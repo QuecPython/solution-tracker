@@ -32,7 +32,6 @@ def loc_timer_cb(argv):
 
 if __name__ == '__main__':
     settings.init()
-    # current_settings, locator_init_params = settings.get()
 
     if (settings.current_settings['app']['loc_mode'] & settings.default_values_app._loc_mode.cycle) \
             and settings.current_settings['app']['loc_cycle_period']:

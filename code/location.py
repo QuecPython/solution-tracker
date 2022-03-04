@@ -42,7 +42,7 @@ def gps_data_retrieve_thread(argv):
 class GPS(UART):
     def __init__(self, gps_cfg):
         global gps_data_retrieve_queue
-        super(GPS, self).__init__(gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'], gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl'])
+        super(UART, self).__init__(gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'], gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl'])
         self.set_callback(gps_data_retrieve_cb)
         self.gps_data = ''
         gps_data_retrieve_queue = Queue(maxsize=8)
@@ -113,8 +113,7 @@ class Location(GPS, CellLocator, WiFiLocator):
     wifiLoc_enabled = False
 
     def __init__(self, read_cb, **kw):
-        current_settings, _ = settings.get()
-        # current_settings = settings.current_settings
+        current_settings = settings.current_settings
 
         self.read_cb = read_cb
 

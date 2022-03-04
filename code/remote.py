@@ -1,5 +1,4 @@
 
-# from logging import exception
 import utime
 import ql_fs
 import ujson
@@ -9,7 +8,7 @@ from queue import Queue
 import usr.settings as settings
 import usr.dev_info as dev_info
 
-current_settings = settings.get()
+current_settings = settings.current_settings
 
 if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
