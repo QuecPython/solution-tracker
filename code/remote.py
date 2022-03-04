@@ -12,6 +12,7 @@ current_settings = settings.current_settings
 
 if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
+    from usr.quecthing import object_model
 
 
 class RemoteError(Exception):
@@ -20,6 +21,11 @@ class RemoteError(Exception):
 
     def __str__(self):
         return repr(self.value)
+
+
+class DownLinkOption(object):
+    def __init__(self):
+        pass
 
 
 def downlink_process(argv):
@@ -32,9 +38,19 @@ def downlink_process(argv):
         Data format:
         TODO: =====================
         '''
-        msg = self.downlink_queue.get()
-        if msg:
-            pass
+        data = self.downlink_queue.get()
+        if isinstance(data, dict):
+            DownLinkOptionObj = DownLinkOption()
+            for k, v in data.items():
+                if object_model.get(k):
+                    if hasattr(DownLinkOptionObj, object_model[k]):
+                        dl_fun = getattr(DownLinkOptionObj, object_model[k])
+                        dl_fun(v)
+                    else:
+                        # TODO: Raise Error OR Conntinue
+                        raise RemoteError('DownLinkOption has no accribute %s.' % object_model[k])
+                else:
+                    raise RemoteError('object_model has no key %d.' % k)
             '''
             TODO: processing for settings or control commands from downlink channel
             '''

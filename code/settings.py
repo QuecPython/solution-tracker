@@ -74,6 +74,7 @@ class default_values_app(object):
 
     sw_drive_behavior_alert = True
 
+
 class default_values_sys(object):
     '''
     System default settings
@@ -89,7 +90,7 @@ class default_values_sys(object):
     '''
     variables of system default settings below MUST NOT start with '_'
     '''
-    profile_idx = 0
+    profile_idx = 1
 
     cloud = _cloud.quecIot
 
@@ -189,9 +190,9 @@ def set(opt, val):
             return True
 
         elif opt in (
-            'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
-            'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
-            'sw_sim_out_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
+                'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
+                'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
+                'sw_sim_out_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
             if not isinstance(val, bool):
                 return False
             current_settings['app'][opt] = val

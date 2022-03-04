@@ -112,12 +112,12 @@ class CellLocator(object):
         )
 
 
-class WiFiLocator(wifilocator):
+class WiFiLocator(object):
     def __init__(self, wifiLocator_cfg):
-        super(wifilocator, self).__init__(wifiLocator_cfg['token'])
+        self.wifilocator_obj = wifilocator(wifiLocator_cfg['token'])
 
     def read(self):
-        return super(wifilocator, self).getwifilocator()
+        return self.wifilocator_obj.getwifilocator()
 
 
 def loc_worker(argv):

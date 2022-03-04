@@ -10,5 +10,5 @@ quecIot = {
     'PK': 'p11275',
     'PS': 'Q0ZQQndaN3pCUFd6',
     'DK': 'trackdev0304',
-    'DS': ''
+    'DS': '8eba9389af434974c3c846d1922d949f'
 }

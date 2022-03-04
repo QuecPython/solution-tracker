@@ -38,6 +38,7 @@ object_model = [
     (20, 'disassemble_alert')
 ]
 
+
 class QuecThing(object):
     def __init__(self, pk, ps, dk, ds, downlink_queue):
         self.downlink_queue = downlink_queue
@@ -131,14 +132,10 @@ class QuecThing(object):
             if errcode == 10200:
                 log.info('Recving raw data.')
                 log.info(data)
-                '''
                 self.downlink_queue.put(data)
-                '''
             if errcode == 10210:
                 log.info('Recving object model data.')
-                '''
                 self.downlink_queue.put(data)
-                '''
             elif errcode == 10211:
                 log.info('Recving object model query command.')
         elif event == 6:
