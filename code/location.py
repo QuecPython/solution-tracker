@@ -82,11 +82,22 @@ class GPS(object):
 
     def read_location_GxVTG(self):
         gps_data = self.read()
-        gga_re = ure.search(
-            r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,[0-9]+\.[0-9]+,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN],\*\w+",
-            gps_data)
-        if gga_re:
-            return gga_re.group(0)
+        vtg_re = ure.search(r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,([0-9]+\.[0-9]+)??,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN]\*\w*", gps_data)
+        if vtg_re:
+            return vtg_re.group(0)
+        else:
+            return ""
+
+    def read_location_GxVTG_speed(self):
+        gps_data = self.read()
+        vtg_re = ure.search(r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,([0-9]+\.[0-9]+)??,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN]\*\w*", gps_data)
+        if vtg_re:
+            speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", gps_data)
+            if speed_re:
+                speed = speed_re.group(0)[3:-3]
+                return float(speed)
+            else:
+                return ""
         else:
             return ""
 
