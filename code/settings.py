@@ -124,11 +124,11 @@ def init():
     global current_settings
 
     if default_values_app.loc_method & default_values_app._loc_method.gps:
-        default_values_sys.locator_init_params = default_values_sys._gps_cfg
-    elif default_values_app.loc_method & default_values_app._loc_method.cell:
-        default_values_sys.locator_init_params = default_values_sys._cellLocator_cfg
-    elif default_values_app.loc_method & default_values_app._loc_method.wifi:
-        default_values_sys.locator_init_params = default_values_sys._wifiLocator_cfg
+        default_values_sys.locator_init_params['gps_cfg'] = default_values_sys._gps_cfg
+    if default_values_app.loc_method & default_values_app._loc_method.cell:
+        default_values_sys.locator_init_params['cellLocator_cfg'] = default_values_sys._cellLocator_cfg
+    if default_values_app.loc_method & default_values_app._loc_method.wifi:
+        default_values_sys.locator_init_params['wifiLocator_cfg'] = default_values_sys._wifiLocator_cfg
 
     default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
     default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
