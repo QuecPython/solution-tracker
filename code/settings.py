@@ -26,6 +26,12 @@ class default_values_app(object):
         onVoiceRecord = 0x8
         all = 0xF
 
+    class _drive_behavior(object):
+        suddenly_start = 0
+        suddenly_stop = 1
+        suddenly_turn_left = 2
+        suddenly_turn_right = 3
+
     '''
     variables of App default settings below MUST NOT start with '_'
     '''
@@ -38,17 +44,17 @@ class default_values_app(object):
 
     loc_cycle_period = 1
 
+    low_power_alert_threshold = 20
+
+    low_power_shutdown_threshold = 5
+
     sw_ota = True
 
-    sw_auto_upgrade = True 
+    sw_ota_auto_upgrade = True
 
-    sw_electric_fence = True
-
-    sw_phone_call = False
+    sw_voice_listen = False
 
     sw_voice_record = False
-
-    sw_jtt808 = True
 
     sw_fault_alert = True
 
@@ -59,8 +65,6 @@ class default_values_app(object):
     sw_sim_out_alert = True
 
     sw_disassemble_alert = True
-
-    sw_vibrate_alert = True
 
     sw_drive_behavior_alert = True
 
@@ -142,9 +146,17 @@ def set(opt, val):
             current_settings['app'][opt] = val
             return True
 
-        elif opt == 'sw_ota' or opt == 'sw_auto_upgrade' or opt == 'sw_electric_fence' or opt == 'sw_phone_call' or opt == 'sw_voice_record' \
-        or opt == 'sw_jtt808' or opt == 'sw_fault_alert' or opt == 'sw_low_power_alert' or opt == 'sw_over_speed_alert' or opt == 'sw_sim_out_alert' \
-        or opt == 'sw_disassemble_alert' or opt == 'sw_vibrate_alert' or opt == 'sw_drive_behavior_alert':
+        elif opt == 'low_power_alert_threshold' or opt == 'low_power_shutdown_threshold':
+            if not isinstance(val, int):
+                return False
+            if val < 0 or val > 100:
+                return False
+            current_settings['app'][opt] = val
+            return True
+
+        elif opt == 'sw_ota' or opt == 'sw_ota_auto_upgrade' or opt == 'sw_voice_listen' or opt == 'sw_voice_record' \
+        or opt == 'sw_fault_alert' or opt == 'sw_low_power_alert' or opt == 'sw_over_speed_alert' or opt == 'sw_sim_out_alert' \
+        or opt == 'sw_disassemble_alert' or opt == 'sw_drive_behavior_alert':
             if not isinstance(val, bool):
                 return False
             current_settings['app'][opt] = val
