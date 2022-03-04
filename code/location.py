@@ -93,8 +93,7 @@ class GPS(object):
         if vtg_data:
             speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", vtg_data)
             if speed_re:
-                speed = speed_re.group(0)[3:-3]
-                return speed
+                return speed_re.group(0)[3:-3]
 
         return ""
 
