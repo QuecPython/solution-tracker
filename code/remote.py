@@ -147,18 +147,24 @@ class Remote(object):
         '''
         {
             "non_loca": [
-                {xxx},
-                {xxx}
+                {
+                    'switch': True,
+                    'energy': 100
+                },
+                {
+                    'switch': True,
+                    'energy': 100
+                }
             ],
 
             "loca_non_gps": [
-                {xxx},
-                {xxx}
+                (117.1138, 31.82279, 550),
+                (117.1138, 31.82279, 550)
             ],
 
             "loca_gps": [
-                {xxx},
-                {xxx}
+                ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x'],
+                ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
             ]
         }
         '''
@@ -209,5 +215,21 @@ class Remote(object):
     def clean_history(self):
         uos.remove(self._history)
 
+    '''
+    Data format to post:
+
+    --- non_loca ---
+    {
+        'switch': True,
+        'energy': 100
+    }
+
+    --- loca_non_gps ---
+    (117.1138, 31.82279, 550)
+
+    --- loca_gps ---
+    ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
+
+    '''
     def post_data(self, data_type, data):
         self.uplink_queue.put((data_type, data))
