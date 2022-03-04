@@ -1,5 +1,5 @@
 
-from logging import exception
+# from logging import exception
 import utime
 import ql_fs
 import ujson
@@ -14,12 +14,14 @@ current_settings = settings.get()
 if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
 
+
 class RemoteError(Exception):
     def __init__(self, value):
         self.value = value
 
     def __str__(self):
         return repr(self.value)
+
 
 def downlink_process(argv):
     self = argv
@@ -38,9 +40,10 @@ def downlink_process(argv):
             TODO: processing for settings or control commands from downlink channel
             '''
 
+
 def uplink_process(argv):
     self = argv
-    ret = False
+    # ret = False
     while True:
 
         '''
@@ -70,14 +73,14 @@ def uplink_process(argv):
                         # Try at most 3 times to post data to server.
                         while not self.cloud.post_data(data_type, data):
                             ntry += 1
-                            if ntry >= 3: # Data post failed after 3 times, maybe network error?
-                                raise RemoteError('Data post failed.') # Stop posting more data, go to exception handler.
+                            if ntry >= 3:  # Data post failed after 3 times, maybe network error?
+                                raise RemoteError('Data post failed.')  # Stop posting more data, go to exception handler.
                             utime.sleep(1)
                         else:
-                            value.pop(i)        # Pop data from data-list after posting sueecss.
-                            need_refresh = True # Data in hist-dictionary changed, need to refresh history file.
+                            value.pop(i)         # Pop data from data-list after posting sueecss.
+                            need_refresh = True  # Data in hist-dictionary changed, need to refresh history file.
         except Exception:
-            while True: # Put all data in uplink_queue to hist-dictionary.
+            while True:  # Put all data in uplink_queue to hist-dictionary.
                 if self.uplink_queue.size():
                     msg = self.uplink_queue.get()
                     if msg:
@@ -123,6 +126,7 @@ def uplink_process(argv):
         else:
             continue
 
+
 class Remote(object):
     _history = '/usr/tracker_data.hist'
 
@@ -130,7 +134,7 @@ class Remote(object):
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-            self.cloud = QuecThing(dev_info.quecIot['PK'], dev_info.quecIot['PS'], self.downlink_queue)
+            self.cloud = QuecThing(dev_info.quecIot['PK'], dev_info.quecIot['PS'], dev_info.quecIot['DK'], dev_info.quecIot['DS'], self.downlink_queue)
             self.DATA_NON_LOCA = QuecThing.DATA_NON_LOCA
             self.DATA_LOCA_NON_GPS = QuecThing.DATA_LOCA_NON_GPS
             self.DATA_LOCA_GPS = QuecThing.DATA_LOCA_GPS
@@ -190,7 +194,7 @@ class Remote(object):
 
         if key not in res:
             res[key] = []
-            
+
         res[key].append(data)
 
         return self.refresh_history(res)
@@ -198,7 +202,7 @@ class Remote(object):
     def refresh_history(self, hist_dict):
         try:
             with open(self._history, 'w') as f:
-                ujson.dump(hist_dict, f, indent = 4)
+                ujson.dump(hist_dict, f, indent=4)
                 return True
         except Exception:
             return False

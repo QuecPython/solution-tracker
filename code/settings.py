@@ -3,8 +3,10 @@ import ql_fs
 import ujson
 import uos
 import ure
+from machine import UART
 
 tracker_settings_file = '/usr/tracker_settings.json'
+
 
 class default_values_app(object):
     '''
@@ -50,6 +52,8 @@ class default_values_app(object):
 
     sw_ota = True
 
+    sw_auto_upgrade = True
+
     sw_ota_auto_upgrade = True
 
     sw_voice_listen = False
@@ -88,28 +92,66 @@ class default_values_sys(object):
     cloud = _cloud.quecIot
 
 
-default_settings_app = {k:v for k,v in default_values_app.__dict__.items() if not k.startswith('_')}
+default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
 current_settings_app = {}
 
-default_settings_sys = {k:v for k,v in default_values_sys.__dict__.items() if not k.startswith('_')}
+default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
 current_settings_sys = {}
 
-default_settings = {'app':default_settings_app, 'sys':default_settings_sys}
+default_settings = {'app': default_settings_app, 'sys': default_settings_sys}
 current_settings = {}
+
+PROFILE_IDX = 0
+
+locator_init_params = {}
+
+all_locator_init_params = {
+    'gps_cfg': {
+        'UARTn': UART.UART0,
+        'buadrate': 115200,
+        'databits': 8,
+        'parity': 0,
+        'stopbits': 1,
+        'flowctl': 0
+    },
+    'cellLocator_cfg': {
+        'serverAddr': 'www.queclocator.com',
+        'port': 80,
+        'token': 'xGP77d2z0i91s67n',
+        'timeout': 3,
+        'profileIdx': PROFILE_IDX
+    },
+    'wifiLocator_cfg': {
+        'token': 'xGP77d2z0i91s67n'
+    }
+}
+
 
 def init():
     global current_settings
+    global locator_init_params
+
     if not ql_fs.path_exists(tracker_settings_file):
         with open(tracker_settings_file, 'w') as f:
-            ujson.dump(default_settings, f, indent = 4)
+            ujson.dump(default_settings, f)
         current_settings = dict(default_settings)
     else:
         with open(tracker_settings_file, 'r') as f:
             current_settings = ujson.load(f)
 
+    if current_settings['app']['loc_method'] & default_values_app._loc_method.gps:
+        locator_init_params['gps_cfg'] = all_locator_init_params['gps_cfg']
+    elif current_settings['app']['loc_method'] & default_values_app._loc_method.cell:
+        locator_init_params['cellLocator_cfg'] = all_locator_init_params['cellLocator_cfg']
+    elif current_settings['app']['loc_method'] & default_values_app._loc_method.wifi:
+        locator_init_params['wifiLocator_cfg'] = all_locator_init_params['wifiLocator_cfg']
+
+
 def get():
     global current_settings
-    return current_settings
+    global locator_init_params
+    return current_settings, locator_init_params
+
 
 def set(opt, val):
     if opt in current_settings['app']:
@@ -129,7 +171,7 @@ def set(opt, val):
                 return False
             current_settings['app'][opt] = val
             return True
-            
+
         elif opt == 'loc_mode':
             if not isinstance(val, int):
                 return False
@@ -145,7 +187,6 @@ def set(opt, val):
                 return False
             current_settings['app'][opt] = val
             return True
-
         elif opt == 'low_power_alert_threshold' or opt == 'low_power_shutdown_threshold':
             if not isinstance(val, int):
                 return False
@@ -153,10 +194,11 @@ def set(opt, val):
                 return False
             current_settings['app'][opt] = val
             return True
-
-        elif opt == 'sw_ota' or opt == 'sw_ota_auto_upgrade' or opt == 'sw_voice_listen' or opt == 'sw_voice_record' \
-        or opt == 'sw_fault_alert' or opt == 'sw_low_power_alert' or opt == 'sw_over_speed_alert' or opt == 'sw_sim_out_alert' \
-        or opt == 'sw_disassemble_alert' or opt == 'sw_drive_behavior_alert':
+        elif opt in (
+                'sw_ota', 'sw_auto_upgrade', 'sw_electric_fence', 'sw_phone_call',
+                'sw_voice_record', 'sw_jtt808', 'sw_fault_alert', 'sw_low_power_alert',
+                'sw_over_speed_alert', 'sw_sim_out_alert', 'sw_disassemble_alert',
+                'sw_vibrate_alert', 'sw_drive_behavior_alert'):
             if not isinstance(val, bool):
                 return False
             current_settings['app'][opt] = val
@@ -168,12 +210,15 @@ def set(opt, val):
     else:
         return False
 
+
 def save():
     with open(tracker_settings_file, 'w') as f:
-        ujson.dump(current_settings, f, indent = 4)
+        ujson.dump(current_settings, f, indent=4)
+
 
 def reset():
     uos.remove(tracker_settings_file)
+
 
 class Error(Exception):
     def __init__(self, value):

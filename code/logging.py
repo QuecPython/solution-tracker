@@ -1,9 +1,8 @@
 
 import utime
 
+
 def asyncLog(name, level, *message, timeout=None, await_connection=True):
-
-
         '''
         pass
         #
@@ -11,6 +10,7 @@ def asyncLog(name, level, *message, timeout=None, await_connection=True):
         #                                await_connection=await_connection)
         '''
         pass
+
 
 def log(name, level, *message, local_only=False, return_only=False, timeout=None):
 
@@ -25,6 +25,7 @@ def log(name, level, *message, local_only=False, return_only=False, timeout=None
         return
     if not local_only:
         pass
+
 
 class Logger:
     def __init__(self, name):

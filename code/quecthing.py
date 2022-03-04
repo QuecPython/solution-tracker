@@ -6,14 +6,17 @@ DATA_NON_LOCA = 0x0
 DATA_LOCA_NON_GPS = 0x1
 DATA_LOCA_GPS = 0x2
 
-log = getLogger('QuecThing')
+# log = getLogger('QuecThing')
+log = getLogger(__name__)
+
 
 class QuecThing(object):
-    def __init__(self, pk, ps, downlink_queue):
+    def __init__(self, pk, ps, dk, ds, downlink_queue):
         self.downlink_queue = downlink_queue
         quecIot.init()
         quecIot.setEventCB(self.eventCB)
         quecIot.setProductinfo(pk, ps)
+        quecIot.setDkDs(dk, ds)
         quecIot.setServer(1, "iot-south.quectel.com:2883")
         quecIot.setConnmode(1)
 
