@@ -27,6 +27,15 @@ class DownLinkOption(object):
     def __init__(self):
         pass
 
+    def switch(self, *args):
+        pass
+
+    def energy(self, *args):
+        pass
+
+    def phone_num(self, *args):
+        pass
+
 
 def downlink_process(argv):
     self = argv
