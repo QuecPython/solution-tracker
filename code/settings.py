@@ -99,7 +99,7 @@ class default_values_sys(object):
     locator_init_params = {}
 
     _gps_cfg = {
-        'UARTn': UART.UART0,
+        'UARTn': UART.UART1,
         'buadrate': 115200,
         'databits': 8,
         'parity': 0,

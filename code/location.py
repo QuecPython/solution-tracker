@@ -4,9 +4,12 @@ import _thread
 import cellLocator
 from wifilocator import wifilocator
 import usr.settings as settings
+from usr.logging import getLogger
 
 from queue import Queue
 from machine import UART
+
+log = getLogger(__name__)
 
 gps_data_retrieve_queue = None
 
@@ -39,17 +42,20 @@ def gps_data_retrieve_thread(argv):
             self.gps_data = self.uart_read(toRead).decode()
 
 
-class GPS(UART):
+class GPS(object):
     def __init__(self, gps_cfg):
         global gps_data_retrieve_queue
-        super(UART, self).__init__(gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'], gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl'])
-        self.set_callback(gps_data_retrieve_cb)
+        self.uart_obj = UART(
+            gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'],
+            gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl']
+        )
+        self.uart_obj.set_callback(gps_data_retrieve_cb)
         self.gps_data = ''
         gps_data_retrieve_queue = Queue(maxsize=8)
         _thread.start_new_thread(gps_data_retrieve_thread, (self,))
 
     def uart_read(self, nread):
-        return super(GPS, self).read(nread).decode()
+        return self.uart_obj.read(nread).decode()
 
     def read(self):
         return self.gps_data
@@ -68,6 +74,16 @@ class GPS(UART):
         gps_data = self.read()
         gga_re = ure.search(
             r"\$G[BLPN]GGA,[0-9]+\.[0-9]+,[0-9]+\.[0-9]+,[NS],[0-9]+\.[0-9]+,[EW],[126],[0-9]+,[0-9]+\.[0-9]+,-*[0-9]+\.[0-9]+,M,-*[0-9]+\.[0-9]+,M,,\*[0-9]+",
+            gps_data)
+        if gga_re:
+            return gga_re.group(0)
+        else:
+            return ""
+
+    def read_location_GxVTG(self):
+        gps_data = self.read()
+        gga_re = ure.search(
+            r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,[0-9]+\.[0-9]+,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN],\*\w+",
             gps_data)
         if gga_re:
             return gga_re.group(0)
