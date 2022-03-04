@@ -56,8 +56,6 @@ class default_values_app(object):
 
     sw_ota = True
 
-    sw_auto_upgrade = True
-
     sw_ota_auto_upgrade = True
 
     sw_voice_listen = False
@@ -75,7 +73,6 @@ class default_values_app(object):
     sw_disassemble_alert = True
 
     sw_drive_behavior_alert = True
-
 
 class default_values_sys(object):
     '''
@@ -182,6 +179,7 @@ def set(opt, val):
                 return False
             current_settings['app'][opt] = val
             return True
+
         elif opt == 'low_power_alert_threshold' or opt == 'low_power_shutdown_threshold':
             if not isinstance(val, int):
                 return False
@@ -189,11 +187,11 @@ def set(opt, val):
                 return False
             current_settings['app'][opt] = val
             return True
+
         elif opt in (
-                'sw_ota', 'sw_auto_upgrade', 'sw_electric_fence', 'sw_phone_call',
-                'sw_voice_record', 'sw_jtt808', 'sw_fault_alert', 'sw_low_power_alert',
-                'sw_over_speed_alert', 'sw_sim_out_alert', 'sw_disassemble_alert',
-                'sw_vibrate_alert', 'sw_drive_behavior_alert'):
+            'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
+            'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
+            'sw_sim_out_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
             if not isinstance(val, bool):
                 return False
             current_settings['app'][opt] = val
