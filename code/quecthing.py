@@ -7,7 +7,6 @@ DATA_NON_LOCA = 0x0
 DATA_LOCA_NON_GPS = 0x1
 DATA_LOCA_GPS = 0x2
 
-# log = getLogger('QuecThing')
 log = getLogger(__name__)
 
 object_model = [
