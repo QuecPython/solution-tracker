@@ -89,17 +89,14 @@ class GPS(object):
             return ""
 
     def read_location_GxVTG_speed(self):
-        gps_data = self.read()
-        vtg_re = ure.search(r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,([0-9]+\.[0-9]+)??,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN]\*\w*", gps_data)
-        if vtg_re:
-            speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", gps_data)
+        vtg_data = self.read_location_GxVTG()
+        if vtg_data:
+            speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", vtg_data)
             if speed_re:
                 speed = speed_re.group(0)[3:-3]
-                return float(speed)
-            else:
-                return ""
-        else:
-            return ""
+                return speed
+
+        return ""
 
 
 class CellLocator(object):
