@@ -133,18 +133,18 @@ class QuecThing(object):
                 log.info('Recving raw data.')
                 log.info(data)
                 # TODO: To Check data format.
-                self.downlink_queue.put({'raw_data': data})
+                self.downlink_queue.put(('raw_data', data))
             if errcode == 10210:
                 log.info('Recving object model data.')
                 dl_data = [(dict(object_model)[k], v.decode() if isinstance(v, bytes) else v) for k, v in data.items()]
-                self.downlink_queue.put({'set': dl_data})
+                self.downlink_queue.put(('set', dl_data))
             elif errcode == 10211:
                 log.info('Recving object model query command.')
                 # TODO: Check pkgId for other uses.
                 # log.info('pkgId: %s' % data[0])
                 object_model_ids = data[1]
                 object_model_val = [dict(object_model).get(i) for i in object_model_ids if object_model_ids.get(i) is not None]
-                self.downlink_queue.put({'get': object_model_val})
+                self.downlink_queue.put(('get', object_model_val))
         elif event == 6:
             if errcode == 10200:
                 log.info('Logout succeeded.')

@@ -75,8 +75,8 @@ def downlink_process(argv):
         data = self.downlink_queue.get()
 
         DownLinkOptionObj = DownLinkOption(remote_obj=self)
-        for option_type in data.keys():
-            for item in data[option_type]:
+        for option_type, option_data in data:
+            for item in option_data:
                 model_obj_name = ''
                 args = ()
                 option_attr = ''
