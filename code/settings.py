@@ -4,6 +4,9 @@ import ujson
 import uos
 import ure
 from machine import UART
+from usr.logging import getLogger
+
+log = getLogger(__name__)
 
 tracker_settings_file = '/usr/tracker_settings.json'
 
@@ -117,16 +120,25 @@ class default_values_sys(object):
         'token': 'xGP77d2z0i91s67n'
     }
 
+    @staticmethod
+    def _get_locator_init_params(loc_method):
+        global current_settings
+        locator_init_params = current_settings.get('sys', {}).get('locator_init_params', {})
+
+        if loc_method & default_values_app._loc_method.gps:
+            locator_init_params['gps_cfg'] = default_values_sys._gps_cfg
+        if loc_method & default_values_app._loc_method.cell:
+            locator_init_params['cellLocator_cfg'] = default_values_sys._cellLocator_cfg
+        if loc_method & default_values_app._loc_method.wifi:
+            locator_init_params['wifiLocator_cfg'] = default_values_sys._wifiLocator_cfg
+
+        return locator_init_params
+
 
 def init():
     global current_settings
 
-    if default_values_app.loc_method & default_values_app._loc_method.gps:
-        default_values_sys.locator_init_params['gps_cfg'] = default_values_sys._gps_cfg
-    if default_values_app.loc_method & default_values_app._loc_method.cell:
-        default_values_sys.locator_init_params['cellLocator_cfg'] = default_values_sys._cellLocator_cfg
-    if default_values_app.loc_method & default_values_app._loc_method.wifi:
-        default_values_sys.locator_init_params['wifiLocator_cfg'] = default_values_sys._wifiLocator_cfg
+    default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
 
     default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
     default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
@@ -147,10 +159,13 @@ def get():
 
 
 def set(opt, val):
+    global current_settings
+
     if opt in current_settings['app']:
         if opt == 'phone_num':
             if not isinstance(val, str):
                 return False
+            # TODO: This ure not work in EC600N
             pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d{9}$')
             if pattern.search(val):
                 current_settings['app'][opt] = val
@@ -163,6 +178,7 @@ def set(opt, val):
             if val > default_values_app._loc_method.all:
                 return False
             current_settings['app'][opt] = val
+            current_settings['sys']['locator_init_params'] = default_values_sys._get_locator_init_params(val)
             return True
 
         elif opt == 'loc_mode':
@@ -207,7 +223,7 @@ def set(opt, val):
 
 def save():
     with open(tracker_settings_file, 'w') as f:
-        ujson.dump(current_settings, f, indent=4)
+        ujson.dump(current_settings, f)
 
 
 def reset():
