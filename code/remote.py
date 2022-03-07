@@ -6,7 +6,6 @@ import uos
 import _thread
 from queue import Queue
 import usr.settings as settings
-import usr.dev_info as dev_info
 from usr.logging import getLogger
 
 log = getLogger(__name__)
@@ -26,40 +25,73 @@ class RemoteError(Exception):
         return repr(self.value)
 
 
-class DownLinkOption(object):
-    def __init__(self, remote_obj):
-        self.remote_obj = remote_obj
+class Controller(object):
+    def __init__(self, remote):
+        self.remote = remote
 
-    def remote_post_data(self, key, val):
-        # TODO: Self funtion over to post or not.
-        self.remote_obj.post_data(self.remote_obj.DATA_NON_LOCA, {key: val})
+    def switch(self, perm, flag=None, *args):
+        if perm == 'r':
+            # TODO: PowerStatus
+            pass
+        elif perm == 'w':
+            if flag is True:
+                # TODO: PowerUp
+                pass
+            elif flag is False:
+                # TODO: PowerDown
+                pass
+            else:
+                pass
+        else:
+            raise RemoteError('Controller switch permission error %s.' % perm)
 
-    def get_switch(self, *args):
-        return True
-
-    def set_switch(self, *args):
-        if args[0] is False:
-            # TODO: How to checkout msg that is posted over before power down.
+    def energy(self, perm, *args):
+        if perm == 'r':
+            # TODO: How to get energy from Power.getVbatt().
             pass
         else:
-            return True
+            raise RemoteError('Controller energy permission error %s.' % perm)
 
-    def get_energy(self, *args):
-        # TODO: How to get energy from Power.getVbatt().
-        pass
-
-    def get_app_settings(self, *args):
-        return settings.current_settings['app'][args[0]]
-
-    def set_app_settings(self, *args):
-        if settings.set(args[0], args[1]):
-            settings.save()
-            return args[1]
+    def drive_behavior_code(self, perm, *args):
+        if perm == 'r':
+            pass
         else:
-            return self.get_app_settings(args[0])
+            raise RemoteError('Controller drive_behavior_code permission error %s.' % perm)
 
-    def get_drive_behavior_code(self, *args):
+
+class DownLinkOption(object):
+    def __init__(self, remote):
+        self.remote = remote
+        self.controller = Controller(self.remote)
+
+    def row_data(self, *args, **kwargs):
         pass
+
+    def object_model(self, *args, **kwargs):
+        setting_flag = 0
+
+        for arg in args:
+            if hasattr(settings.default_values_app, arg[0]):
+                set_res = settings.set(arg[0], arg[1])
+                log.debug('key: %s, val: %s, set_res: %s', (arg[0], arg[1], set_res))
+                if setting_flag == 0:
+                    setting_flag = 1
+            elif hasattr(self.controller, arg[0]):
+                getattr(self.controller, arg[0])(*('w', arg[1]))
+            else:
+                pass
+
+        if setting_flag:
+            settings.save()
+
+    def query(self, *args, **kwargs):
+        for arg in args:
+            if hasattr(settings.default_values_app, arg):
+                settings.query(self.remote, 'app', arg)
+            elif hasattr(self.controller, arg):
+                getattr(self.controller, arg)(*('r'))
+            else:
+                pass
 
 
 def downlink_process(argv):
@@ -73,39 +105,17 @@ def downlink_process(argv):
         TODO: =====================
         '''
         data = self.downlink_queue.get()
+        log.debug('downlink_queue data:', data)
 
-        DownLinkOptionObj = DownLinkOption(remote_obj=self)
-        for option_type, option_data in data:
-            for item in option_data:
-                model_obj_name = ''
-                args = ()
-                option_attr = ''
-                if option_type == 'set':
-                    model_obj_name = item[0]
-                    if hasattr(settings.default_values_app, model_obj_name):
-                        option_attr = 'set_app_settings'
-                        args = item
-                    else:
-                        option_attr = 'set_' + model_obj_name
-                        args = (item[1],)
-                elif option_type == 'get':
-                    model_obj_name = item
-                    if hasattr(settings.default_values_app, model_obj_name):
-                        option_attr = 'get_app_settings'
-                        args = (item,)
-                    else:
-                        option_attr = 'get_' + model_obj_name
-                else:
-                    # TODO: row data
-                    pass
-
-                if hasattr(DownLinkOptionObj, option_attr):
-                    option_fun = getattr(DownLinkOptionObj, option_attr)
-                    option_fun_res = option_fun(*args)
-                    self.post_data(self.DATA_NON_LOCA, {model_obj_name: option_fun_res})
-                else:
-                    # TODO: Raise Error OR Conntinue
-                    raise RemoteError('DownLinkOption has no accribute %s.' % option_fun)
+        DownLinkOptionObj = DownLinkOption(remote=self)
+        option_attr = data[0]
+        args = data[1]
+        if hasattr(DownLinkOptionObj, option_attr):
+            option_fun = getattr(DownLinkOptionObj, option_attr)
+            option_fun(*args)
+        else:
+            # TODO: Raise Error OR Conntinue
+            raise RemoteError('DownLinkOption has no accribute %s.' % option_attr)
         '''
         TODO: processing for settings or control commands from downlink channel
         '''
@@ -203,8 +213,9 @@ class Remote(object):
     def __init__(self):
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
+        cloud_init_params = settings.current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-            self.cloud = QuecThing(dev_info.quecIot['PK'], dev_info.quecIot['PS'], dev_info.quecIot['DK'], dev_info.quecIot['DS'], self.downlink_queue)
+            self.cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], self.downlink_queue)
             self.DATA_NON_LOCA = DATA_NON_LOCA
             self.DATA_LOCA_NON_GPS = DATA_LOCA_NON_GPS
             self.DATA_LOCA_GPS = DATA_LOCA_GPS

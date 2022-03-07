@@ -10,32 +10,32 @@ DATA_LOCA_GPS = 0x2
 log = getLogger(__name__)
 
 object_model = [
-    (9,  'switch'),
-    (4,  'energy'),
-    (23, 'phone_num'),
-    (24, 'loc_method'),
-    (25, 'loc_mode'),
-    (26, 'loc_cycle_period'),
-    (19, 'local_time'),
-    (15, 'low_power_alert_threshold'),
-    (16, 'low_power_shutdown_threshold'),
-    (12, 'sw_ota'),
-    (13, 'sw_ota_auto_upgrade'),
-    (10, 'sw_voice_listen'),
-    (11, 'sw_voice_record'),
-    (27, 'sw_fault_alert'),
-    (28, 'sw_low_power_alert'),
-    (29, 'sw_over_speed_alert'),
-    (30, 'sw_sim_out_alert'),
-    (31, 'sw_disassemble_alert'),
-    (32, 'sw_drive_behavior_alert'),
-    (21, 'drive_behavior_code'),
-    (6,  'sos_alert'),
-    (14, 'fault_alert'),
-    (17, 'low_power_alert'),
-    (18, 'sim_out_alert'),
-    (22, 'drive_behavior_alert'),
-    (20, 'disassemble_alert')
+    (9,  ('switch', 'rw')),
+    (4,  ('energy', 'r')),
+    (23, ('phone_num', 'rw')),
+    (24, ('loc_method', 'rw')),
+    (25, ('loc_mode', 'rw')),
+    (26, ('loc_cycle_period', 'rw')),
+    (19, ('local_time', 'r')),
+    (15, ('low_power_alert_threshold', 'rw')),
+    (16, ('low_power_shutdown_threshold', 'rw')),
+    (12, ('sw_ota', 'rw')),
+    (13, ('sw_ota_auto_upgrade', 'rw')),
+    (10, ('sw_voice_listen', 'rw')),
+    (11, ('sw_voice_record', 'rw')),
+    (27, ('sw_fault_alert', 'rw')),
+    (28, ('sw_low_power_alert', 'rw')),
+    (29, ('sw_over_speed_alert', 'rw')),
+    (30, ('sw_sim_out_alert', 'rw')),
+    (31, ('sw_disassemble_alert', 'rw')),
+    (32, ('sw_drive_behavior_alert', 'rw')),
+    (21, ('drive_behavior_code', 'r')),
+    (6,  ('sos_alert', 'rw')),
+    (14, ('fault_alert', 'rw')),
+    (17, ('low_power_alert', 'rw')),
+    (18, ('sim_out_alert', 'rw')),
+    (22, ('drive_behavior_alert', 'rw')),
+    (20, ('disassemble_alert', 'rw'))
 ]
 
 
@@ -136,15 +136,15 @@ class QuecThing(object):
                 self.downlink_queue.put(('raw_data', data))
             if errcode == 10210:
                 log.info('Recving object model data.')
-                dl_data = [(dict(object_model)[k], v.decode() if isinstance(v, bytes) else v) for k, v in data.items()]
-                self.downlink_queue.put(('set', dl_data))
+                dl_data = [(dict(object_model)[k][0], v.decode() if isinstance(v, bytes) else v) for k, v in data.items() if 'w' in dict(object_model)[k][1]]
+                self.downlink_queue.put(('object_model', dl_data))
             elif errcode == 10211:
                 log.info('Recving object model query command.')
                 # TODO: Check pkgId for other uses.
                 # log.info('pkgId: %s' % data[0])
                 object_model_ids = data[1]
-                object_model_val = [dict(object_model).get(i) for i in object_model_ids if object_model_ids.get(i) is not None]
-                self.downlink_queue.put(('get', object_model_val))
+                object_model_val = [dict(object_model)[i][0] for i in object_model_ids if dict(object_model).get(i) is not None and 'r' in dict(object_model)[i][1]]
+                self.downlink_queue.put(('query', object_model_val))
         elif event == 6:
             if errcode == 10200:
                 log.info('Logout succeeded.')

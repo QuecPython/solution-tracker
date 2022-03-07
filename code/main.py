@@ -6,6 +6,8 @@ from usr.logging import getLogger
 
 log = getLogger(__name__)
 
+version = '1.0.0'
+
 tracker = None
 
 

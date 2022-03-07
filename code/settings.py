@@ -3,6 +3,8 @@ import ql_fs
 import ujson
 import uos
 import ure
+import _thread
+import quecIot
 from machine import UART
 from usr.logging import getLogger
 
@@ -13,6 +15,23 @@ tracker_settings_file = '/usr/tracker_settings.json'
 current_settings = {}
 current_settings_app = {}
 current_settings_sys = {}
+
+_settings_lock = _thread.allocate_lock()
+
+
+def settings_lock(func):
+    def wrapperd_fun(*args, **kwargs):
+        if not _settings_lock.locked():
+            if _settings_lock.acquire():
+                source_fun = func(*args, **kwargs)
+                _settings_lock.release()
+                return source_fun
+            else:
+                log.warn('%s for _settings_lock acquire falied. args: %s' % (func.__name__, args))
+        else:
+            log.warn('%s for _settings_lock is locked. args: %s' % (func.__name__, args))
+
+    return wrapperd_fun
 
 
 class default_values_app(object):
@@ -97,6 +116,29 @@ class default_values_sys(object):
 
     cloud = _cloud.quecIot
 
+    cloud_init_params = {}
+
+    _quecIot = {
+        'PK': 'p11275',
+        'PS': 'Q0ZQQndaN3pCUFd6',
+        'DK': 'trackdev0304',
+        'DS': '8eba9389af434974c3c846d1922d949f',
+    }
+
+    _AliYun = {
+        'PK': '',
+        'PS': '',
+        'DK': '',
+        'DS': '',
+    }
+
+    _JTT808 = {
+        'PK': '',
+        'PS': '',
+        'DK': '',
+        'DS': '',
+    }
+
     locator_init_params = {}
 
     _gps_cfg = {
@@ -134,11 +176,39 @@ class default_values_sys(object):
 
         return locator_init_params
 
+    @staticmethod
+    def _get_cloud_init_params(cloud):
+        global current_settings
+        cloud_init_params = current_settings.get('sys', {}).get('cloud_init_params', {})
 
+        if cloud & default_values_sys._cloud.quecIot:
+            cloud_init_params = default_values_sys._quecIot
+            cloud_init_params = default_values_sys._quecIot_init_params(cloud_init_params)
+        if cloud & default_values_sys._cloud.AliYun:
+            cloud_init_params = default_values_sys._AliYun
+        if cloud & default_values_sys._cloud.JTT808:
+            cloud_init_params = default_values_sys._JTT808
+
+        return cloud_init_params
+
+    @staticmethod
+    def _quecIot_init_params(cloud_init_params):
+        if not cloud_init_params['DK'] or not cloud_init_params['DS']:
+            if quecIot.init():
+                if quecIot.setProductinfo(pk, ps):
+                    if quecIot.setDkDs(dk, ds):
+                        ndk, nds = quecIot.getDkDs()
+                        cloud_init_params['DK'] = ndk
+                        cloud_init_params['DS'] = nds
+        return cloud_init_params
+
+
+@settings_lock
 def init():
     global current_settings
 
     default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
+    default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
 
     default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
     default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
@@ -153,11 +223,19 @@ def init():
             current_settings = ujson.load(f)
 
 
+@settings_lock
 def get():
     global current_settings
     return current_settings
 
 
+@settings_lock
+def query(remote, set_type, set_key):
+    global current_settings
+    remote.post_data(remote.DATA_NON_LOCA, {set_key: current_settings.get(set_type, {}).get(set_key)})
+
+
+@settings_lock
 def set(opt, val):
     global current_settings
 
@@ -216,16 +294,17 @@ def set(opt, val):
 
         else:
             return False
-
     else:
         return False
 
 
+@settings_lock
 def save():
     with open(tracker_settings_file, 'w') as f:
         ujson.dump(current_settings, f)
 
 
+@settings_lock
 def reset():
     uos.remove(tracker_settings_file)
 
