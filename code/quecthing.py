@@ -60,7 +60,7 @@ class QuecThing(object):
         if data_type == DATA_NON_LOCA:
             for k, v in data.items():
                 for om in object_model:
-                    if k == om[1]:
+                    if k == om[1][0]:
                         if v:
                             if quecIot.phymodelReport(1, {om[0]: v}):
                                 res = self.post_result_wait_queue.get()

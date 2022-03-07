@@ -232,6 +232,7 @@ def get():
 @settings_lock
 def query(remote, set_type, set_key):
     global current_settings
+    log.debug('remote: %s, set_type: %s, set_key: %s' % (remote, set_type, set_key))
     remote.post_data(remote.DATA_NON_LOCA, {set_key: current_settings.get(set_type, {}).get(set_key)})
 
 

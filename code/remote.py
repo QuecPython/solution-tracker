@@ -314,4 +314,5 @@ class Remote(object):
 
     '''
     def post_data(self, data_type, data):
+        log.debug('data_type: %s, data: %s' % (data_type, data))
         self.uplink_queue.put((data_type, data))
