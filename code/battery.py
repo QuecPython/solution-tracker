@@ -1,4 +1,7 @@
 
+from misc import Power
+
+
 class Battery(object):
     def __init__(self):
         pass
@@ -10,3 +13,9 @@ class Battery(object):
 
     def charge(self):
         pass
+
+    def capacity(self):
+        Vbatt = Power.getVbatt()
+        # TODO: Get battery capacity from Vbatt
+        battery_capacity = Vbatt
+        return battery_capacity

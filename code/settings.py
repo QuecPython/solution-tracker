@@ -19,19 +19,20 @@ current_settings_sys = {}
 _settings_lock = _thread.allocate_lock()
 
 
-def settings_lock(func):
-    def wrapperd_fun(*args, **kwargs):
-        if not _settings_lock.locked():
-            if _settings_lock.acquire():
-                source_fun = func(*args, **kwargs)
-                _settings_lock.release()
-                return source_fun
+def settings_lock(func_name):
+    def settings_lock_fun(func):
+        def wrapperd_fun(*args, **kwargs):
+            if not _settings_lock.locked():
+                if _settings_lock.acquire():
+                    source_fun = func(*args, **kwargs)
+                    _settings_lock.release()
+                    return source_fun
+                else:
+                    log.warn('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
             else:
-                log.warn('%s for _settings_lock acquire falied. args: %s' % (func.__name__, args))
-        else:
-            log.warn('%s for _settings_lock is locked. args: %s' % (func.__name__, args))
-
-    return wrapperd_fun
+                log.warn('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
+        return wrapperd_fun
+    return settings_lock_fun
 
 
 class default_values_app(object):
@@ -195,15 +196,15 @@ class default_values_sys(object):
     def _quecIot_init_params(cloud_init_params):
         if not cloud_init_params['DK'] or not cloud_init_params['DS']:
             if quecIot.init():
-                if quecIot.setProductinfo(pk, ps):
-                    if quecIot.setDkDs(dk, ds):
+                if quecIot.setProductinfo(cloud_init_params['PK'], cloud_init_params['PS']):
+                    if quecIot.setDkDs(cloud_init_params['DK'], cloud_init_params['DS']):
                         ndk, nds = quecIot.getDkDs()
                         cloud_init_params['DK'] = ndk
                         cloud_init_params['DS'] = nds
         return cloud_init_params
 
 
-@settings_lock
+@settings_lock('settings.init')
 def init():
     global current_settings
 
@@ -223,20 +224,20 @@ def init():
             current_settings = ujson.load(f)
 
 
-@settings_lock
+@settings_lock('settings.get')
 def get():
     global current_settings
     return current_settings
 
 
-@settings_lock
+@settings_lock('settings.query')
 def query(remote, set_type, set_key):
     global current_settings
     log.debug('remote: %s, set_type: %s, set_key: %s' % (remote, set_type, set_key))
     remote.post_data(remote.DATA_NON_LOCA, {set_key: current_settings.get(set_type, {}).get(set_key)})
 
 
-@settings_lock
+@settings_lock('settings.set')
 def set(opt, val):
     global current_settings
 
@@ -299,13 +300,13 @@ def set(opt, val):
         return False
 
 
-@settings_lock
+@settings_lock('settings.save')
 def save():
     with open(tracker_settings_file, 'w') as f:
         ujson.dump(current_settings, f)
 
 
-@settings_lock
+@settings_lock('settings.reset')
 def reset():
     uos.remove(tracker_settings_file)
 

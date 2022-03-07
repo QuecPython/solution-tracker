@@ -10,7 +10,7 @@ DATA_LOCA_GPS = 0x2
 log = getLogger(__name__)
 
 object_model = [
-    (9,  ('switch', 'rw')),
+    (9,  ('power_switch', 'rw')),
     (4,  ('energy', 'r')),
     (23, ('phone_num', 'rw')),
     (24, ('loc_method', 'rw')),

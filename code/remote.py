@@ -29,7 +29,7 @@ class Controller(object):
     def __init__(self, remote):
         self.remote = remote
 
-    def switch(self, perm, flag=None, *args):
+    def power_switch(self, perm, flag=None, *args):
         if perm == 'r':
             # TODO: PowerStatus
             pass
@@ -47,16 +47,10 @@ class Controller(object):
 
     def energy(self, perm, *args):
         if perm == 'r':
-            # TODO: How to get energy from Power.getVbatt().
+            # TODO: Get energy from battery.
             pass
         else:
             raise RemoteError('Controller energy permission error %s.' % perm)
-
-    def drive_behavior_code(self, perm, *args):
-        if perm == 'r':
-            pass
-        else:
-            raise RemoteError('Controller drive_behavior_code permission error %s.' % perm)
 
 
 class DownLinkOption(object):
