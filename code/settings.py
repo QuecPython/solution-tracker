@@ -166,7 +166,7 @@ def set(opt, val):
             if not isinstance(val, str):
                 return False
             # TODO: This ure not work in EC600N
-            pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d{9}$')
+            pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$')
             if pattern.search(val):
                 current_settings['app'][opt] = val
                 return True
