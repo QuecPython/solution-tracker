@@ -27,7 +27,7 @@ tracker = Tracker(loc_read_cb, **settings.current_settings['sys']['locator_init_
 
 
 def loc_timer_cb(argv):
-    tracker.trigger()
+    tracker.locator.trigger()
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ import _thread
 from queue import Queue
 import usr.settings as settings
 from usr.logging import getLogger
+from usr.battery import Battery
 
 log = getLogger(__name__)
 
@@ -31,15 +32,21 @@ class Controller(object):
 
     def power_switch(self, perm, flag=None, *args):
         if perm == 'r':
-            # TODO: PowerStatus
-            pass
+            power_status = Battery.power_status()
+            self.remote.post_data(self.remote.DATA_NON_LOCA, {'power_switch': power_status})
         elif perm == 'w':
             if flag is True:
-                # TODO: PowerUp
-                pass
+                # TODO: Get other model info
+                model_info = {}
+                model_info['power_switch'] = flag
+                self.remote.post_data(self.remote.DATA_NON_LOCA, model_info)
+                Battery.power_up()
             elif flag is False:
-                # TODO: PowerDown
-                pass
+                # TODO: Get other model info
+                model_info = {}
+                model_info['power_switch'] = flag
+                self.remote.post_data(self.remote.DATA_NON_LOCA, model_info)
+                Battery.power_down()
             else:
                 pass
         else:
@@ -47,8 +54,8 @@ class Controller(object):
 
     def energy(self, perm, *args):
         if perm == 'r':
-            # TODO: Get energy from battery.
-            pass
+            battery_energy = Battery.energy()
+            self.remote.post_data(self.remote.DATA_NON_LOCA, {'energy': battery_energy})
         else:
             raise RemoteError('Controller energy permission error %s.' % perm)
 
