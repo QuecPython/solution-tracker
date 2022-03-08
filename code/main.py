@@ -10,6 +10,8 @@ version = '1.0.0'
 
 tracker = None
 
+current_settings = settings.settings.get()
+
 
 def loc_read_cb(data):
     if data:
@@ -23,7 +25,15 @@ def loc_read_cb(data):
             data_type = tracker.remote.DATA_LOCA_NON_GPS
         tracker.remote.post_data(data_type, loc_data)
 
-tracker = Tracker(loc_read_cb, **settings.current_settings['sys']['locator_init_params'])
+
+def alert_read_cb(data):
+    if data:
+        data_type = tracker.remote.DATA_NON_LOCA
+        alert_data = {data[0]: data[1]}
+        tracker.remote.post_data(data_type, alert_data)
+
+
+tracker = Tracker(loc_read_cb, alert_read_cb)
 
 
 def loc_timer_cb(argv):
@@ -31,9 +41,6 @@ def loc_timer_cb(argv):
 
 
 if __name__ == '__main__':
-    settings.init()
-    current_settings = settings.current_settings
-
     if (current_settings['app']['loc_mode'] & settings.default_values_app._loc_mode.cycle) \
             and current_settings['app']['loc_cycle_period']:
         loc_timer = osTimer()

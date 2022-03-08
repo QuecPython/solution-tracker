@@ -12,27 +12,29 @@ log = getLogger(__name__)
 
 tracker_settings_file = '/usr/tracker_settings.json'
 
-current_settings = {}
-current_settings_app = {}
-current_settings_sys = {}
-
 _settings_lock = _thread.allocate_lock()
 
 
-def settings_lock(func_name):
-    def settings_lock_fun(func):
-        def wrapperd_fun(*args, **kwargs):
-            if not _settings_lock.locked():
-                if _settings_lock.acquire():
-                    source_fun = func(*args, **kwargs)
-                    _settings_lock.release()
-                    return source_fun
-                else:
-                    log.warn('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
+def settings_lock(func):
+    def wrapperd_fun(*args, **kwargs):
+        if not _settings_lock.locked():
+            if _settings_lock.acquire():
+                source_fun = func(*args, **kwargs)
+                _settings_lock.release()
+                return source_fun
             else:
-                log.warn('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
-        return wrapperd_fun
-    return settings_lock_fun
+                log.warn('_settings_lock acquire falied. func: %s, args: %s' % (func.__name__, args))
+        else:
+            log.warn('_settings_lock is locked. func: %s, args: %s' % (func.__name__, args))
+    return wrapperd_fun
+
+
+class SettingsError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 class default_values_app(object):
@@ -165,8 +167,7 @@ class default_values_sys(object):
 
     @staticmethod
     def _get_locator_init_params(loc_method):
-        global current_settings
-        locator_init_params = current_settings.get('sys', {}).get('locator_init_params', {})
+        locator_init_params = {}
 
         if loc_method & default_values_app._loc_method.gps:
             locator_init_params['gps_cfg'] = default_values_sys._gps_cfg
@@ -179,8 +180,7 @@ class default_values_sys(object):
 
     @staticmethod
     def _get_cloud_init_params(cloud):
-        global current_settings
-        cloud_init_params = current_settings.get('sys', {}).get('cloud_init_params', {})
+        cloud_init_params = {}
 
         if cloud & default_values_sys._cloud.quecIot:
             cloud_init_params = default_values_sys._quecIot
@@ -204,116 +204,107 @@ class default_values_sys(object):
         return cloud_init_params
 
 
-@settings_lock('settings.init')
-def init():
-    global current_settings
+class Settings(object):
 
-    default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
-    default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
+    def __init__(self):
+        self.current_settings = {}
+        self.current_settings_app = {}
+        self.current_settings_sys = {}
+        self.init()
 
-    default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
-    default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
-    default_settings = {'app': default_settings_app, 'sys': default_settings_sys}
+    @settings_lock
+    def init(self):
+        default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
+        default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
 
-    if not ql_fs.path_exists(tracker_settings_file):
-        with open(tracker_settings_file, 'w') as f:
-            ujson.dump(default_settings, f)
-        current_settings = dict(default_settings)
-    else:
-        with open(tracker_settings_file, 'r') as f:
-            current_settings = ujson.load(f)
+        default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
+        default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
+        default_settings = {'app': default_settings_app, 'sys': default_settings_sys}
 
+        if not ql_fs.path_exists(tracker_settings_file):
+            with open(tracker_settings_file, 'w') as f:
+                ujson.dump(default_settings, f)
+            self.current_settings = dict(default_settings)
+        else:
+            with open(tracker_settings_file, 'r') as f:
+                self.current_settings = ujson.load(f)
 
-@settings_lock('settings.get')
-def get():
-    global current_settings
-    return current_settings
+    @settings_lock
+    def get(self):
+        return self.current_settings
 
+    @settings_lock
+    def query(self, remote, set_type, set_key):
+        log.debug('remote: %s, set_type: %s, set_key: %s' % (remote, set_type, set_key))
+        remote.post_data(remote.DATA_NON_LOCA, {set_key: self.current_settings.get(set_type, {}).get(set_key)})
 
-@settings_lock('settings.query')
-def query(remote, set_type, set_key):
-    global current_settings
-    log.debug('remote: %s, set_type: %s, set_key: %s' % (remote, set_type, set_key))
-    remote.post_data(remote.DATA_NON_LOCA, {set_key: current_settings.get(set_type, {}).get(set_key)})
-
-
-@settings_lock('settings.set')
-def set(opt, val):
-    global current_settings
-
-    if opt in current_settings['app']:
-        if opt == 'phone_num':
-            if not isinstance(val, str):
+    @settings_lock
+    def set(self, opt, val):
+        if opt in self.current_settings['app']:
+            if opt == 'phone_num':
+                if not isinstance(val, str):
+                    return False
+                # TODO: This ure not work in EC600N
+                pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$')
+                if pattern.search(val):
+                    self.current_settings['app'][opt] = val
+                    return True
                 return False
-            # TODO: This ure not work in EC600N
-            pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$')
-            if pattern.search(val):
-                current_settings['app'][opt] = val
+
+            elif opt == 'loc_method':
+                if not isinstance(val, int):
+                    return False
+                if val > default_values_app._loc_method.all:
+                    return False
+                self.current_settings['app'][opt] = val
+                self.current_settings['sys']['locator_init_params'] = default_values_sys._get_locator_init_params(val)
                 return True
-            return False
 
-        elif opt == 'loc_method':
-            if not isinstance(val, int):
-                return False
-            if val > default_values_app._loc_method.all:
-                return False
-            current_settings['app'][opt] = val
-            current_settings['sys']['locator_init_params'] = default_values_sys._get_locator_init_params(val)
-            return True
+            elif opt == 'loc_mode':
+                if not isinstance(val, int):
+                    return False
+                if val > default_values_app._loc_mode.all:
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
 
-        elif opt == 'loc_mode':
-            if not isinstance(val, int):
-                return False
-            if val > default_values_app._loc_mode.all:
-                return False
-            current_settings['app'][opt] = val
-            return True
+            elif opt == 'loc_cycle_period':
+                if not isinstance(val, int):
+                    return False
+                if val < 1:
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
 
-        elif opt == 'loc_cycle_period':
-            if not isinstance(val, int):
-                return False
-            if val < 1:
-                return False
-            current_settings['app'][opt] = val
-            return True
+            elif opt == 'low_power_alert_threshold' or opt == 'low_power_shutdown_threshold':
+                if not isinstance(val, int):
+                    return False
+                if val < 0 or val > 100:
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
 
-        elif opt == 'low_power_alert_threshold' or opt == 'low_power_shutdown_threshold':
-            if not isinstance(val, int):
-                return False
-            if val < 0 or val > 100:
-                return False
-            current_settings['app'][opt] = val
-            return True
+            elif opt in (
+                    'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
+                    'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
+                    'sw_sim_out_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
+                if not isinstance(val, bool):
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
 
-        elif opt in (
-                'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
-                'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
-                'sw_sim_out_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
-            if not isinstance(val, bool):
+            else:
                 return False
-            current_settings['app'][opt] = val
-            return True
-
         else:
             return False
-    else:
-        return False
 
+    @settings_lock
+    def save(self):
+        with open(tracker_settings_file, 'w') as f:
+            ujson.dump(self.current_settings, f)
 
-@settings_lock('settings.save')
-def save():
-    with open(tracker_settings_file, 'w') as f:
-        ujson.dump(current_settings, f)
+    @settings_lock
+    def reset(self):
+        uos.remove(tracker_settings_file)
 
-
-@settings_lock('settings.reset')
-def reset():
-    uos.remove(tracker_settings_file)
-
-
-class Error(Exception):
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
+settings = Settings()

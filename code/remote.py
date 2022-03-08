@@ -14,9 +14,8 @@ from usr.battery import Battery
 
 log = getLogger(__name__)
 
-current_settings = settings.current_settings
 
-if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
     from usr.quecthing import DATA_NON_LOCA, DATA_LOCA_NON_GPS, DATA_LOCA_GPS
 
@@ -66,7 +65,7 @@ class DownLinkOption(object):
         self.remote = remote
         self.controller = Controller(self.remote)
 
-    def row_data(self, *args, **kwargs):
+    def raw_data(self, *args, **kwargs):
         pass
 
     def object_model(self, *args, **kwargs):
@@ -74,7 +73,7 @@ class DownLinkOption(object):
 
         for arg in args:
             if hasattr(settings.default_values_app, arg[0]):
-                set_res = settings.set(arg[0], arg[1])
+                set_res = settings.settings.set(arg[0], arg[1])
                 log.debug('key: %s, val: %s, set_res: %s', (arg[0], arg[1], set_res))
                 if setting_flag == 0:
                     setting_flag = 1
@@ -84,12 +83,12 @@ class DownLinkOption(object):
                 pass
 
         if setting_flag:
-            settings.save()
+            settings.settings.save()
 
     def query(self, *args, **kwargs):
         for arg in args:
             if hasattr(settings.default_values_app, arg):
-                settings.query(self.remote, 'app', arg)
+                settings.settings.query(self.remote, 'app', arg)
             elif hasattr(self.controller, arg):
                 getattr(self.controller, arg)(*('r'))
             else:
@@ -104,7 +103,8 @@ def downlink_process(argv):
         Data format should be unified at the process module file of its own before put to downlink_queue.
 
         Data format:
-        TODO: =====================
+        ('object_model', [('phone_num', '123456789'),...])
+        ('query', ['phone_num',...])
         '''
         data = self.downlink_queue.get()
         log.debug('downlink_queue data:', data)
@@ -118,9 +118,6 @@ def downlink_process(argv):
         else:
             # TODO: Raise Error OR Conntinue
             raise RemoteError('DownLinkOption has no accribute %s.' % option_attr)
-        '''
-        TODO: processing for settings or control commands from downlink channel
-        '''
 
 
 def uplink_process(argv):
@@ -215,14 +212,15 @@ class Remote(object):
     def __init__(self):
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
-        cloud_init_params = settings.current_settings['sys']['cloud_init_params']
+        current_settings = settings.settings.get()
+        cloud_init_params = current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
             self.cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], self.downlink_queue)
             self.DATA_NON_LOCA = DATA_NON_LOCA
             self.DATA_LOCA_NON_GPS = DATA_LOCA_NON_GPS
             self.DATA_LOCA_GPS = DATA_LOCA_GPS
         else:
-            raise settings.Error('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
+            raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
 
         _thread.start_new_thread(downlink_process, (self,))
         _thread.start_new_thread(uplink_process, (self,))

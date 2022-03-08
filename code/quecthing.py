@@ -38,6 +38,8 @@ object_model = [
     (20, ('disassemble_alert', 'rw'))
 ]
 
+object_model_code = {i[1][0]: i[0] for i in object_model}
+
 
 class QuecThing(object):
     def __init__(self, pk, ps, dk, ds, downlink_queue):
@@ -59,22 +61,21 @@ class QuecThing(object):
     def post_data(self, data_type, data):
         if data_type == DATA_NON_LOCA:
             for k, v in data.items():
-                for om in object_model:
-                    if k == om[1][0]:
-                        if v:
-                            if quecIot.phymodelReport(1, {om[0]: v}):
-                                res = self.post_result_wait_queue.get()
-                                if res:
-                                    v = {}
-                                    continue
-                                else:
-                                    self.rm_empty_data(data)
-                                    return False
-                            else:
-                                self.rm_empty_data(data)
-                                return False
-                        else:
+                if object_model_code.get(k) is not None and v:
+                    # Event Data Format From object_mode_code
+                    if isinstance(v, dict):
+                        v = {object_model_code.get(ik) if object_model_code.get(ik) else ik: iv for ik, iv in v.items()}
+                    if quecIot.phymodelReport(1, {object_model_code.get(k): v}):
+                        res = self.post_result_wait_queue.get()
+                        if res:
+                            v = {}
                             continue
+                        else:
+                            self.rm_empty_data(data)
+                            return False
+                    else:
+                        self.rm_empty_data(data)
+                        return False
             self.rm_empty_data(data)
             return True
         elif data_type == DATA_LOCA_GPS:

@@ -1,5 +1,6 @@
 
 import ure
+import utime
 import _thread
 import cellLocator
 from wifilocator import wifilocator
@@ -125,66 +126,84 @@ def loc_worker(argv):
     while True:
         trigger = self.trigger_queue.get()
         if trigger:
-            data = self.read()
+            data = None
+            retry = 0
+            while retry < 3:
+                data = self.read()
+                if data:
+                    break
+                else:
+                    retry += 1
+                    utime.sleep(1)
+            log.debug('location data info:', data)
             if data and self.read_cb:
                 self.read_cb(data)
 
 
-class Location(GPS, CellLocator, WiFiLocator):
-    gps_enabled = False
-    cellLoc_enabled = False
-    wifiLoc_enabled = False
+class Location(object):
+    gps = None
+    cellLoc = None
+    wifiLoc = None
 
-    def __init__(self, read_cb, **kw):
-        current_settings = settings.current_settings
-
+    def __init__(self, read_cb):
         self.read_cb = read_cb
-
-        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.gps:
-            if 'gps_cfg' in kw:
-                super(GPS, self).__init__(kw['gps_cfg'])
-                self.gps_enabled = True
-            else:
-                raise ValueError('Invalid gps init parameters.')
-
-        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.cell:
-            if 'cellLocator_cfg' in kw:
-                super(CellLocator, self).__init__(kw['cellLocator_cfg'])
-                self.cellLoc_enabled = True
-            else:
-                raise ValueError('Invalid cell-locator init parameters.')
-
-        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.wifi:
-            if 'wifiLocator_cfg' in kw:
-                super(WiFiLocator, self).__init__(kw['wifiLocator_cfg'])
-                self.wifiLoc_enabled = True
-            else:
-                raise ValueError('Invalid wifi-locator init parameters.')
-
         self.trigger_queue = Queue(maxsize=64)
         _thread.start_new_thread(loc_worker, (self,))
 
+    def _locater_init(self):
+        current_settings = settings.settings.get()
+        locator_init_params = current_settings['sys']['locator_init_params']
+
+        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.gps:
+            if self.gps is None:
+                if 'gps_cfg' in locator_init_params:
+                    self.gps = GPS(locator_init_params['gps_cfg'])
+                else:
+                    raise ValueError('Invalid gps init parameters.')
+        else:
+            self.gps = None
+
+        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.cell:
+            if self.cellLoc is None:
+                if 'cellLocator_cfg' in locator_init_params:
+                    self.cellLoc = CellLocator(locator_init_params['cellLocator_cfg'])
+                else:
+                    raise ValueError('Invalid cell-locator init parameters.')
+        else:
+            self.cellLoc = None
+
+        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.wifi:
+            if self.wifiLoc is None:
+                if 'wifiLocator_cfg' in locator_init_params:
+                    self.wifiLoc = WiFiLocator(locator_init_params['wifiLocator_cfg'])
+                else:
+                    raise ValueError('Invalid wifi-locator init parameters.')
+        else:
+            self.wifiLoc = None
+
     def read(self):
-        if self.gps_enabled:
+        self._locater_init()
+
+        if self.gps:
             data = []
-            r = super(GPS, self).read_location_GxRMC()
+            r = self.gps.read_location_GxRMC()
             if r:
                 data.append(r)
 
-            r = super(GPS, self).read_location_GxGGA()
+            r = self.gps.read_location_GxGGA()
             if r:
                 data.append(r)
 
             if len(data):
                 return (settings.default_values_app._loc_method.gps, data)
 
-        if self.cellLoc_enabled:
-            data = super(CellLocator, self).read()
+        if self.cellLoc:
+            data = self.cellLoc.read()
             if data:
                 return (settings.default_values_app._loc_method.cell, data)
 
-        if self.wifiLoc_enabled:
-            data = super(WiFiLocator, self).read()
+        if self.wifiLoc:
+            data = self.wifiLoc.read()
             if data:
                 return (settings.default_values_app._loc_method.wifi, data)
 
