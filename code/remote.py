@@ -4,10 +4,13 @@ import ql_fs
 import ujson
 import uos
 import _thread
-from queue import Queue
 import usr.settings as settings
+
+from misc import Power
+from queue import Queue
 from usr.logging import getLogger
 from usr.battery import Battery
+
 
 log = getLogger(__name__)
 
@@ -32,21 +35,19 @@ class Controller(object):
 
     def power_switch(self, perm, flag=None, *args):
         if perm == 'r':
-            power_status = Battery.power_status()
-            self.remote.post_data(self.remote.DATA_NON_LOCA, {'power_switch': power_status})
+            self.remote.post_data(self.remote.DATA_NON_LOCA, {'power_switch': True})
         elif perm == 'w':
             if flag is True:
                 # TODO: Get other model info
                 model_info = {}
                 model_info['power_switch'] = flag
                 self.remote.post_data(self.remote.DATA_NON_LOCA, model_info)
-                Battery.power_up()
             elif flag is False:
                 # TODO: Get other model info
                 model_info = {}
                 model_info['power_switch'] = flag
                 self.remote.post_data(self.remote.DATA_NON_LOCA, model_info)
-                Battery.power_down()
+                Power.powerDown()
             else:
                 pass
         else:

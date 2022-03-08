@@ -19,17 +19,3 @@ class Battery(object):
         # TODO: Get battery energy from Vbatt
         battery_energy = Vbatt
         return battery_energy
-
-    def power_status(self):
-        return True
-
-    def power_up(self):
-        pass
-
-    def power_down(self):
-        # TODO: Send model info to cloud before power down.
-        Power.powerDown()
-
-    def power_restart(self):
-        # TODO: Send model info to cloud before power restart.
-        Power.powerRestart()
