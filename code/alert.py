@@ -7,13 +7,13 @@ from usr.logging import getLogger
 log = getLogger(__name__)
 
 ALERTCODE = {
-    30001: 'sw_fault_alert',
-    30002: 'sw_low_power_alert',
-    30004: 'sw_sim_out_alert',
-    30005: 'sw_disassemble_alert',
-    # 30006: 'sw_shock_alert',  # TODO: NOT USED
-    40000: 'sw_drive_behavior_alert',
-    50001: 'sw_sos_alert',
+    30001: 'fault_alert',
+    30002: 'low_power_alert',
+    30004: 'sim_out_alert',
+    30005: 'disassemble_alert',
+    # 30006: 'shock_alert',  # TODO: NOT USED
+    40000: 'drive_behavior_alert',
+    50001: 'sos_alert',
 }
 
 DRIVEBEHAVIORCODE = {
@@ -49,7 +49,7 @@ def alert_process(argv):
             log.info('alert_signals_queue data: ', data)
             if ALERTCODE.get(data[0]):
                 current_settings = settings.settings.get()
-                alert_status = current_settings.get('app', {}).get(ALERTCODE.get(data[0]))
+                alert_status = current_settings.get('app', {}).get('sw_' + ALERTCODE.get(data[0]))
                 if alert_status:
                     self.read_cb(ALERTCODE.get(data[0]), data[1])
                 else:
