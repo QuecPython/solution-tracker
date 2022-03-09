@@ -62,8 +62,8 @@ class AlertMonitor(Singleton):
     '''
     Recv alert signals and process them
     '''
-    def __init__(self, read_cb):
-        self.read_cb = read_cb
+    def __init__(self, alert_cb):
+        self.alert_cb = alert_cb
         self.alert_signals_queue = Queue(maxsize=64)
         _thread.start_new_thread(alert_process, (self,))
 

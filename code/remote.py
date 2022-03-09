@@ -12,13 +12,11 @@ from usr.logging import getLogger
 from usr.battery import Battery
 from usr.common import Singleton
 
-
-log = getLogger(__name__)
-
-
 if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
     from usr.quecthing import DATA_NON_LOCA, DATA_LOCA_NON_GPS, DATA_LOCA_GPS
+
+log = getLogger(__name__)
 
 
 class RemoteError(Exception):
@@ -116,6 +114,7 @@ def downlink_process(argv):
         if hasattr(DownLinkOptionObj, option_attr):
             option_fun = getattr(DownLinkOptionObj, option_attr)
             option_fun(*args)
+            self.remote_read_cb(*data)
         else:
             # TODO: Raise Error OR Conntinue
             raise RemoteError('DownLinkOption has no accribute %s.' % option_attr)
@@ -210,7 +209,8 @@ def uplink_process(argv):
 class Remote(Singleton):
     _history = '/usr/tracker_data.hist'
 
-    def __init__(self):
+    def __init__(self, remote_read_cb):
+        self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
         current_settings = settings.settings.get()

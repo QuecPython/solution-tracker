@@ -74,7 +74,7 @@ class default_values_app(object):
 
     loc_method = _loc_method.gps
 
-    loc_mode = _loc_mode.cycle
+    loc_mode = _loc_mode.none
 
     loc_cycle_period = 1
 
