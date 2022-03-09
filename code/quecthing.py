@@ -35,7 +35,10 @@ object_model = [
     (17, ('low_power_alert', 'rw')),
     (18, ('sim_out_alert', 'rw')),
     (22, ('drive_behavior_alert', 'rw')),
-    (20, ('disassemble_alert', 'rw'))
+    (20, ('disassemble_alert', 'rw')),
+    (33, ('power_restart', 'w')),
+    (34, ('over_speed_threshold', 'rw')),
+    (35, ('over_speed_alert', 'rw')),
 ]
 
 object_model_code = {i[1][0]: i[0] for i in object_model}

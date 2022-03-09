@@ -17,12 +17,10 @@ ALERTCODE = {
 }
 
 DRIVEBEHAVIORCODE = {
-    40001: 'quick_start',
-    40002: 'quick_stop',
-    40003: 'quick_turn_left',
-    40004: 'quick_turn_right',
-    40005: 'over_speed',
-    40006: 'low_speed',
+    1: 'quick_start',
+    2: 'quick_stop',
+    3: 'quick_turn_left',
+    4: 'quick_turn_right',
 }
 
 

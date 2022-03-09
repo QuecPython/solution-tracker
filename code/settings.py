@@ -79,6 +79,8 @@ class default_values_app(object):
 
     low_power_shutdown_threshold = 5
 
+    over_speed_threshold = 120
+
     sw_ota = True
 
     sw_ota_auto_upgrade = True
