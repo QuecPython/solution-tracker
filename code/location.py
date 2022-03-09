@@ -105,6 +105,9 @@ class CellLocator(object):
         self.cellLocator_cfg = cellLocator_cfg
 
     def read(self):
+        return ['LBS']
+
+    def get_location(self):
         return cellLocator.getLocation(
             self.cellLocator_cfg['serverAddr'],
             self.cellLocator_cfg['port'],
@@ -119,6 +122,9 @@ class WiFiLocator(object):
         self.wifilocator_obj = wifilocator(wifiLocator_cfg['token'])
 
     def read(self):
+        return []
+
+    def get_location(self):
         return self.wifilocator_obj.getwifilocator()
 
 
