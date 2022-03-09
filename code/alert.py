@@ -6,23 +6,22 @@ from usr.logging import getLogger
 
 log = getLogger(__name__)
 
-# TODO: Use objec model code?
+
 ALERTCODE = {
     30001: 'fault_alert',
     30002: 'low_power_alert',
     30003: 'over_speed_alert',
     30004: 'sim_out_alert',
     30005: 'disassemble_alert',
-    # 30006: 'shock_alert',  # TODO: NOT USED
     40000: 'drive_behavior_alert',
     50001: 'sos_alert',
 }
 
-DRIVEBEHAVIORCODE = {
-    1: 'quick_start',
-    2: 'quick_stop',
-    3: 'quick_turn_left',
-    4: 'quick_turn_right',
+DRIVE_BEHAVIOR_CODE = {
+    40001: 'quick_start',
+    40002: 'quick_stop',
+    40003: 'quick_turn_left',
+    40004: 'quick_turn_right',
 }
 
 
@@ -38,9 +37,9 @@ def alert_process(argv):
     '''
     alert_signals_queue data format
 
-    (300001, {})
+    (30001, {'local_time': 1646731286})
 
-    (400000, {40001: True})
+    (40000, {'drive_behavior_code': 40001, 'local_time': 1646731286})
     '''
     self = argv
     while True:
@@ -58,7 +57,7 @@ def alert_process(argv):
                 log.error('altercode (%s) is not exists. alert info: %s' % data)
 
 
-class AlertMonitor(object):
+class AlertMonitor(settings.Singleton):
     '''
     Recv alert signals and process them
     '''

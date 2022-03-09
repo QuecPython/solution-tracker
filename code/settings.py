@@ -37,6 +37,15 @@ class SettingsError(Exception):
         return repr(self.value)
 
 
+class Singleton(object):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+
 class default_values_app(object):
     '''
     App default settings
@@ -206,7 +215,7 @@ class default_values_sys(object):
         return cloud_init_params
 
 
-class Settings(object):
+class Settings(Singleton):
 
     def __init__(self):
         self.current_settings = {}
@@ -308,5 +317,6 @@ class Settings(object):
     @settings_lock
     def reset(self):
         uos.remove(tracker_settings_file)
+
 
 settings = Settings()

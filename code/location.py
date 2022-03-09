@@ -43,7 +43,7 @@ def gps_data_retrieve_thread(argv):
             self.gps_data = self.uart_read(toRead).decode()
 
 
-class GPS(object):
+class GPS(settings.Singleton):
     def __init__(self, gps_cfg):
         global gps_data_retrieve_queue
         self.uart_obj = UART(
@@ -140,7 +140,7 @@ def loc_worker(argv):
                 self.read_cb(data)
 
 
-class Location(object):
+class Location(settings.Singleton):
     gps = None
     cellLoc = None
     wifiLoc = None

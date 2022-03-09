@@ -206,7 +206,7 @@ def uplink_process(argv):
             continue
 
 
-class Remote(object):
+class Remote(settings.Singleton):
     _history = '/usr/tracker_data.hist'
 
     def __init__(self):
