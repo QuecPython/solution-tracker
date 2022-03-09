@@ -3,12 +3,13 @@ import ure
 import utime
 import _thread
 import cellLocator
-from wifilocator import wifilocator
 import usr.settings as settings
-from usr.logging import getLogger
 
 from queue import Queue
 from machine import UART
+from usr.logging import getLogger
+from usr.common import Singleton
+from wifilocator import wifilocator
 
 log = getLogger(__name__)
 
@@ -43,7 +44,7 @@ def gps_data_retrieve_thread(argv):
             self.gps_data = self.uart_read(toRead).decode()
 
 
-class GPS(settings.Singleton):
+class GPS(Singleton):
     def __init__(self, gps_cfg):
         global gps_data_retrieve_queue
         self.uart_obj = UART(
@@ -140,7 +141,7 @@ def loc_worker(argv):
                 self.read_cb(data)
 
 
-class Location(settings.Singleton):
+class Location(Singleton):
     gps = None
     cellLoc = None
     wifiLoc = None

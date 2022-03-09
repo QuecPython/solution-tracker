@@ -7,6 +7,7 @@ import _thread
 import quecIot
 from machine import UART
 from usr.logging import getLogger
+from usr.common import Singleton
 
 log = getLogger(__name__)
 
@@ -15,18 +16,20 @@ tracker_settings_file = '/usr/tracker_settings.json'
 _settings_lock = _thread.allocate_lock()
 
 
-def settings_lock(func):
-    def wrapperd_fun(*args, **kwargs):
-        if not _settings_lock.locked():
-            if _settings_lock.acquire():
-                source_fun = func(*args, **kwargs)
-                _settings_lock.release()
-                return source_fun
+def settings_lock(func_name):
+    def settings_lock_fun(func):
+        def wrapperd_fun(*args, **kwargs):
+            if not _settings_lock.locked():
+                if _settings_lock.acquire():
+                    source_fun = func(*args, **kwargs)
+                    _settings_lock.release()
+                    return source_fun
+                else:
+                    log.warn('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
             else:
-                log.warn('_settings_lock acquire falied. func: %s, args: %s' % (func.__name__, args))
-        else:
-            log.warn('_settings_lock is locked. func: %s, args: %s' % (func.__name__, args))
-    return wrapperd_fun
+                log.warn('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
+        return wrapperd_fun
+    return settings_lock_fun
 
 
 class SettingsError(Exception):
@@ -35,15 +38,6 @@ class SettingsError(Exception):
 
     def __str__(self):
         return repr(self.value)
-
-
-class Singleton(object):
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super().__new__(cls)
-        return cls._instance
 
 
 class default_values_app(object):
@@ -78,7 +72,7 @@ class default_values_app(object):
 
     phone_num = ''
 
-    loc_method = _loc_method.gps
+    loc_method = _loc_method.all
 
     loc_mode = _loc_mode.cycle
 
@@ -223,7 +217,7 @@ class Settings(Singleton):
         self.current_settings_sys = {}
         self.init()
 
-    @settings_lock
+    @settings_lock('Settings.init')
     def init(self):
         default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
         default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
@@ -240,16 +234,16 @@ class Settings(Singleton):
             with open(tracker_settings_file, 'r') as f:
                 self.current_settings = ujson.load(f)
 
-    @settings_lock
+    @settings_lock('Settings.get')
     def get(self):
         return self.current_settings
 
-    @settings_lock
+    @settings_lock('Settings.query')
     def query(self, remote, set_type, set_key):
         log.debug('remote: %s, set_type: %s, set_key: %s' % (remote, set_type, set_key))
         remote.post_data(remote.DATA_NON_LOCA, {set_key: self.current_settings.get(set_type, {}).get(set_key)})
 
-    @settings_lock
+    @settings_lock('Settings.set')
     def set(self, opt, val):
         if opt in self.current_settings['app']:
             if opt == 'phone_num':
@@ -309,12 +303,12 @@ class Settings(Singleton):
         else:
             return False
 
-    @settings_lock
+    @settings_lock('Settings.save')
     def save(self):
         with open(tracker_settings_file, 'w') as f:
             ujson.dump(self.current_settings, f)
 
-    @settings_lock
+    @settings_lock('Settings.reset')
     def reset(self):
         uos.remove(tracker_settings_file)
 

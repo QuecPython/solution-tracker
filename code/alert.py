@@ -3,6 +3,7 @@ import _thread
 from queue import Queue
 from usr import settings
 from usr.logging import getLogger
+from usr.common import Singleton
 
 log = getLogger(__name__)
 
@@ -57,7 +58,7 @@ def alert_process(argv):
                 log.error('altercode (%s) is not exists. alert info: %s' % data)
 
 
-class AlertMonitor(settings.Singleton):
+class AlertMonitor(Singleton):
     '''
     Recv alert signals and process them
     '''

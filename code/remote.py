@@ -10,6 +10,7 @@ from misc import Power
 from queue import Queue
 from usr.logging import getLogger
 from usr.battery import Battery
+from usr.common import Singleton
 
 
 log = getLogger(__name__)
@@ -206,7 +207,7 @@ def uplink_process(argv):
             continue
 
 
-class Remote(settings.Singleton):
+class Remote(Singleton):
     _history = '/usr/tracker_data.hist'
 
     def __init__(self):
