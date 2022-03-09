@@ -53,7 +53,7 @@ class Controller(object):
 
     def energy(self, perm, *args):
         if perm == 'r':
-            battery_energy = Battery.energy()
+            battery_energy = Battery().energy()
             self.remote.post_data(self.remote.DATA_NON_LOCA, {'energy': battery_energy})
         else:
             raise RemoteError('Controller energy permission error %s.' % perm)
