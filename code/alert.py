@@ -6,9 +6,11 @@ from usr.logging import getLogger
 
 log = getLogger(__name__)
 
+# TODO: Use objec model code?
 ALERTCODE = {
     30001: 'fault_alert',
     30002: 'low_power_alert',
+    30003: 'over_speed_alert',
     30004: 'sim_out_alert',
     30005: 'disassemble_alert',
     # 30006: 'shock_alert',  # TODO: NOT USED
