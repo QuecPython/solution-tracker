@@ -39,6 +39,8 @@ object_model = [
     (33, ('power_restart', 'w')),
     (34, ('over_speed_threshold', 'rw')),
     (35, ('over_speed_alert', 'rw')),
+    (36, ('fault_code', 'r')),
+    (37, ('gps_mode', 'r')),
 ]
 
 object_model_code = {i[1][0]: i[0] for i in object_model}

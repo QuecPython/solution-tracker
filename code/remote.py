@@ -1,15 +1,17 @@
-
+import uos
 import utime
 import ql_fs
 import ujson
-import uos
 import _thread
+
+from misc import Power
+from queue import Queue
+
 import usr.settings as settings
 
-from queue import Queue
-from usr.logging import getLogger
+from usr.battery import Battery
 from usr.common import Singleton
-from usr.common import Controller
+from usr.logging import getLogger
 
 if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
@@ -24,6 +26,43 @@ class RemoteError(Exception):
 
     def __str__(self):
         return repr(self.value)
+
+
+class ControllerError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
+class Controller(Singleton):
+    def __init__(self, tracker):
+        self.tracker = tracker
+
+    def power_switch(self, perm, flag=None, *args):
+        if perm == 'r':
+            self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'power_switch': True})
+        elif perm == 'w':
+            if flag is True:
+                self.tracker.machine_info_report()
+            elif flag is False:
+                self.tracker.machine_info_report(power_switch=flag)
+                utime.sleep(3)
+                self.tracker.energy_led.period = None
+                self.tracker.energy_led.switch(0)
+                self.tracker.running_led.period = None
+                self.tracker.running_led.switch(0)
+                Power.powerDown()
+        else:
+            raise ControllerError('Controller switch permission error %s.' % perm)
+
+    def energy(self, perm, *args):
+        if perm == 'r':
+            battery_energy = Battery().energy()
+            self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'energy': battery_energy})
+        else:
+            raise ControllerError('Controller energy permission error %s.' % perm)
 
 
 class DownLinkOption(object):
@@ -90,7 +129,6 @@ def downlink_process(argv):
 
 def uplink_process(argv):
     self = argv
-    # ret = False
     while True:
 
         '''
@@ -182,6 +220,7 @@ class Remote(Singleton):
         self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
+        self.block_io = False
         current_settings = settings.settings.get()
         cloud_init_params = current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
@@ -259,13 +298,23 @@ class Remote(Singleton):
     def refresh_history(self, hist_dict):
         try:
             with open(self._history, 'w') as f:
-                ujson.dump(hist_dict, f, indent=4)
+                ujson.dump(hist_dict, f)
                 return True
         except Exception:
             return False
 
     def clean_history(self):
         uos.remove(self._history)
+
+    def _post_data(self, data):
+        if data[0] == self.DATA_NON_LOCA or data[0] == self.DATA_LOCA_NON_GPS or data[0] == self.DATA_LOCA_GPS:
+            if not self.cloud.post_data(data[0], data[1]):
+                self.add_history(data[0], data[1])
+                return False
+            else:
+                return True
+        else:
+            raise RemoteError('Post data format is wrong. data: %s' % data)
 
     '''
     Data format to post:
@@ -285,4 +334,10 @@ class Remote(Singleton):
     '''
     def post_data(self, data_type, data):
         log.debug('data_type: %s, data: %s' % (data_type, data))
-        self.uplink_queue.put((data_type, data))
+        if self.block_io is False:
+            self.uplink_queue.put((data_type, data))
+        else:
+            self._post_data((data_type, data))
+
+    def set_block_io(self, val):
+        self.block_io = val

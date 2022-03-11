@@ -11,10 +11,11 @@ from usr.led import LED
 from usr.sensor import Sensor
 from usr.remote import Remote
 from usr.battery import Battery
-from usr.common import Singleton, Controller, TrackerTimer, LEDTimer
-from usr.location import Location, GPS
+from usr.common import Singleton
 from usr.alert import AlertMonitor
 from usr.logging import getLogger
+from usr.location import Location, GPS
+from usr.timer import TrackerTimer, LEDTimer
 
 log = getLogger(__name__)
 
@@ -26,20 +27,16 @@ class Tracker(Singleton):
         self.sensor = Sensor()
         self.locator = Location(self.loc_read_cb)
         self.alert = AlertMonitor(self.alert_read_cb)
-        self.battery = Battery(self.batter_read_cb)
-        self.controller = Controller(self)
-        self.remote = Remote(self, self.remote_read_cb)
-        self.tracker_timer = TrackerTimer(self)
-        self.led_timer = LEDTimer(self)
+        self.battery = Battery()
+        self.remote = Remote(self)
 
         self.power_key = PowerKey()
         self.power_key.powerKeyEventRegister(self.pwk_callback)
         self.usb = USB()
         self.usb.setCallback(self.usb_callback)
         self.check = SelfCheck()
-
-    def remote_read_cb(self, *data):
-        pass
+        self.tracker_timer = TrackerTimer(self)
+        self.led_timer = LEDTimer(self)
 
     def loc_read_cb(self, data):
         if data:
@@ -59,17 +56,21 @@ class Tracker(Singleton):
             alert_data = {data[0]: data[1]}
             self.remote.post_data(data_type, alert_data)
 
-    def machine_info_report(self, power_switch=True):
+    def machine_info_report(self, power_switch=True, block_io=False):
         current_settings = settings.settings.get()
         self.locator.trigger()
         # TODO: Other Machine Info.
         machine_info = {
             'power_switch': power_switch,
             'energy': self.battery.energy(),
-            'local_time': utime.mktime(utime.localtime()),
-            'phone_num': current_settings['app']['phone_num'],
+            'local_time': utime.mktime(utime.localtime())
         }
+        machine_info.update(current_settings['app'])
+        if block_io is True:
+            self.remote.set_block_io(block_io)
         self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
+        if self.remote.block_io is True:
+            self.remote.set_block_io(False)
 
     def energy_led_show(self, energy):
         current_settings = settings.settings.get()
@@ -81,24 +82,27 @@ class Tracker(Singleton):
         elif current_settings['app']['low_power_alert_threshold'] < energy:
             self.energy_led.period = 0
 
+    def machine_check(self):
+        net_check_res = self.check.net_check()
+        gps_check_res = self.check.gps_check()
+        sensor_check_res = self.check.sensor_check()
+        if net_check_res and gps_check_res and sensor_check_res:
+            self.running_led.period = 2
+        else:
+            self.running_led.period = 0.5
+            if not net_check_res:
+                self.alert.post_alert(20000, {'fault_code': 20001})
+            if not gps_check_res:
+                self.alert.post_alert(20000, {'fault_code': 20002})
+            if not sensor_check_res:
+                # TODO: Need To Check What Sensor Error To Report.
+                pass
+        self.machine_info_report()
+
     def pwk_callback(self, status):
         if status == 0:
             log.info('PowerKey Release.')
-            net_check_res = self.check.net_check()
-            gps_check_res = self.check.gps_check()
-            sensor_check_res = self.check.sensor_check()
-            if net_check_res and gps_check_res and sensor_check_res:
-                self.running_led.period = 2
-            else:
-                self.running_led.period = 0.5
-                if not net_check_res:
-                    self.alert.post_alert(20000, {'fault_code': 20001})
-                if not gps_check_res:
-                    self.alert.post_alert(20000, {'fault_code': 20002})
-                if not sensor_check_res:
-                    # TODO: Need To Check What Sensor Error To Report.
-                    pass
-                self.machine_info_report()
+            self.machine_check()
         elif status == 1:
             log.info('PowerKey Press.')
         else:

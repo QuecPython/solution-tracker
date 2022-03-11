@@ -68,38 +68,17 @@ def test_remote():
 def test_tracker():
     log.info('[x] start test_tracker')
 
-    tracker = None
+    tracker = Tracker()
 
-    def remote_read_cb(*data):
-        if data:
-            if data[0] == 'object_model':
-                for item in data[1]:
-                    if item[0] == 'loc_mode':
-                        tracker.tracker_command_queue.put(item[0])
+    log.info('[.] sleep 10')
+    utime.sleep(10)
 
-    def loc_read_cb(data):
-        if data:
-            loc_method = data[0]
-            loc_data = data[1]
-            log.info("loc_method:", loc_method)
-            log.info("loc_data:", loc_data)
-            if loc_method == settings.default_values_app._loc_method.gps:
-                data_type = tracker.remote.DATA_LOCA_GPS
-            else:
-                data_type = tracker.remote.DATA_LOCA_NON_GPS
-            tracker.remote.post_data(data_type, loc_data)
+    log.debug('[x] start to machine check.')
+    tracker.machine_check()
+    log.debug('[x] end to machine check.')
 
-    def alert_read_cb(*data):
-        if data:
-            data_type = tracker.remote.DATA_NON_LOCA
-            alert_data = {data[0]: data[1]}
-            tracker.remote.post_data(data_type, alert_data)
-
-    kw = {}
-    tracker = Tracker(remote_read_cb, loc_read_cb, alert_read_cb, **kw)
-
-    # log.info('[.] sleep 10')
-    # utime.sleep(10)
+    log.info('[.] sleep 10')
+    utime.sleep(10)
 
     # log.debug('[.] set loc_mode 0x0.')
     # settings.settings.set('loc_mode', 0x0)
