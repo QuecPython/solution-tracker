@@ -1,7 +1,5 @@
 
 from misc import Power
-from machine import Timer
-import usr.settings as settings
 from usr.logging import getLogger
 
 log = getLogger(__name__)
@@ -56,20 +54,8 @@ def get_soc(temp, volt_arg, bat_type='nix_coy_mnzo2'):
 
 
 class Battery(object):
-    def __init__(self, battery_read_cb=None):
-        current_settings = settings.settings.get()
+    def __init__(self):
         self.now_energy = 100
-        self.battery_read_cb = battery_read_cb
-        if self.battery_read_cb:
-            self.battery_timer = Timer(current_settings['sys']['battery_timern'])
-            self.battery_timer.start(period=60 * 1000, mode=self.battery_timer.PERIODIC, callback=self.battery_cb)
-        else:
-            log.warn('Battery read callback is not defined.')
-
-    def battery_cb(self, args):
-        self.energy()
-        if self.battery_read_cb is not None:
-            self.battery_read_cb(self.now_energy)
 
     def indicate(self, low_power_threshold, low_power_cb):
         # TODO: This fun for what?

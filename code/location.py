@@ -11,9 +11,22 @@ from usr.logging import getLogger
 from usr.common import Singleton
 from wifilocator import wifilocator
 
+try:
+    import quecgnns
+except ImportError:
+    quecgnns = None
+
 log = getLogger(__name__)
 
 gps_data_retrieve_queue = None
+
+
+class LocationError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 def gps_data_retrieve_cb(para_list):
@@ -46,18 +59,39 @@ def gps_data_retrieve_thread(argv):
 
 class GPS(Singleton):
     def __init__(self, gps_cfg):
+        self.gps_data = ''
+        self.gps_cfg = gps_cfg
+        current_settings = settings.settings.get()
+        if current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.external:
+            self.uart_init()
+        elif current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.internal:
+            if quecgnns:
+                quecgnns.init()
+            else:
+                raise LocationError('quecgnns import error.')
+            self.quecgnns_init()
+
+    def uart_init(self):
         global gps_data_retrieve_queue
         self.uart_obj = UART(
-            gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'],
-            gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl']
+            self.gps_cfg['UARTn'], self.gps_cfg['buadrate'], self.gps_cfg['databits'],
+            self.gps_cfg['parity'], self.gps_cfg['stopbits'], self.gps_cfg['flowctl']
         )
         self.uart_obj.set_callback(gps_data_retrieve_cb)
-        self.gps_data = ''
         gps_data_retrieve_queue = Queue(maxsize=8)
         _thread.start_new_thread(gps_data_retrieve_thread, (self,))
 
     def uart_read(self, nread):
         return self.uart_obj.read(nread).decode()
+
+    def quecgnns_read(self):
+        if quecgnns.get_state() == 0:
+            quecgnns.gnssEnable(1)
+
+        data = quecgnns.read(4096)
+        self.gps_data = data[1].decode()
+
+        return self.gps_data
 
     def read(self):
         return self.gps_data
@@ -198,6 +232,10 @@ class Location(Singleton):
                 data.append(r)
 
             r = self.gps.read_location_GxGGA()
+            if r:
+                data.append(r)
+
+            r = self.gps.read_location_GxVTG()
             if r:
                 data.append(r)
 

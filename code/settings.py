@@ -6,7 +6,6 @@ import ure
 import _thread
 import quecIot
 from machine import UART
-from machine import Timer
 from usr.logging import getLogger
 from usr.common import Singleton
 
@@ -61,6 +60,11 @@ class default_values_app(object):
         onVoiceRecord = 0x8
         all = 0xF
 
+    class _gps_mode(object):
+        none = 0x0
+        internal = 0x1
+        external = 0x2
+
     class _drive_behavior(object):
         suddenly_start = 0
         suddenly_stop = 1
@@ -70,16 +74,14 @@ class default_values_app(object):
     '''
     variables of App default settings below MUST NOT start with '_'
     '''
-    loc_timern = Timer.Timer0
-    energy_led_timern = Timer.Timer1
-    operating_led_timern = Timer.Timer2
-    battery_timern = Timer.Timer3
 
     phone_num = ''
 
     loc_method = _loc_method.gps
 
-    loc_mode = _loc_mode.none
+    gps_mode = _gps_mode.external
+
+    loc_mode = _loc_mode.cycle
 
     loc_cycle_period = 1
 
