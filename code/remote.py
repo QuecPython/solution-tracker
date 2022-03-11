@@ -47,7 +47,8 @@ class Controller(Singleton):
             if flag is True:
                 self.tracker.machine_info_report()
             elif flag is False:
-                self.tracker.machine_info_report(power_switch=flag, block_io=True)
+                self.tracker.machine_info_report(power_switch=flag)
+                utime.sleep(3)
                 self.tracker.energy_led.period = None
                 self.tracker.energy_led.switch(0)
                 self.tracker.running_led.period = None
@@ -219,7 +220,7 @@ class Remote(Singleton):
         self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
-        self.block_io = False
+        self.block_io = True
         current_settings = settings.settings.get()
         cloud_init_params = current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
@@ -333,10 +334,10 @@ class Remote(Singleton):
     '''
     def post_data(self, data_type, data):
         log.debug('data_type: %s, data: %s' % (data_type, data))
-        if self.block_io is False:
-            self.uplink_queue.put((data_type, data))
-        else:
+        if self.block_io is True:
             self._post_data((data_type, data))
+        else:
+            self.uplink_queue.put((data_type, data))
 
     def set_block_io(self, val):
         self.block_io = val

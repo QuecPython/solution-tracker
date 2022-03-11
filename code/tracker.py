@@ -56,7 +56,7 @@ class Tracker(Singleton):
             alert_data = {data[0]: data[1]}
             self.remote.post_data(data_type, alert_data)
 
-    def machine_info_report(self, power_switch=True, block_io=False):
+    def machine_info_report(self, power_switch=True, block_io=True):
         current_settings = settings.settings.get()
         self.locator.trigger()
         # TODO: Other Machine Info.
@@ -66,11 +66,9 @@ class Tracker(Singleton):
             'local_time': utime.mktime(utime.localtime())
         }
         machine_info.update(current_settings['app'])
-        if block_io is True:
+        if self.remote.block_io != block_io:
             self.remote.set_block_io(block_io)
         self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
-        if self.remote.block_io is True:
-            self.remote.set_block_io(False)
 
     def energy_led_show(self, energy):
         current_settings = settings.settings.get()
