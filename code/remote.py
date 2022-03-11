@@ -6,11 +6,10 @@ import uos
 import _thread
 import usr.settings as settings
 
-from misc import Power
 from queue import Queue
 from usr.logging import getLogger
-from usr.battery import Battery
 from usr.common import Singleton
+from usr.common import Controller
 
 if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
@@ -25,38 +24,6 @@ class RemoteError(Exception):
 
     def __str__(self):
         return repr(self.value)
-
-
-class Controller(object):
-    def __init__(self, remote):
-        self.remote = remote
-
-    def power_switch(self, perm, flag=None, *args):
-        if perm == 'r':
-            self.remote.post_data(self.remote.DATA_NON_LOCA, {'power_switch': True})
-        elif perm == 'w':
-            if flag is True:
-                # TODO: Get other model info
-                model_info = {}
-                model_info['power_switch'] = flag
-                self.remote.post_data(self.remote.DATA_NON_LOCA, model_info)
-            elif flag is False:
-                # TODO: Get other model info
-                model_info = {}
-                model_info['power_switch'] = flag
-                self.remote.post_data(self.remote.DATA_NON_LOCA, model_info)
-                Power.powerDown()
-            else:
-                pass
-        else:
-            raise RemoteError('Controller switch permission error %s.' % perm)
-
-    def energy(self, perm, *args):
-        if perm == 'r':
-            battery_energy = Battery().energy()
-            self.remote.post_data(self.remote.DATA_NON_LOCA, {'energy': battery_energy})
-        else:
-            raise RemoteError('Controller energy permission error %s.' % perm)
 
 
 class DownLinkOption(object):
@@ -76,10 +43,8 @@ class DownLinkOption(object):
                 log.debug('key: %s, val: %s, set_res: %s', (arg[0], arg[1], set_res))
                 if setting_flag == 0:
                     setting_flag = 1
-            elif hasattr(self.controller, arg[0]):
+            if hasattr(self.controller, arg[0]):
                 getattr(self.controller, arg[0])(*('w', arg[1]))
-            else:
-                pass
 
         if setting_flag:
             settings.settings.save()
@@ -114,7 +79,10 @@ def downlink_process(argv):
         if hasattr(DownLinkOptionObj, option_attr):
             option_fun = getattr(DownLinkOptionObj, option_attr)
             option_fun(*args)
-            self.remote_read_cb(*data)
+            if self.remote_read_cb:
+                self.remote_read_cb(*data)
+            else:
+                log.warn('Remote read callback is not defined.')
         else:
             # TODO: Raise Error OR Conntinue
             raise RemoteError('DownLinkOption has no accribute %s.' % option_attr)
@@ -209,7 +177,7 @@ def uplink_process(argv):
 class Remote(Singleton):
     _history = '/usr/tracker_data.hist'
 
-    def __init__(self, remote_read_cb):
+    def __init__(self, remote_read_cb=None):
         self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)

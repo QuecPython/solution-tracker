@@ -1,5 +1,10 @@
 
 from misc import Power
+from machine import Timer
+import usr.settings as settings
+from usr.logging import getLogger
+
+log = getLogger(__name__)
 
 battery_ocv_table = {
     'nix_coy_mnzo2': {
@@ -23,7 +28,7 @@ def _get_soc_from_dict(key, volt_arg):
     if key in battery_ocv_table['nix_coy_mnzo2']:
         volts = sorted(battery_ocv_table['nix_coy_mnzo2'][key].keys(), reverse=True)
         pre_volt = 0
-        volt_not_under = 0  # 判断电压是否低于soc最低电压值
+        volt_not_under = 0  # Determine whether the voltage is lower than the minimum voltage value of soc.
         for volt in volts:
             if volt_arg > volt:
                 volt_not_under = 1
@@ -32,7 +37,7 @@ def _get_soc_from_dict(key, volt_arg):
                 break
             else:
                 pre_volt = volt
-        if pre_volt == 0:  # 电压高于最高电压soc
+        if pre_volt == 0:  # Input Voltarg > Highest Voltarg
             return soc1
         elif volt_not_under == 0:
             return 0
@@ -51,13 +56,25 @@ def get_soc(temp, volt_arg, bat_type='nix_coy_mnzo2'):
 
 
 class Battery(object):
-    def __init__(self):
-        pass
+    def __init__(self, battery_read_cb=None):
+        current_settings = settings.settings.get()
+        self.now_energy = 100
+        self.battery_read_cb = battery_read_cb
+        if self.battery_read_cb:
+            self.battery_timer = Timer(current_settings['sys']['battery_timern'])
+            self.battery_timer.start(period=60 * 1000, mode=self.battery_timer.PERIODIC, callback=self.battery_cb)
+        else:
+            log.warn('Battery read callback is not defined.')
+
+    def battery_cb(self, args):
+        self.energy()
+        if self.battery_read_cb is not None:
+            self.battery_read_cb(self.now_energy)
 
     def indicate(self, low_power_threshold, low_power_cb):
+        # TODO: This fun for what?
         self.low_power_threshold = low_power_threshold
         self.low_power_cb = low_power_cb
-        pass
 
     def charge(self):
         pass
@@ -66,5 +83,5 @@ class Battery(object):
         volt_arg = Power.getVbatt()
         # TODO: Get temp from sensor
         temp = 20
-        battery_energy = get_soc(temp, volt_arg)
-        return battery_energy
+        self.now_energy = get_soc(temp, volt_arg)
+        return self.now_energy

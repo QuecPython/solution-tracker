@@ -6,6 +6,7 @@ import ure
 import _thread
 import quecIot
 from machine import UART
+from machine import Timer
 from usr.logging import getLogger
 from usr.common import Singleton
 
@@ -69,6 +70,10 @@ class default_values_app(object):
     '''
     variables of App default settings below MUST NOT start with '_'
     '''
+    loc_timern = Timer.Timer0
+    energy_led_timern = Timer.Timer1
+    operating_led_timern = Timer.Timer2
+    battery_timern = Timer.Timer3
 
     phone_num = ''
 

@@ -143,8 +143,8 @@ def loc_worker(argv):
                     retry += 1
                     utime.sleep(1)
             log.debug('location data info:', data)
-            if data and self.read_cb:
-                self.read_cb(data)
+            if data and self.loc_read_cb:
+                self.loc_read_cb(data)
 
 
 class Location(Singleton):
@@ -152,8 +152,8 @@ class Location(Singleton):
     cellLoc = None
     wifiLoc = None
 
-    def __init__(self, read_cb):
-        self.read_cb = read_cb
+    def __init__(self, loc_read_cb):
+        self.loc_read_cb = loc_read_cb
         self.trigger_queue = Queue(maxsize=64)
         _thread.start_new_thread(loc_worker, (self,))
 

@@ -9,13 +9,22 @@ log = getLogger(__name__)
 
 
 ALERTCODE = {
-    30001: 'fault_alert',
+    20000: 'fault_alert',
     30002: 'low_power_alert',
     30003: 'over_speed_alert',
     30004: 'sim_out_alert',
     30005: 'disassemble_alert',
     40000: 'drive_behavior_alert',
     50001: 'sos_alert',
+}
+
+FAULT_CODE = {
+    20001: 'net_error',
+    20002: 'gps_error',
+    20003: 'temp_sensor_error',
+    20004: 'light_sensor_error',
+    20005: 'move_sensor_error',
+    20006: 'mike_error',
 }
 
 DRIVE_BEHAVIOR_CODE = {
@@ -51,7 +60,10 @@ def alert_process(argv):
                 current_settings = settings.settings.get()
                 alert_status = current_settings.get('app', {}).get('sw_' + ALERTCODE.get(data[0]))
                 if alert_status:
-                    self.read_cb(ALERTCODE.get(data[0]), data[1])
+                    if self.alert_read_cb:
+                        self.alert_read_cb(ALERTCODE.get(data[0]), data[1])
+                    else:
+                        log.warn('Alert callback is not defined.')
                 else:
                     log.warn('%s status is %s' % (ALERTCODE.get(data[0]), alert_status))
             else:
@@ -62,8 +74,8 @@ class AlertMonitor(Singleton):
     '''
     Recv alert signals and process them
     '''
-    def __init__(self, alert_cb):
-        self.alert_cb = alert_cb
+    def __init__(self, alert_read_cb=None):
+        self.alert_read_cb = alert_read_cb
         self.alert_signals_queue = Queue(maxsize=64)
         _thread.start_new_thread(alert_process, (self,))
 
