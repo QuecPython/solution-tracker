@@ -27,9 +27,9 @@ class RemoteError(Exception):
 
 
 class DownLinkOption(object):
-    def __init__(self, remote):
-        self.remote = remote
-        self.controller = Controller(self.remote)
+    def __init__(self, tracker):
+        self.tracker = tracker
+        self.controller = Controller(self.tracker)
 
     def raw_data(self, *args, **kwargs):
         pass
@@ -52,7 +52,7 @@ class DownLinkOption(object):
     def query(self, *args, **kwargs):
         for arg in args:
             if hasattr(settings.default_values_app, arg):
-                settings.settings.query(self.remote, 'app', arg)
+                settings.settings.query(self.tracker.remote, 'app', arg)
             elif hasattr(self.controller, arg):
                 getattr(self.controller, arg)(*('r'))
             else:
@@ -73,7 +73,7 @@ def downlink_process(argv):
         data = self.downlink_queue.get()
         log.debug('downlink_queue data:', data)
 
-        DownLinkOptionObj = DownLinkOption(remote=self)
+        DownLinkOptionObj = DownLinkOption(tracker=self.tracker)
         option_attr = data[0]
         args = data[1]
         if hasattr(DownLinkOptionObj, option_attr):
@@ -177,7 +177,8 @@ def uplink_process(argv):
 class Remote(Singleton):
     _history = '/usr/tracker_data.hist'
 
-    def __init__(self, remote_read_cb=None):
+    def __init__(self, tracker, remote_read_cb=None):
+        self.tracker = tracker
         self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)

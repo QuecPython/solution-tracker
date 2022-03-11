@@ -25,11 +25,11 @@ class Tracker(Singleton):
     def __init__(self, *args, **kwargs):
         self.led = LED()
         self.sensor = Sensor()
-        self.remote = Remote(self.remote_read_cb)
         self.locator = Location(self.loc_read_cb)
         self.alert = AlertMonitor(self.alert_read_cb)
         self.battery = Battery(self.batter_read_cb)
         self.controller = Controller(self.remote)
+        self.remote = Remote(self, self.remote_read_cb)
 
         current_settings = settings.settings.get()
         self.loc_timer = Timer(current_settings['sys']['loc_timern'])
