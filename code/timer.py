@@ -18,14 +18,14 @@ class TrackerTimer(Singleton):
         self.tracker_timer = osTimer()
         self.tracker_timer.start(1000, 1, self.timer_callback)
         self.loc_count = 0
-        self.barrery_count = 0
+        self.battery_count = 0
         self.gnns_count = 0
 
     def timer_callback(self, args):
         current_settings = settings.settings.get()
 
         self.loc_count += 1
-        self.barrery_count += 1
+        self.battery_count += 1
         self.gnns_count += 1
 
         if (current_settings['app']['loc_mode'] & settings.default_values_app._loc_mode.cycle) \
@@ -34,9 +34,9 @@ class TrackerTimer(Singleton):
             self.loc_count = 0
             self.loc_timer()
 
-        if self.barrery_count == 60:
-            self.barrery_count = 0
-            self.barrery_timer()
+        if self.battery_count == 60:
+            self.battery_count = 0
+            self.battery_timer()
 
         if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.gps and \
                 current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.internal:
@@ -46,8 +46,8 @@ class TrackerTimer(Singleton):
     def loc_timer(self):
         self.tracker.locator.trigger()
 
-    def barrery_timer(self):
-        log.debug('start barrery_timer')
+    def battery_timer(self):
+        log.debug('start battery_timer')
         current_settings = settings.settings.get()
         energy = self.tracker.battery.energy()
         is_charge = USB().getStatus()
