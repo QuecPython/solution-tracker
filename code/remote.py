@@ -47,8 +47,7 @@ class Controller(Singleton):
             if flag is True:
                 self.tracker.machine_info_report()
             elif flag is False:
-                self.tracker.machine_info_report(power_switch=flag)
-                utime.sleep(3)
+                self.tracker.machine_info_report(power_switch=flag, block_io=True)
                 self.tracker.energy_led.period = None
                 self.tracker.energy_led.switch(0)
                 self.tracker.running_led.period = None

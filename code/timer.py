@@ -58,7 +58,7 @@ class TrackerTimer(Singleton):
                     self.tracker.alert.post_alert(30002, {'local_time': utime.mktime(utime.localtime())})
                     self.tracker.machine_info_report()
             if energy <= current_settings['app']['low_power_shutdown_threshold']:
-                self.tracker.machine_info_report(power_switch=False)
+                self.tracker.machine_info_report(power_switch=False, block_io=True)
                 self.tracker.energy_led.period = None
                 self.tracker.energy_led.switch(0)
                 self.tracker.running_led.period = None
