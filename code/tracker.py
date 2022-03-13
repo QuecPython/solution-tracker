@@ -89,9 +89,9 @@ class Tracker(Singleton):
         else:
             self.running_led.period = 0.5
             if not net_check_res:
-                self.alert.post_alert(20000, {'fault_code': 20001})
+                self.alert.post_alert(20000, {'fault_code': 20001, 'local_time': utime.mktime(utime.localtime())})
             if not gps_check_res:
-                self.alert.post_alert(20000, {'fault_code': 20002})
+                self.alert.post_alert(20000, {'fault_code': 20002, 'local_time': utime.mktime(utime.localtime())})
             if not sensor_check_res:
                 # TODO: Need To Check What Sensor Error To Report.
                 pass
