@@ -12,9 +12,9 @@ from usr.common import Singleton
 from wifilocator import wifilocator
 
 try:
-    import quecgnns
+    import quecgnss
 except ImportError:
-    quecgnns = None
+    quecgnss = None
 
 log = getLogger(__name__)
 
@@ -65,11 +65,11 @@ class GPS(Singleton):
         if current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.external:
             self.uart_init()
         elif current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.internal:
-            if quecgnns:
-                quecgnns.init()
+            if quecgnss:
+                quecgnss.init()
             else:
-                raise LocationError('quecgnns import error.')
-            self.quecgnns_init()
+                raise LocationError('quecgnss import error.')
+            self.quecgnss_read()
 
     def uart_init(self):
         global gps_data_retrieve_queue
@@ -84,11 +84,11 @@ class GPS(Singleton):
     def uart_read(self, nread):
         return self.uart_obj.read(nread).decode()
 
-    def quecgnns_read(self):
-        if quecgnns.get_state() == 0:
-            quecgnns.gnssEnable(1)
+    def quecgnss_read(self):
+        if quecgnss.get_state() == 0:
+            quecgnss.gnssEnable(1)
 
-        data = quecgnns.read(4096)
+        data = quecgnss.read(4096)
         self.gps_data = data[1].decode()
 
         return self.gps_data
@@ -176,7 +176,6 @@ def loc_worker(argv):
                 else:
                     retry += 1
                     utime.sleep(1)
-            log.debug('location data info:', data)
             if data and self.loc_read_cb:
                 self.loc_read_cb(data)
 
@@ -190,6 +189,7 @@ class Location(Singleton):
         self.loc_read_cb = loc_read_cb
         self.trigger_queue = Queue(maxsize=64)
         _thread.start_new_thread(loc_worker, (self,))
+        self._locater_init()
 
     def _locater_init(self):
         current_settings = settings.settings.get()

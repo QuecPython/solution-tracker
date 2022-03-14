@@ -2,9 +2,6 @@ import sim
 import net
 import utime
 
-from misc import USB
-from misc import PowerKey
-
 import usr.settings as settings
 
 from usr.led import LED
@@ -16,6 +13,16 @@ from usr.alert import AlertMonitor
 from usr.logging import getLogger
 from usr.location import Location, GPS
 from usr.timer import TrackerTimer, LEDTimer
+
+try:
+    from misc import USB
+except ImportError:
+    USB = None
+try:
+    from misc import PowerKey
+except ImportError:
+    PowerKey = None
+
 
 log = getLogger(__name__)
 
@@ -30,13 +37,16 @@ class Tracker(Singleton):
         self.battery = Battery()
         self.remote = Remote(self)
 
-        self.power_key = PowerKey()
-        self.power_key.powerKeyEventRegister(self.pwk_callback)
-        self.usb = USB()
-        self.usb.setCallback(self.usb_callback)
         self.check = SelfCheck()
         self.tracker_timer = TrackerTimer(self)
         self.led_timer = LEDTimer(self)
+
+        if PowerKey is not None:
+            self.power_key = PowerKey()
+            self.power_key.powerKeyEventRegister(self.pwk_callback)
+        if USB is not None:
+            self.usb = USB()
+            self.usb.setCallback(self.usb_callback)
 
     def loc_read_cb(self, data):
         if data:

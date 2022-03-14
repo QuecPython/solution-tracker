@@ -1,12 +1,16 @@
 import utime
 import osTimer
 
-from misc import USB
 from misc import Power
 
 import usr.settings as settings
 from usr.common import Singleton
 from usr.logging import getLogger
+
+try:
+    from misc import USB
+except ImportError:
+    USB = None
 
 log = getLogger(__name__)
 
@@ -19,14 +23,14 @@ class TrackerTimer(Singleton):
         self.tracker_timer.start(1000, 1, self.timer_callback)
         self.loc_count = 0
         self.battery_count = 0
-        self.gnns_count = 0
+        self.gnss_count = 0
 
     def timer_callback(self, args):
         current_settings = settings.settings.get()
 
         self.loc_count += 1
         self.battery_count += 1
-        self.gnns_count += 1
+        self.gnss_count += 1
 
         if (current_settings['app']['loc_mode'] & settings.default_values_app._loc_mode.cycle) \
                 and current_settings['app']['loc_cycle_period'] \
@@ -34,23 +38,22 @@ class TrackerTimer(Singleton):
             self.loc_count = 0
             self.loc_timer()
 
-        if self.battery_count == 60:
+        if self.battery_count >= 60:
             self.battery_count = 0
             self.battery_timer()
 
         if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.gps and \
                 current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.internal:
-            self.gnns_count = 0
-            self.gnns_timer()
+            self.gnss_count = 0
+            self.gnss_timer()
 
     def loc_timer(self):
         self.tracker.locator.trigger()
 
     def battery_timer(self):
-        log.debug('start battery_timer')
         current_settings = settings.settings.get()
         energy = self.tracker.battery.energy()
-        is_charge = USB().getStatus()
+        is_charge = USB().getStatus() if USB is not None else 1
         if is_charge == 0:
             self.tracker.energy_led_show(energy)
             if current_settings['app']['sw_low_power_alert']:
@@ -67,8 +70,8 @@ class TrackerTimer(Singleton):
         elif is_charge == 1:
             self.tracker.energy_led_show(energy)
 
-    def gnns_timer(self):
-        self.tracker.locator.gps.quecgnns_read()
+    def gnss_timer(self):
+        self.tracker.locator.gps.quecgnss_read()
 
 
 class LEDTimer(Singleton):

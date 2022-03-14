@@ -108,10 +108,12 @@ class QuecThing(object):
             if errcode == 10200:
                 log.info('Device authentication succeeded.')
             elif errcode == 10422:
-                log.info('Device has been authenticated (connect failed).')
+                log.error('Device has been authenticated (connect failed).')
         elif event == 2:
             if errcode == 10200:
                 log.info('Access succeeded.')
+            if errcode == 10450:
+                log.error('Device internal error (connect failed).')
         elif event == 3:
             if errcode == 10200:
                 log.info('Subscription succeeded.')
@@ -129,10 +131,10 @@ class QuecThing(object):
                 log.info('Data sending failed.')
                 self.post_result_wait_queue.put(False)
             elif errcode == 10310:
-                log.info('Object model data sending failed.')
+                log.error('Object model data sending failed.')
                 self.post_result_wait_queue.put(False)
             elif errcode == 10320:
-                log.info('Location data sending failed.')
+                log.error('Location data sending failed.')
                 self.post_result_wait_queue.put(False)
         elif event == 5:
             if errcode == 10200:

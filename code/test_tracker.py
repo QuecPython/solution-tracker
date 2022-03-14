@@ -8,7 +8,7 @@ from queue import Queue
 from usr.logging import getLogger
 from usr.quecthing import QuecThing
 from usr.remote import Remote
-# from usr.location import Location
+from usr.location import Location, GPS
 from usr.tracker import Tracker
 
 log = getLogger(__name__)
@@ -20,7 +20,7 @@ def test_quecthing():
     cloud_init_params = current_settings['sys']['cloud_init_params']
     downlink_queue = Queue(maxsize=64)
     cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], downlink_queue)
-    cloud.post_data(0x0, 'put test msg.')
+    cloud.post_data(0x0, {'power_switch': True})
     log.info('[x] end test_quecthing')
 
 
@@ -77,8 +77,8 @@ def test_tracker():
     tracker.machine_check()
     log.debug('[x] end to machine check.')
 
-    log.info('[.] sleep 10')
-    utime.sleep(10)
+    # log.info('[.] sleep 10')
+    # utime.sleep(10)
 
     # log.debug('[.] set loc_mode 0x0.')
     # settings.settings.set('loc_mode', 0x0)
@@ -108,12 +108,52 @@ def test_tracker():
     log.info('[x] end test_tracker')
 
 
+def test_location():
+    log.debug('[x] start test_location')
+    try:
+        locator = Location(None)
+        if locator.gps is not None:
+            gps_data = None
+            retry = 0
+            while retry < 10:
+                gps_data = locator.gps.quecgnss_read()
+                if gps_data:
+                    log.debug('gps_data: %s' % gps_data)
+                    break
+                else:
+                    log.debug('gps_data is empty: %s' % gps_data)
+                utime.sleep(1)
+    except Exception as e:
+        raise e
+    log.debug('[x] end test_location')
+
+
+def test_gps():
+    log.debug('[x] start test_gps')
+    gps = GPS(settings.default_values_sys._gps_cfg)
+    gps_data = None
+    retry = 0
+    while retry < 10:
+        gps_data = gps.quecgnss_read()
+        if gps_data:
+            log.debug('gps_data: %s' % gps_data)
+            break
+        else:
+            log.debug('gps_data is empty: %s' % gps_data)
+        utime.sleep(1)
+
+    log.debug('[x] gps_data: %s' % gps_data)
+    log.debug('[x] end test_gps')
+
+
 def main():
     # test_quecthing()
     # test_settings()
     # test_uart()
     # test_remote()
     test_tracker()
+    # test_location()
+    # test_gps()
 
 if __name__ == '__main__':
     main()
