@@ -98,7 +98,7 @@ tracker.alert.post_alert(alert_code, alert_info)
 >> - 40003: `quick_turn_left`
 >> - 40004: `quick_turn_right`
 
-#### battery 功能
+#### battery 电池功能
 
 改功能提供`energy`方法查询当前电池电量。
 
@@ -115,7 +115,7 @@ battery_energy = tracker.battery.energy()
 |:---|---|
 |int|电量百分比|
 
-#### locator 功能
+#### locator 定位功能
 
 该功能提供了`read`和`trigger`两个方法, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
 
@@ -150,7 +150,7 @@ tracker.locator.trigger()
 返回值:
 无
 
-#### remote 功能
+#### remote 信息通信功能
 
 该功能提供了`post_data`和`set_block_io`方法向云端进行消息通信功能(目前暂时只支持移远云)。
 
@@ -228,7 +228,7 @@ tracker.remote.set_block_io(False)
     - `fault_code`
     - `gps_mode`
 
-#### tracker_timer 功能
+#### tracker_timer 定时器功能
 
 该模块为`tracker`定时器模块, 该模块实现了三个定时任务
 
@@ -236,7 +236,7 @@ tracker.remote.set_block_io(False)
 2. 每60秒循环获取当前电池电量进行电量提示, 低电量报警, 地点了关机等检测;
 3. GPS位置信息循环获取, 此功能只针对内置GPS模块, 外置GPS模块该功能不启动。
 
-#### machine_info_report 功能
+#### machine_info_report 机器信息上报功能
 
 该模块实现了机器信息的汇总上报功能, 会将机器的位置信息, 开机状态, 电池电量等相关设置信息全部实时上报云端。
 
@@ -251,7 +251,7 @@ tracker.machine_info_report()
 返回值:
 无
 
-#### machine_check 功能
+#### machine_check 机器自检功能
 
 该功能用于检测设备相关功能是否正常, 主要包括网络状态, GPS模组, 各类传感器, 麦克风是否正常工作(目前暂不支持各类传感器麦克风等外设检测)。 如异常会上报远端异常信息。 检查完毕后不论异常与否都会调用`machine_info_report`功能上报云端设备所有信息。
 
