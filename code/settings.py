@@ -10,7 +10,7 @@ from usr.common import Singleton
 
 PROJECT_NAME = 'QuecPython_Tracker'
 
-PROJECT_VERSION = '1.0.0'
+PROJECT_VERSION = '2.0.0'
 
 tracker_settings_file = '/usr/tracker_settings.json'
 
