@@ -54,7 +54,7 @@ tracker = Tracker()
 
 该功能提供`post_alert`方法, 将定义好的报警编码与报警信息上报到云端。
 
-##### `post_alert`
+>`tracker.alert.post_alert`
 例:
 ```python
 import utime
@@ -102,7 +102,7 @@ tracker.alert.post_alert(alert_code, alert_info)
 
 改功能提供`energy`方法查询当前电池电量。
 
-##### `energy`
+>`tracker.battery.energy`
 例:
 ```python
 battery_energy = tracker.battery.energy()
@@ -115,14 +115,14 @@ battery_energy = tracker.battery.energy()
 |:---|---|
 |int|电量百分比|
 
-#### location 功能
+#### locator 功能
 
 该功能提供了`read`和`trigger`两个方法, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
 
 - `read`方法用于查询当前发送云端的定位信息。
 - `trigger`方法用于立即向云端报告设备定位信息功能。
 
-##### `read`
+>`tracker.locator.read`
 例:
 ```python
 location_info = tracker.locator.read()
@@ -138,7 +138,7 @@ location_info = tracker.locator.read()
 ||0|定位类型(int)|
 ||1|定位信息(list)|
 
-##### `trigger`
+>`tracker.locator.trigger`
 例:
 ```python
 tracker.locator.trigger()
@@ -154,7 +154,7 @@ tracker.locator.trigger()
 
 该功能提供了`post_data`和`set_block_io`方法向云端进行消息通信功能(目前暂时只支持移远云)。
 
-##### `post_data`
+>`tracker.remote.post_data`
 例:
 ```python
 import utime
@@ -178,7 +178,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 |:---|---|
 |Bool|True:发送成功;False:发送失败|
 
-##### `set_block_io`
+>`tracker.remote.set_block_io`
 例:
 ```python
 tracker.remote.set_block_io(False)
@@ -277,7 +277,7 @@ tracker.machine_check()
 from usr.settings import settings
 ```
 
-#### init settings初始化
+#### init 初始化
 
 例:
 ```python
