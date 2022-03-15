@@ -55,6 +55,7 @@ tracker = Tracker()
 该功能提供`post_alert`方法, 将定义好的报警编码与报警信息上报到云端。
 
 >`tracker.alert.post_alert`
+
 例:
 ```python
 import utime
@@ -103,6 +104,7 @@ tracker.alert.post_alert(alert_code, alert_info)
 改功能提供`energy`方法查询当前电池电量。
 
 >`tracker.battery.energy`
+
 例:
 ```python
 battery_energy = tracker.battery.energy()
@@ -123,6 +125,7 @@ battery_energy = tracker.battery.energy()
 - `trigger`方法用于立即向云端报告设备定位信息功能。
 
 >`tracker.locator.read`
+
 例:
 ```python
 location_info = tracker.locator.read()
@@ -139,6 +142,7 @@ location_info = tracker.locator.read()
 ||1|定位信息(list)|
 
 >`tracker.locator.trigger`
+
 例:
 ```python
 tracker.locator.trigger()
@@ -155,6 +159,7 @@ tracker.locator.trigger()
 该功能提供了`post_data`和`set_block_io`方法向云端进行消息通信功能(目前暂时只支持移远云)。
 
 >`tracker.remote.post_data`
+
 例:
 ```python
 import utime
@@ -179,6 +184,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 |Bool|True:发送成功;False:发送失败|
 
 >`tracker.remote.set_block_io`
+
 例:
 ```python
 tracker.remote.set_block_io(False)
