@@ -6,10 +6,11 @@ import ure
 import _thread
 import quecIot
 from machine import UART
-from usr.logging import getLogger
 from usr.common import Singleton
 
-log = getLogger(__name__)
+PROJECT_NAME = 'QuecPython_Tracker'
+
+PROJECT_VERSION = '1.0.0'
 
 tracker_settings_file = '/usr/tracker_settings.json'
 
@@ -25,9 +26,9 @@ def settings_lock(func_name):
                     _settings_lock.release()
                     return source_fun
                 else:
-                    log.warn('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
+                    print('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
             else:
-                log.warn('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
+                print('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
         return wrapperd_fun
     return settings_lock_fun
 
@@ -60,11 +61,6 @@ class default_values_app(object):
         onVoiceRecord = 0x8
         all = 0xF
 
-    class _gps_mode(object):
-        none = 0x0
-        internal = 0x1
-        external = 0x2
-
     class _drive_behavior(object):
         suddenly_start = 0
         suddenly_stop = 1
@@ -78,8 +74,6 @@ class default_values_app(object):
     phone_num = ''
 
     loc_method = _loc_method.gps
-
-    gps_mode = _gps_mode.external
 
     loc_mode = _loc_mode.cycle
 
@@ -124,10 +118,21 @@ class default_values_sys(object):
         JTT808 = 0x4
         customization = 0x8
 
+    class _gps_mode(object):
+        none = 0x0
+        internal = 0x1
+        external = 0x2
+
     '''
     variables of system default settings below MUST NOT start with '_'
     '''
+    sw_log = True
+
+    checknet_timeout = 60
+
     profile_idx = 1
+
+    gps_mode = _gps_mode.external
 
     cloud = _cloud.quecIot
 
@@ -247,7 +252,6 @@ class Settings(Singleton):
 
     @settings_lock('Settings.query')
     def query(self, remote, set_type, set_key):
-        log.debug('remote: %s, set_type: %s, set_key: %s' % (remote, set_type, set_key))
         remote.post_data(remote.DATA_NON_LOCA, {set_key: self.current_settings.get(set_type, {}).get(set_key)})
 
     @settings_lock('Settings.set')

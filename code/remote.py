@@ -335,9 +335,10 @@ class Remote(Singleton):
     def post_data(self, data_type, data):
         log.debug('data_type: %s, data: %s' % (data_type, data))
         if self.block_io is True:
-            self._post_data((data_type, data))
+            return self._post_data((data_type, data))
         else:
             self.uplink_queue.put((data_type, data))
+            return True
 
     def set_block_io(self, val):
         self.block_io = val

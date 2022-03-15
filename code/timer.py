@@ -43,7 +43,7 @@ class TrackerTimer(Singleton):
             self.battery_timer()
 
         if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.gps and \
-                current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.internal:
+                current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
             self.gnss_count = 0
             self.gnss_timer()
 

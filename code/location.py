@@ -62,9 +62,9 @@ class GPS(Singleton):
         self.gps_data = ''
         self.gps_cfg = gps_cfg
         current_settings = settings.settings.get()
-        if current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.external:
+        if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
             self.uart_init()
-        elif current_settings['app']['gps_mode'] & settings.default_values_app._gps_mode.internal:
+        elif current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
             if quecgnss:
                 quecgnss.init()
             else:

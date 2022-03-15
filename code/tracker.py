@@ -1,6 +1,5 @@
-import sim
-import net
 import utime
+import checkNet
 
 import usr.settings as settings
 
@@ -29,6 +28,8 @@ log = getLogger(__name__)
 
 class Tracker(Singleton):
     def __init__(self, *args, **kwargs):
+        self.check = SelfCheck()
+
         self.energy_led = LED()
         self.running_led = LED()
         self.sensor = Sensor()
@@ -37,7 +38,6 @@ class Tracker(Singleton):
         self.battery = Battery()
         self.remote = Remote(self)
 
-        self.check = SelfCheck()
         self.tracker_timer = TrackerTimer(self)
         self.led_timer = LEDTimer(self)
 
@@ -129,13 +129,17 @@ class Tracker(Singleton):
 
 
 class SelfCheck(object):
+
     def net_check(self):
         # return True if OK
-        if sim.getStatus() == 1:
-            if net.getModemFun() == 1:
-                return True
-
-        return False
+        current_settings = settings.settings.get()
+        checknet = checkNet.CheckNetwork(settings.PROJECT_NAME, settings.PROJECT_VERSION)
+        timeout = current_settings.get('sys', {}).get('checknet_timeout', 60)
+        check_res = checknet.wait_network_connected(timeout)
+        if check_res == (3, 1):
+            return True
+        else:
+            return False
 
     def gps_check(self):
         # return True if OK

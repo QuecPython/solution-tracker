@@ -6,7 +6,9 @@ from usr.logging import getLogger
 
 log = getLogger(__name__)
 
-version = '1.0.0'
+PROJECT_NAME = 'QuecPython_Tracker'
+
+PROJECT_VERSION = '1.0.0'
 
 tracker = None
 

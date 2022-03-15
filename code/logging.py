@@ -1,5 +1,6 @@
 
 import utime
+import usr.settings as settings
 
 
 def asyncLog(name, level, *message, timeout=None, await_connection=True):
@@ -13,6 +14,8 @@ def asyncLog(name, level, *message, timeout=None, await_connection=True):
 
 
 def log(name, level, *message, local_only=False, return_only=False, timeout=None):
+    if not settings.settings.get().get('sys', {}).get('sw_log', True):
+        return
 
     if hasattr(utime, "strftime"):
         print("[{}]".format(utime.strftime("%Y-%m-%d %H:%M:%S")), "[{}]".format(name),
