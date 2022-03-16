@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220313162641877"
+		"version":"20220316114050639"
 	},
 	"properties":[
 		{
@@ -457,6 +457,44 @@
 			"sort":30,
 			"type":"PROPERTY",
 			"desc":"0: 无GPS模块,\n1: 内置GPS模块,\n2: 外置GPS模块,"
+		},
+		{
+			"specs":[
+				{
+					"dataType":"BOOL",
+					"name":"接受升级",
+					"value":"true"
+				},
+				{
+					"dataType":"BOOL",
+					"name":"拒绝升级",
+					"value":"false"
+				}
+			],
+			"code":"user_ota_action",
+			"dataType":"BOOL",
+			"name":"是否OTA升级",
+			"subType":"W",
+			"id":38,
+			"sort":31,
+			"type":"PROPERTY",
+			"desc":"当OTA自动升级关闭时, 用户通过查看设备当前是否有OTA升级来进行自主选择升级或不升级"
+		},
+		{
+			"specs":{
+				"unit":"",
+				"min":"0",
+				"max":"5",
+				"step":"1"
+			},
+			"code":"ota_status",
+			"dataType":"INT",
+			"name":"OTA升级状态",
+			"subType":"R",
+			"id":39,
+			"sort":32,
+			"type":"PROPERTY",
+			"desc":"0: 无升级;\n1: 待升级;\n2: 升级中;\n3: 升级成功;\n4: 升级失败"
 		}
 	],
 	"events":[
