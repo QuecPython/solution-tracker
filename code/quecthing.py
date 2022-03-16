@@ -41,6 +41,8 @@ object_model = [
     (35, ('over_speed_alert', 'rw')),
     (36, ('fault_code', 'r')),
     (37, ('gps_mode', 'r')),
+    (38, ('user_ota_action', 'w')),
+    (39, ('ota_status', 'r')),
 ]
 
 object_model_code = {i[1][0]: i[0] for i in object_model}
@@ -51,10 +53,16 @@ class QuecThing(object):
         self.downlink_queue = downlink_queue
         self.post_result_wait_queue = Queue(maxsize=16)
         quecIot.init()
+
         quecIot.setEventCB(self.eventCB)
         quecIot.setProductinfo(pk, ps)
         quecIot.setDkDs(dk, ds)
         quecIot.setServer(1, "iot-south.quectel.com:2883")
+
+        # quecIot.setHttpOtaEventCb(self.otaEventCB)
+        # quecIot.setHttpOtaProductInfo(pk, ps)
+        # quecIot.setHttpOtaServer("iot-south.quectel.com:2883")
+
         quecIot.setConnmode(1)
 
     @staticmethod
@@ -159,3 +167,29 @@ class QuecThing(object):
         elif event == 7:
             if errcode == 10700:
                 log.info('New OTA plain.')
+                self.downlink_queue(('ota_plain', data))
+                self.downlink_queue(('object_model', ('ota_status', 1)))
+            elif errcode == 10701:
+                log.info('The module starts to download.')
+                self.downlink_queue(('object_model', ('ota_status', 2)))
+            elif errcode == 10702:
+                log.info('Package download.')
+                self.downlink_queue(('object_model', ('ota_status', 2)))
+            elif errcode == 10703:
+                log.info('Package download complete.')
+                self.downlink_queue(('object_model', ('ota_status', 2)))
+            elif errcode == 10704:
+                log.info('Package updating.')
+                self.downlink_queue(('object_model', ('ota_status', 2)))
+            elif errcode == 10705:
+                log.info('Firmware update complete.')
+                self.downlink_queue(('object_model', ('ota_status', 3)))
+            elif errcode == 10706:
+                log.info('Failed to update firmware.')
+                self.downlink_queue(('object_model', ('ota_status', 4)))
+
+    def dev_info_report(self):
+        quecIot.devInfoReport([i for i in range(1, 13)])
+
+    def ota_action(self, val=1):
+        quecIot.otaAction(val)

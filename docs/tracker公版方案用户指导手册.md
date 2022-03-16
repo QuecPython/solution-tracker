@@ -274,27 +274,6 @@ current_settings = settings.get()
 |:---|---|
 |dict|字典参数(见下方备注)|
 
-### query 发送设置参数至云端
-
-例:
-```python
-from usr.remote import Remote
-remote = Remote()
-set_type = 'app'
-set_key = 'phone_num'
-settings.query(remote, set_type, set_key)
-```
-
-参数:
-|参数|参数类型|参数说明|
-|:---|---|---|
-|remote|object|Remote对象|
-|set_type|str|app或sys|
-|set_key|str|配置参数标识符|
-
-返回值:
-无
-
 ### set 设置配置参数
 
 例:

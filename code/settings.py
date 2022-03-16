@@ -123,6 +123,13 @@ class default_values_sys(object):
         internal = 0x1
         external = 0x2
 
+    class _ota_status(object):
+        none = 0
+        to_be_updated = 1
+        updating = 2
+        update_successed = 3
+        update_failed = 4
+
     '''
     variables of system default settings below MUST NOT start with '_'
     '''
@@ -133,6 +140,8 @@ class default_values_sys(object):
     profile_idx = 1
 
     gps_mode = _gps_mode.external
+
+    ota_status = _ota_status.none
 
     cloud = _cloud.quecIot
 
@@ -250,17 +259,12 @@ class Settings(Singleton):
     def get(self):
         return self.current_settings
 
-    @settings_lock('Settings.query')
-    def query(self, remote, set_type, set_key):
-        remote.post_data(remote.DATA_NON_LOCA, {set_key: self.current_settings.get(set_type, {}).get(set_key)})
-
     @settings_lock('Settings.set')
     def set(self, opt, val):
         if opt in self.current_settings['app']:
             if opt == 'phone_num':
                 if not isinstance(val, str):
                     return False
-                # TODO: This ure not work in EC600N
                 pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$')
                 if pattern.search(val):
                     self.current_settings['app'][opt] = val
@@ -311,6 +315,17 @@ class Settings(Singleton):
 
             else:
                 return False
+        if opt in self.current_settings['sys']:
+            if opt == 'sw_log':
+                if not isinstance(val, bool):
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
+            elif opt == 'ota_status':
+                if not isinstance(val, int):
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
         else:
             return False
 

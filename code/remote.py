@@ -40,7 +40,7 @@ class Controller(Singleton):
     def __init__(self, tracker):
         self.tracker = tracker
 
-    def power_switch(self, perm, flag=None, *args):
+    def power_switch(self, perm, flag=None):
         if perm == 'r':
             self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'power_switch': True})
         elif perm == 'w':
@@ -57,12 +57,29 @@ class Controller(Singleton):
         else:
             raise ControllerError('Controller switch permission error %s.' % perm)
 
-    def energy(self, perm, *args):
+    def energy(self, perm):
         if perm == 'r':
             battery_energy = Battery().energy()
             self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'energy': battery_energy})
         else:
             raise ControllerError('Controller energy permission error %s.' % perm)
+
+    def user_ota_action(self, perm, action):
+        if perm == 'w':
+            if action is False:
+                self.tracker.remote.cloud_ota_action(0)
+            elif action is True:
+                self.tracker.remote.cloud_ota_action(1)
+
+    def ota_status(self, perm, status=None):
+        if perm == 'r':
+            current_settings = settings.settings.get()
+            ota_status = current_settings['sys']['ota_status']
+            self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'ota_status': ota_status})
+        elif perm == 'w':
+            if status is not None:
+                settings.settings.set('ota_status', status)
+                settings.settings.save()
 
 
 class DownLinkOption(object):
@@ -91,11 +108,17 @@ class DownLinkOption(object):
     def query(self, *args, **kwargs):
         for arg in args:
             if hasattr(settings.default_values_app, arg):
-                settings.settings.query(self.tracker.remote, 'app', arg)
+                current_settings = settings.settings.get()
+                self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {arg: current_settings.get('app', {}).get(arg)})
             elif hasattr(self.controller, arg):
                 getattr(self.controller, arg)(*('r'))
             else:
                 pass
+
+    def ota_plain(self, *args, **kwargs):
+        current_settings = settings.settings.get()
+        if current_settings['app']['sw_ota'] and current_settings['app']['sw_ota_auto_upgrade']:
+            self.tracker.remote.cloud_ota_action()
 
 
 def downlink_process(argv):
@@ -333,7 +356,6 @@ class Remote(Singleton):
 
     '''
     def post_data(self, data_type, data):
-        log.debug('data_type: %s, data: %s' % (data_type, data))
         if self.block_io is True:
             return self._post_data((data_type, data))
         else:
@@ -342,3 +364,23 @@ class Remote(Singleton):
 
     def set_block_io(self, val):
         self.block_io = val
+
+    def check_ota(self):
+        current_settings = settings.settings.get()
+        if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+            if current_settings['app']['sw_ota'] is True:
+                self.cloud.dev_info_report()
+            else:
+                raise settings.SettingsError('OTA upgrade is disabled!')
+        else:
+            raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
+
+    def cloud_ota_action(self, val=1):
+        current_settings = settings.settings.get()
+        if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+            self.cloud.ota_action(val)
+            if val == 0:
+                settings.settings.set('ota_status', 0)
+                settings.settings.save()
+        else:
+            raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])

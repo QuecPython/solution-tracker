@@ -24,6 +24,7 @@ class TrackerTimer(Singleton):
         self.loc_count = 0
         self.battery_count = 0
         self.gnss_count = 0
+        self.quec_ota = 0
 
     def timer_callback(self, args):
         current_settings = settings.settings.get()
@@ -31,6 +32,7 @@ class TrackerTimer(Singleton):
         self.loc_count += 1
         self.battery_count += 1
         self.gnss_count += 1
+        self.quec_ota += 1
 
         if (current_settings['app']['loc_mode'] & settings.default_values_app._loc_mode.cycle) \
                 and current_settings['app']['loc_cycle_period'] \
@@ -46,6 +48,13 @@ class TrackerTimer(Singleton):
                 current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
             self.gnss_count = 0
             self.gnss_timer()
+
+        if current_settings['app']['sw_ota'] is False:
+            self.quec_ota = 0
+        if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot and \
+                self.quec_ota >= 3600:
+            self.quec_ota = 0
+            self.quecthing_ota_timer()
 
     def loc_timer(self):
         self.tracker.locator.trigger()
@@ -72,6 +81,9 @@ class TrackerTimer(Singleton):
 
     def gnss_timer(self):
         self.tracker.locator.gps.quecgnss_read()
+
+    def quecthing_ota_timer(self):
+        self.tracker.remote.check_ota()
 
 
 class LEDTimer(Singleton):

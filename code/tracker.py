@@ -52,8 +52,6 @@ class Tracker(Singleton):
         if data:
             loc_method = data[0]
             loc_data = data[1]
-            log.info("loc_method:", loc_method)
-            log.info("loc_data:", loc_data)
             if loc_method == settings.default_values_app._loc_method.gps:
                 data_type = self.remote.DATA_LOCA_GPS
             else:
@@ -73,7 +71,8 @@ class Tracker(Singleton):
         machine_info = {
             'power_switch': power_switch,
             'energy': self.battery.energy(),
-            'local_time': utime.mktime(utime.localtime())
+            'local_time': utime.mktime(utime.localtime()),
+            'ota_status': current_settings['sys']['ota_status']
         }
         machine_info.update(current_settings['app'])
         if self.remote.block_io != block_io:

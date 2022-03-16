@@ -73,9 +73,9 @@ def test_tracker():
     log.info('[.] sleep 10')
     utime.sleep(10)
 
-    log.debug('[x] start to machine check.')
-    tracker.machine_check()
-    log.debug('[x] end to machine check.')
+    # log.debug('[x] start to machine check.')
+    # tracker.machine_check()
+    # log.debug('[x] end to machine check.')
 
     # log.info('[.] sleep 10')
     # utime.sleep(10)
@@ -147,11 +147,11 @@ def test_gps():
 
 
 def main():
-    # test_quecthing()
+    test_quecthing()
     # test_settings()
     # test_uart()
     # test_remote()
-    test_tracker()
+    # test_tracker()
     # test_location()
     # test_gps()
 
