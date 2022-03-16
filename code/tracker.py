@@ -8,7 +8,6 @@ from usr.sensor import Sensor
 from usr.remote import Remote
 from usr.battery import Battery
 from usr.common import Singleton
-from usr.alert import AlertMonitor
 from usr.logging import getLogger
 from usr.location import Location, GPS
 from usr.timer import TrackerTimer, LEDTimer
@@ -33,8 +32,7 @@ class Tracker(Singleton):
         self.energy_led = LED()
         self.running_led = LED()
         self.sensor = Sensor()
-        self.locator = Location(self.loc_read_cb)
-        self.alert = AlertMonitor(self.alert_read_cb)
+        self.locator = Location()
         self.battery = Battery()
         self.remote = Remote(self)
 
@@ -48,7 +46,17 @@ class Tracker(Singleton):
             self.usb = USB()
             self.usb.setCallback(self.usb_callback)
 
-    def loc_read_cb(self, data):
+    def loc_report(self):
+        data = None
+        retry = 0
+        while retry < 3:
+            data = self.locator.read()
+            if data:
+                break
+            else:
+                retry += 1
+                utime.sleep(1)
+
         if data:
             loc_method = data[0]
             loc_data = data[1]
@@ -56,28 +64,75 @@ class Tracker(Singleton):
                 data_type = self.remote.DATA_LOCA_GPS
             else:
                 data_type = self.remote.DATA_LOCA_NON_GPS
-            self.remote.post_data(data_type, loc_data)
 
-    def alert_read_cb(self, *data):
-        if data:
-            data_type = self.remote.DATA_NON_LOCA
-            alert_data = {data[0]: data[1]}
-            self.remote.post_data(data_type, alert_data)
+            current_settings = settings.settings.get()
+            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+                if loc_method == settings.default_values_app._loc_method.cell:
+                    loc_data = ['LBS']
+                elif loc_method == settings.default_values_app._loc_method.wifi:
+                    loc_data = []
 
-    def machine_info_report(self, power_switch=True, block_io=True):
-        current_settings = settings.settings.get()
-        self.locator.trigger()
-        # TODO: Other Machine Info.
-        machine_info = {
-            'power_switch': power_switch,
-            'energy': self.battery.energy(),
-            'local_time': utime.mktime(utime.localtime()),
-            'ota_status': current_settings['sys']['ota_status']
-        }
-        machine_info.update(current_settings['app'])
-        if self.remote.block_io != block_io:
-            self.remote.set_block_io(block_io)
-        self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
+            return self.remote.post_data(data_type, loc_data)
+        else:
+            log.warn('Location data is not ready.')
+
+        return False
+
+    def alert_report(self, alert_code, alert_info):
+        if settings.ALERTCODE.get(alert_code):
+            current_settings = settings.settings.get()
+            alert_status = current_settings.get('app', {}).get('sw_' + settings.ALERTCODE.get(alert_code))
+            if alert_status:
+                data_type = self.remote.DATA_NON_LOCA
+                alert_data = {settings.ALERTCODE.get(alert_code): alert_info}
+                return self.remote.post_data(data_type, alert_data)
+            else:
+                log.warn('%s status is %s' % (settings.ALERTCODE.get(alert_code), alert_status))
+        else:
+            log.error('altercode (%s) is not exists. alert info: %s' % (alert_code, alert_info))
+
+        return False
+
+    def machine_info_report(self, power_switch=True):
+        if self.loc_report():
+            # TODO: Other Machine Info.
+            current_settings = settings.settings.get()
+            machine_info = {
+                'power_switch': power_switch,
+                'energy': self.battery.energy(),
+                'local_time': utime.mktime(utime.localtime()),
+                'ota_status': current_settings['sys']['ota_status']
+            }
+            machine_info.update(current_settings['app'])
+            return self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
+
+        return False
+
+    def machine_check(self):
+        net_check_res = self.check.net_check()
+        gps_check_res = self.check.gps_check()
+        sensor_check_res = self.check.sensor_check()
+
+        alert_code = 20000
+        fault_code = 0
+        if net_check_res and gps_check_res and sensor_check_res:
+            self.running_led.period = 2
+        else:
+            self.running_led.period = 0.5
+            if not net_check_res:
+                fault_code = 20001
+                alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
+            if not gps_check_res:
+                fault_code = 20002
+                alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
+            if not sensor_check_res:
+                # TODO: Need To Check What Sensor Error To Report.
+                pass
+
+            self.alert_report(alert_code, alert_info)
+        self.machine_info_report()
+
+        return fault_code
 
     def energy_led_show(self, energy):
         current_settings = settings.settings.get()
@@ -88,23 +143,6 @@ class Tracker(Singleton):
             self.energy_led.period = 1
         elif current_settings['app']['low_power_alert_threshold'] < energy:
             self.energy_led.period = 0
-
-    def machine_check(self):
-        net_check_res = self.check.net_check()
-        gps_check_res = self.check.gps_check()
-        sensor_check_res = self.check.sensor_check()
-        if net_check_res and gps_check_res and sensor_check_res:
-            self.running_led.period = 2
-        else:
-            self.running_led.period = 0.5
-            if not net_check_res:
-                self.alert.post_alert(20000, {'fault_code': 20001, 'local_time': utime.mktime(utime.localtime())})
-            if not gps_check_res:
-                self.alert.post_alert(20000, {'fault_code': 20002, 'local_time': utime.mktime(utime.localtime())})
-            if not sensor_check_res:
-                # TODO: Need To Check What Sensor Error To Report.
-                pass
-        self.machine_info_report()
 
     def pwk_callback(self, status):
         if status == 0:

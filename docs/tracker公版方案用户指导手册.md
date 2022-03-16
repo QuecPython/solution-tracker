@@ -14,57 +14,6 @@ from usr.tracker import Tracker
 tracker = Tracker()
 ```
 
-### alert 告警功能
-
-该功能提供`post_alert`方法, 将定义好的报警编码与报警信息上报到云端。
-
->`tracker.alert.post_alert`
-
-- 例:
-
-```python
-import utime
-alert_code = 20000
-alert_info = {
-    'fault_code': 20001,
-    'local_time': utime.mktime(utime.localtime())
-}
-tracker.alert.post_alert(alert_code, alert_info)
-```
-
-- 参数:
-
-|参数|参数类型|参数说明|
-|:---|---|---|
-|alert_code|int|报警编码|
-|alert_info|dict|报警信息, key为标识符, value为具体信息|
-
-- 返回值:
-
-无
-
-- 报警编码与标识符
-
-|报警编码|子码|标识符|说明|
-|:---|:---|:---|:---|
-|20000|-|`fault_alert`|故障报警|
-|-|20001|`net_error`|网络异常|
-|-|20002|`gps_error`|GPS异常|
-|-|20003|`temp_sensor_error`|温度传感器异常|
-|-|20004|`light_sensor_error`|照度传感器异常|
-|-|20005|`move_sensor_error`|三轴加速度传感器异常|
-|-|20006|`mike_error`|麦克风异常|
-|30002|-|`low_power_alert`|低电量报警|
-|30003|-|`over_speed_alert`|超速报警|
-|30004|-|`sim_out_alert`|拔卡报警|
-|30005|-|`disassemble_alert`|拆卸报警|
-|40000|-|`drive_behavior_alert`|驾驶行为监测报警|
-|-|40001|`quick_start`|急起|
-|-|40002|`quick_stop`|急停|
-|-|40003|`quick_turn_left`|左急转弯|
-|-|40004|`quick_turn_right`|右急转弯|
-|50001|-|`sos_alert`|SOS求救报警|
-
 ### battery 电池功能
 
 改功能提供`energy`方法查询当前电池电量。
@@ -86,9 +35,9 @@ battery_energy = tracker.battery.energy()
 
 ### locator 定位功能
 
-该功能提供了`read`和`trigger`两个方法, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
+该功能提供了`read`查询当前模块的定位信息, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
 
-#### `read` 查询当前发送云端的定位信息。
+#### `read` 查询当前模块的定位信息。
 
 >`tracker.locator.read`
 
@@ -120,22 +69,6 @@ location_info = tracker.locator.read()
         - `['LBS']`
     - `loc_method` -- 4
         - `[]`
-
-#### `trigger` 用于立即向云端报告设备定位信息功能。
-
->`tracker.locator.trigger`
-
-- 例:
-
-```python
-tracker.locator.trigger()
-```
-
-- 参数:
-无
-
-- 返回值:
-无
 
 ### remote 信息通信功能
 
@@ -217,7 +150,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 
 - 返回值:
 
-返回`bool`类型数据, `True`发送成功, `False`发送失败。
+返回`bool`类型数据, `True`成功, `False`失败。
 
 #### `set_block_io` 设置消息发送为阻塞或非阻塞方式。
 
@@ -235,6 +168,78 @@ tracker.remote.set_block_io(False)
 |:---|---|---|
 |val|bool|是否阻塞发送消息, 默认True, True:阻塞;False:非阻塞|
 
+- 返回值:
+
+返回`bool`类型数据, `True`成功, `False`失败。
+
+### alert_report 告警功能
+
+该功能提供`alert_report`方法, 将定义好的报警编码与报警信息上报到云端。
+
+>`tracker.alert_report`
+
+- 例:
+
+```python
+import utime
+alert_code = 20000
+alert_info = {
+    'fault_code': 20001,
+    'local_time': utime.mktime(utime.localtime())
+}
+tracker.alert_report(alert_code, alert_info)
+```
+
+- 参数:
+
+|参数|参数类型|参数说明|
+|:---|---|---|
+|alert_code|int|报警编码|
+|alert_info|dict|报警信息, key为标识符, value为具体信息|
+
+- 返回值:
+
+返回`bool`类型数据, `True`成功, `False`失败。
+
+- 报警编码与标识符
+
+|报警编码|子码|标识符|说明|
+|:---|:---|:---|:---|
+|20000|-|`fault_alert`|故障报警|
+|-|20001|`net_error`|网络异常|
+|-|20002|`gps_error`|GPS异常|
+|-|20003|`temp_sensor_error`|温度传感器异常|
+|-|20004|`light_sensor_error`|照度传感器异常|
+|-|20005|`move_sensor_error`|三轴加速度传感器异常|
+|-|20006|`mike_error`|麦克风异常|
+|30002|-|`low_power_alert`|低电量报警|
+|30003|-|`over_speed_alert`|超速报警|
+|30004|-|`sim_out_alert`|拔卡报警|
+|30005|-|`disassemble_alert`|拆卸报警|
+|40000|-|`drive_behavior_alert`|驾驶行为监测报警|
+|-|40001|`quick_start`|急起|
+|-|40002|`quick_stop`|急停|
+|-|40003|`quick_turn_left`|左急转弯|
+|-|40004|`quick_turn_right`|右急转弯|
+|50001|-|`sos_alert`|SOS求救报警|
+
+### `loc_report` 用于立即向云端报告设备定位信息功能。
+
+>`tracker.loc_report`
+
+- 例:
+
+```python
+tracker.loc_report()
+```
+
+- 参数:
+无
+
+- 返回值:
+
+返回`bool`类型数据, `True`成功, `False`失败。
+
 ### machine_info_report 机器信息上报功能
 
 该模块实现了机器信息的汇总上报功能, 会将机器的位置信息, 开机状态, 电池电量等相关设置信息全部实时上报云端。
@@ -251,7 +256,7 @@ tracker.machine_info_report()
 
 - 返回值:
 
-无
+返回`bool`类型数据, `True`成功, `False`失败。
 
 ### machine_check 机器自检功能
 
@@ -269,7 +274,17 @@ tracker.machine_check()
 
 - 返回值:
 
-无
+返回码，数值类型`int`
+
+|返回码|说明|
+|:---|:---|
+|0|无异常|
+|20001|网络异常|
+|20002|GPS异常|
+|20003|温度传感器异常|
+|20004|照度传感器异常|
+|20005|三轴加速度传感器异常|
+|20006|麦克风异常|
 
 ## settings
 
@@ -303,7 +318,7 @@ settings.init()
 
 - 返回值:
 
-无
+返回`bool`类型数据, `True`成功, `False`失败。
 
 ### get 获取配置参数
 
@@ -387,7 +402,9 @@ settings.set(opt, val)
 
 - 返回值:
 
-无
+返回`bool`类型数据, `True`成功, `False`失败。
+
+- 配置参数标识符列表，见`移远云物模型属性功能定义标识符`表中可写权限数据
 
 ### save 持久化保存配置参数
 
@@ -403,7 +420,7 @@ settings.save()
 
 - 返回值:
 
-无
+返回`bool`类型数据, `True`成功, `False`失败。
 
 ### reset 重置配置参数
 
@@ -419,4 +436,4 @@ settings.reset()
 
 - 返回值:
 
-无
+返回`bool`类型数据, `True`成功, `False`失败。

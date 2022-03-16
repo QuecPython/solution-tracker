@@ -57,7 +57,7 @@ class TrackerTimer(Singleton):
             self.quecthing_ota_timer()
 
     def loc_timer(self):
-        self.tracker.locator.trigger()
+        self.tracker.loc_report()
 
     def battery_timer(self):
         current_settings = settings.settings.get()
@@ -67,7 +67,7 @@ class TrackerTimer(Singleton):
             self.tracker.energy_led_show(energy)
             if current_settings['app']['sw_low_power_alert']:
                 if energy <= current_settings['app']['low_power_alert_threshold']:
-                    self.tracker.alert.post_alert(30002, {'local_time': utime.mktime(utime.localtime())})
+                    self.tracker.alert_report(30002, {'local_time': utime.mktime(utime.localtime())})
                     self.tracker.machine_info_report()
             if energy <= current_settings['app']['low_power_shutdown_threshold']:
                 self.tracker.machine_info_report(power_switch=False, block_io=True)

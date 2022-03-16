@@ -1,6 +1,6 @@
 
 import ure
-import utime
+# import utime
 import _thread
 import cellLocator
 import usr.settings as settings
@@ -139,9 +139,6 @@ class CellLocator(object):
         self.cellLocator_cfg = cellLocator_cfg
 
     def read(self):
-        return ['LBS']
-
-    def get_location(self):
         return cellLocator.getLocation(
             self.cellLocator_cfg['serverAddr'],
             self.cellLocator_cfg['port'],
@@ -150,34 +147,37 @@ class CellLocator(object):
             self.cellLocator_cfg['profileIdx']
         )
 
+    def read_quecIot(self):
+        return ['LBS']
+
 
 class WiFiLocator(object):
     def __init__(self, wifiLocator_cfg):
         self.wifilocator_obj = wifilocator(wifiLocator_cfg['token'])
 
     def read(self):
-        return []
-
-    def get_location(self):
         return self.wifilocator_obj.getwifilocator()
 
+    def read_quecIot(self):
+        return []
 
-def loc_worker(argv):
-    self = argv
-    while True:
-        trigger = self.trigger_queue.get()
-        if trigger:
-            data = None
-            retry = 0
-            while retry < 3:
-                data = self.read()
-                if data:
-                    break
-                else:
-                    retry += 1
-                    utime.sleep(1)
-            if data and self.loc_read_cb:
-                self.loc_read_cb(data)
+
+# def loc_worker(argv):
+#     self = argv
+#     while True:
+#         trigger = self.trigger_queue.get()
+#         if trigger:
+#             data = None
+#             retry = 0
+#             while retry < 3:
+#                 data = self.read()
+#                 if data:
+#                     break
+#                 else:
+#                     retry += 1
+#                     utime.sleep(1)
+#             if data and self.loc_read_cb:
+#                 self.loc_read_cb(data)
 
 
 class Location(Singleton):
@@ -185,10 +185,10 @@ class Location(Singleton):
     cellLoc = None
     wifiLoc = None
 
-    def __init__(self, loc_read_cb):
-        self.loc_read_cb = loc_read_cb
-        self.trigger_queue = Queue(maxsize=64)
-        _thread.start_new_thread(loc_worker, (self,))
+    def __init__(self):
+        # self.loc_read_cb = loc_read_cb
+        # self.trigger_queue = Queue(maxsize=64)
+        # _thread.start_new_thread(loc_worker, (self,))
         self._locater_init()
 
     def _locater_init(self):
@@ -224,35 +224,45 @@ class Location(Singleton):
 
     def read(self):
         self._locater_init()
+        current_settings = settings.settings.get()
 
         if self.gps:
             data = []
-            r = self.gps.read_location_GxRMC()
-            if r:
-                data.append(r)
+            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+                r = self.gps.read_location_GxRMC()
+                if r:
+                    data.append(r)
 
-            r = self.gps.read_location_GxGGA()
-            if r:
-                data.append(r)
+                r = self.gps.read_location_GxGGA()
+                if r:
+                    data.append(r)
 
-            r = self.gps.read_location_GxVTG()
-            if r:
-                data.append(r)
+                r = self.gps.read_location_GxVTG()
+                if r:
+                    data.append(r)
 
             if len(data):
                 return (settings.default_values_app._loc_method.gps, data)
 
         if self.cellLoc:
-            data = self.cellLoc.read()
+            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+                data = self.cellLoc.read_quecIot()
+            else:
+                data = self.cellLoc.read()
+
             if data:
                 return (settings.default_values_app._loc_method.cell, data)
 
         if self.wifiLoc:
-            data = self.wifiLoc.read()
+            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+                data = self.wifiLoc.read_quecIot()
+            else:
+                data = self.wifiLoc.read()
+
             if data:
                 return (settings.default_values_app._loc_method.wifi, data)
 
         return ()
 
-    def trigger(self):
-        self.trigger_queue.put(True)
+    # def trigger(self):
+    #     self.trigger_queue.put(True)

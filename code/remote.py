@@ -363,7 +363,11 @@ class Remote(Singleton):
             return True
 
     def set_block_io(self, val):
-        self.block_io = val
+        try:
+            self.block_io = val
+            return True
+        except:
+            return False
 
     def check_ota(self):
         current_settings = settings.settings.get()

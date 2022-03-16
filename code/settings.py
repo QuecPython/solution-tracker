@@ -12,6 +12,32 @@ PROJECT_NAME = 'QuecPython_Tracker'
 
 PROJECT_VERSION = '2.0.0'
 
+ALERTCODE = {
+    20000: 'fault_alert',
+    30002: 'low_power_alert',
+    30003: 'over_speed_alert',
+    30004: 'sim_out_alert',
+    30005: 'disassemble_alert',
+    40000: 'drive_behavior_alert',
+    50001: 'sos_alert',
+}
+
+FAULT_CODE = {
+    20001: 'net_error',
+    20002: 'gps_error',
+    20003: 'temp_sensor_error',
+    20004: 'light_sensor_error',
+    20005: 'move_sensor_error',
+    20006: 'mike_error',
+}
+
+DRIVE_BEHAVIOR_CODE = {
+    40001: 'quick_start',
+    40002: 'quick_stop',
+    40003: 'quick_turn_left',
+    40004: 'quick_turn_right',
+}
+
 tracker_settings_file = '/usr/tracker_settings.json'
 
 _settings_lock = _thread.allocate_lock()
@@ -240,20 +266,24 @@ class Settings(Singleton):
 
     @settings_lock('Settings.init')
     def init(self):
-        default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
-        default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
+        try:
+            default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
+            default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
 
-        default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
-        default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
-        default_settings = {'app': default_settings_app, 'sys': default_settings_sys}
+            default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
+            default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
+            default_settings = {'app': default_settings_app, 'sys': default_settings_sys}
 
-        if not ql_fs.path_exists(tracker_settings_file):
-            with open(tracker_settings_file, 'w') as f:
-                ujson.dump(default_settings, f)
-            self.current_settings = dict(default_settings)
-        else:
-            with open(tracker_settings_file, 'r') as f:
-                self.current_settings = ujson.load(f)
+            if not ql_fs.path_exists(tracker_settings_file):
+                with open(tracker_settings_file, 'w') as f:
+                    ujson.dump(default_settings, f)
+                self.current_settings = dict(default_settings)
+            else:
+                with open(tracker_settings_file, 'r') as f:
+                    self.current_settings = ujson.load(f)
+            return True
+        except:
+            return False
 
     @settings_lock('Settings.get')
     def get(self):
@@ -331,12 +361,20 @@ class Settings(Singleton):
 
     @settings_lock('Settings.save')
     def save(self):
-        with open(tracker_settings_file, 'w') as f:
-            ujson.dump(self.current_settings, f)
+        try:
+            with open(tracker_settings_file, 'w') as f:
+                ujson.dump(self.current_settings, f)
+            return True
+        except:
+            return False
 
     @settings_lock('Settings.reset')
     def reset(self):
-        uos.remove(tracker_settings_file)
+        try:
+            uos.remove(tracker_settings_file)
+            return True
+        except:
+            return False
 
 
 settings = Settings()
