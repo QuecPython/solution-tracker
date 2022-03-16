@@ -88,8 +88,7 @@ battery_energy = tracker.battery.energy()
 
 该功能提供了`read`和`trigger`两个方法, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
 
-- `read`方法用于查询当前发送云端的定位信息。
-- `trigger`方法用于立即向云端报告设备定位信息功能。
+#### `read`方法用于查询当前发送云端的定位信息。
 
 >`tracker.locator.read`
 
@@ -122,6 +121,8 @@ location_info = tracker.locator.read()
     - `loc_method` -- 4
         - `[]`
 
+#### `trigger`方法用于立即向云端报告设备定位信息功能。
+
 >`tracker.locator.trigger`
 
 - 例:
@@ -138,7 +139,9 @@ tracker.locator.trigger()
 
 ### remote 信息通信功能
 
-- `post_data`方法向云端进行消息发送功能。`post_data`发放支持阻塞和非阻塞两种消息发送模式, 默认为阻塞方式进行消息发送。
+#### `post_data`方法向云端进行消息发送功能。
+
+- `post_data`发放支持阻塞和非阻塞两种消息发送模式, 默认为阻塞方式进行消息发送。
 
 >`tracker.remote.post_data`
 
@@ -216,7 +219,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 
 返回`bool`类型数据, `True`发送成功, `False`发送失败。
 
-- `set_block_io`方法可以设置消息发送的阻塞和非阻塞方式。
+#### `set_block_io`方法可以设置消息发送的阻塞和非阻塞方式。
 
 >`tracker.remote.set_block_io`
 
