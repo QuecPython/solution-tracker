@@ -88,8 +88,7 @@ data = {
     'energy': tracker.battery.energy(),
     'local_time': utime.mktime(utime.localtime())
 }
-bio = False
-tracker.remote.post_data(data_type, data, bio=bio)
+tracker.remote.post_data(data_type, data)
 ```
 
 - 参数:
@@ -98,7 +97,6 @@ tracker.remote.post_data(data_type, data, bio=bio)
 |:---|---|---|
 |data_type|int|数据类型|
 |data|dict|数据信息|
-|bio|boll|是否阻塞发送(True阻塞;False非阻塞)，默认False|
 
 - data_type 枚举值
 
