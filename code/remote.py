@@ -328,38 +328,24 @@ class Remote(Singleton):
     def clean_history(self):
         uos.remove(self._history)
 
-    def _post_data(self, data_type, data):
-        if data_type == self.DATA_NON_LOCA or data_type == self.DATA_LOCA_NON_GPS or data_type == self.DATA_LOCA_GPS:
-            if not self.cloud.post_data(data_type, data):
-                self.add_history(data_type, data)
-                return False
-            else:
-                return True
-        else:
-            raise RemoteError('data_type %s is wrong.' % data_type)
+    def post_data(self, data_type, data):
+        '''
+        Data format to post:
 
-    '''
-    Data format to post:
+        --- non_loca ---
+        {
+            'switch': True,
+            'energy': 100
+        }
 
-    --- non_loca ---
-    {
-        'switch': True,
-        'energy': 100
-    }
+        --- loca_non_gps ---
+        (117.1138, 31.82279, 550)
 
-    --- loca_non_gps ---
-    (117.1138, 31.82279, 550)
+        --- loca_gps ---
+        ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
 
-    --- loca_gps ---
-    ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
-
-    '''
-    def post_data(self, data_type, data, bio=False):
-        if bio is False:
-            self.uplink_queue.put((data_type, data))
-            return True
-        else:
-            return self._post_data(data_type, data)
+        '''
+        self.uplink_queue.put((data_type, data))
 
     def check_ota(self):
         current_settings = settings.settings.get()

@@ -64,9 +64,12 @@ class QuecThing(object):
         quecIot.setServer(1, "iot-south.quectel.com:2883")
         quecIot.setConnmode(1)
 
-    def quec_start_timer(self):
+    def get_post_res(self):
         current_settings = settings.get()
         self.quec_timer.start(current_settings['sys']['quecIot_timeout'] * 1000, 2, self.quec_timer_callback)
+        res = self.post_result_wait_queue.get()
+        self.quec_timer.stop()
+        return res
 
     def quec_timer_callback(self):
         current_settings = settings.get()
@@ -88,9 +91,7 @@ class QuecThing(object):
                         v = {object_model_code.get(ik) if object_model_code.get(ik) else ik: iv for ik, iv in v.items()}
                     phymodelReport_res = quecIot.phymodelReport(1, {object_model_code.get(k): v})
                     if phymodelReport_res:
-                        self.quec_start_timer()
-                        res = self.post_result_wait_queue.get()
-                        self.quec_timer.stop()
+                        res = self.get_post_res()
                         if res:
                             v = {}
                             continue
@@ -105,17 +106,13 @@ class QuecThing(object):
         elif data_type == DATA_LOCA_GPS:
             locReportOutside_res = quecIot.locReportOutside(data)
             if locReportOutside_res:
-                self.quec_start_timer()
-                return self.post_result_wait_queue.get()
-                self.quec_timer.stop()
+                return self.get_post_res()
             else:
                 return False
         elif data_type == DATA_LOCA_NON_GPS:
             locReportInside_res = quecIot.locReportInside(data)
             if locReportInside_res:
-                self.quec_start_timer()
-                return self.post_result_wait_queue.get()
-                self.quec_timer.stop()
+                return self.get_post_res()
             else:
                 return False
         else:
