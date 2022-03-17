@@ -105,7 +105,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 |1|`DATA_LOCA_NON_GPS`|非GPS定位数据|
 |2|`DATA_LOCA_GPS`|GPS定位数据|
 
-- 移远云物模型属性功能定义标识符
+- 属性功能定义标识符
 
 |功能名称|标识符|数据类型|数据定义|功能描述|读写类型|
 |:---|:---|:---|:---|:---|:---|
@@ -136,7 +136,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 |是否OTA升级|`user_ota_action`|`bool`|`True`:接受升级,`False`:拒绝升级||只写|
 |OTA升级状态|`ota_status`|`int`|取值范围：0 ~ 5|0: 无升级;1: 待升级;2: 升级中;3: 升级成功;4: 升级失败|只读|
 
-- 移远云物模型事件功能定义标识符
+- 事件功能定义标识符
 
 |功能名称|标识符|数据定义|
 |:---|:---|:---|
@@ -159,14 +159,14 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 - 例:
 
 ```python
-tracker.remote.set_block_io(False)
+res = tracker.remote.set_block_io(False)
 ```
 
 - 参数:
 
 |参数|参数类型|参数说明|
 |:---|---|---|
-|val|bool|是否阻塞发送消息, 默认True, True:阻塞;False:非阻塞|
+|val|bool|是否阻塞发送消息(True:阻塞;False:非阻塞), 默认True。|
 
 - 返回值:
 
@@ -187,7 +187,7 @@ alert_info = {
     'fault_code': 20001,
     'local_time': utime.mktime(utime.localtime())
 }
-tracker.alert_report(alert_code, alert_info)
+res = tracker.alert_report(alert_code, alert_info)
 ```
 
 - 参数:
@@ -230,7 +230,7 @@ tracker.alert_report(alert_code, alert_info)
 - 例:
 
 ```python
-tracker.loc_report()
+res = tracker.loc_report()
 ```
 
 - 参数:
@@ -247,7 +247,7 @@ tracker.loc_report()
 - 例:
 
 ```python
-tracker.machine_info_report()
+res = tracker.machine_info_report()
 ```
 
 - 参数:
@@ -265,7 +265,7 @@ tracker.machine_info_report()
 - 例:
 
 ```python
-tracker.machine_check()
+res = tracker.machine_check()
 ```
 
 - 参数:
@@ -309,7 +309,7 @@ from usr.settings import settings
 - 例:
 
 ```python
-settings.init()
+res = settings.init()
 ```
 
 - 参数:
@@ -390,7 +390,7 @@ current_settings = settings.get()
 ```python
 opt = 'phone_num'
 val = '123456789'
-settings.set(opt, val)
+res = settings.set(opt, val)
 ```
 
 - 参数:
@@ -411,7 +411,7 @@ settings.set(opt, val)
 - 例:
 
 ```python
-settings.save()
+res = settings.save()
 ```
 
 - 参数:
@@ -427,7 +427,7 @@ settings.save()
 - 例:
 
 ```python
-settings.reset()
+res = settings.reset()
 ```
 
 - 参数:

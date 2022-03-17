@@ -53,8 +53,10 @@ def settings_lock(func_name):
                     return source_fun
                 else:
                     print('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
+                    return False
             else:
                 print('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
+                return False
         return wrapperd_fun
     return settings_lock_fun
 
