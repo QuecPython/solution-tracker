@@ -103,7 +103,7 @@ class default_values_app(object):
 
     loc_mode = _loc_mode.cycle
 
-    loc_cycle_period = 1
+    loc_cycle_period = 5
 
     low_power_alert_threshold = 20
 

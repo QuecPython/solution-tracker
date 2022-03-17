@@ -1,6 +1,5 @@
 
 import ure
-# import utime
 import _thread
 import cellLocator
 import usr.settings as settings
@@ -162,33 +161,12 @@ class WiFiLocator(object):
         return []
 
 
-# def loc_worker(argv):
-#     self = argv
-#     while True:
-#         trigger = self.trigger_queue.get()
-#         if trigger:
-#             data = None
-#             retry = 0
-#             while retry < 3:
-#                 data = self.read()
-#                 if data:
-#                     break
-#                 else:
-#                     retry += 1
-#                     utime.sleep(1)
-#             if data and self.loc_read_cb:
-#                 self.loc_read_cb(data)
-
-
 class Location(Singleton):
     gps = None
     cellLoc = None
     wifiLoc = None
 
     def __init__(self):
-        # self.loc_read_cb = loc_read_cb
-        # self.trigger_queue = Queue(maxsize=64)
-        # _thread.start_new_thread(loc_worker, (self,))
         self._locater_init()
 
     def _locater_init(self):
@@ -263,6 +241,3 @@ class Location(Singleton):
                 return (settings.default_values_app._loc_method.wifi, data)
 
         return ()
-
-    # def trigger(self):
-    #     self.trigger_queue.put(True)

@@ -1,6 +1,6 @@
-
+import utime
 import quecIot
-from queue import Queue
+# from queue import Queue
 from usr.logging import getLogger
 
 DATA_NON_LOCA = 0x0
@@ -51,18 +51,14 @@ object_model_code = {i[1][0]: i[0] for i in object_model}
 class QuecThing(object):
     def __init__(self, pk, ps, dk, ds, downlink_queue):
         self.downlink_queue = downlink_queue
-        self.post_result_wait_queue = Queue(maxsize=16)
-        quecIot.init()
+        # self.post_result_wait_queue = Queue(maxsize=16)
+        self.post_result = []
 
+        quecIot.init()
         quecIot.setEventCB(self.eventCB)
         quecIot.setProductinfo(pk, ps)
         quecIot.setDkDs(dk, ds)
         quecIot.setServer(1, "iot-south.quectel.com:2883")
-
-        # quecIot.setHttpOtaEventCb(self.otaEventCB)
-        # quecIot.setHttpOtaProductInfo(pk, ps)
-        # quecIot.setHttpOtaServer("iot-south.quectel.com:2883")
-
         quecIot.setConnmode(1)
 
     @staticmethod
@@ -71,6 +67,21 @@ class QuecThing(object):
             if not v:
                 del data[k]
 
+    def get_post_result(self):
+        res = True
+        count = 0
+        while count < 10:
+            if self.post_result:
+                res = self.post_result.pop()
+                break
+            count += 1
+            utime.sleep(1)
+
+        return res
+
+    def put_post_result(self, res):
+        self.post_result.append(res)
+
     def post_data(self, data_type, data):
         if data_type == DATA_NON_LOCA:
             for k, v in data.items():
@@ -78,8 +89,10 @@ class QuecThing(object):
                     # Event Data Format From object_mode_code
                     if isinstance(v, dict):
                         v = {object_model_code.get(ik) if object_model_code.get(ik) else ik: iv for ik, iv in v.items()}
-                    if quecIot.phymodelReport(1, {object_model_code.get(k): v}):
-                        res = self.post_result_wait_queue.get()
+                    phymodelReport_res = quecIot.phymodelReport(1, {object_model_code.get(k): v})
+                    if phymodelReport_res:
+                        # res = self.post_result_wait_queue.get()
+                        res = self.get_post_result()
                         if res:
                             v = {}
                             continue
@@ -92,13 +105,17 @@ class QuecThing(object):
             self.rm_empty_data(data)
             return True
         elif data_type == DATA_LOCA_GPS:
-            if quecIot.locReportOutside(data):
-                return self.post_result_wait_queue.get()
+            locReportOutside_res = quecIot.locReportOutside(data)
+            if locReportOutside_res:
+                # return self.post_result_wait_queue.get()
+                return self.get_post_result()
             else:
                 return False
         elif data_type == DATA_LOCA_NON_GPS:
-            if quecIot.locReportInside(data):
-                return self.post_result_wait_queue.get()
+            locReportInside_res = quecIot.locReportInside(data)
+            if locReportInside_res:
+                # return self.post_result_wait_queue.get()
+                return self.get_post_result()
             else:
                 return False
         else:
@@ -128,22 +145,28 @@ class QuecThing(object):
         elif event == 4:
             if errcode == 10200:
                 log.info('Data sending succeeded.')
-                self.post_result_wait_queue.put(True)
+                # self.post_result_wait_queue.put(True)
+                self.put_post_result(True)
             elif errcode == 10210:
                 log.info('Object model data sending succeeded.')
-                self.post_result_wait_queue.put(True)
+                # self.post_result_wait_queue.put(True)
+                self.put_post_result(True)
             elif errcode == 10220:
                 log.info('Location data sending succeeded.')
-                self.post_result_wait_queue.put(True)
+                # self.post_result_wait_queue.put(True)
+                self.put_post_result(True)
             elif errcode == 10300:
                 log.info('Data sending failed.')
-                self.post_result_wait_queue.put(False)
+                # self.post_result_wait_queue.put(False)
+                self.put_post_result(False)
             elif errcode == 10310:
                 log.error('Object model data sending failed.')
-                self.post_result_wait_queue.put(False)
+                # self.post_result_wait_queue.put(False)
+                self.put_post_result(False)
             elif errcode == 10320:
                 log.error('Location data sending failed.')
-                self.post_result_wait_queue.put(False)
+                # self.post_result_wait_queue.put(False)
+                self.put_post_result(False)
         elif event == 5:
             if errcode == 10200:
                 log.info('Recving raw data.')

@@ -73,7 +73,7 @@
 
 QPYcom工具是一个集**QuecPython repl交互、PC和模组间文件传输、文件系统镜像制作并打包到固件包、及固件烧录等各种功能**于一体的强大利器。
 
-用户如需进行DTU的二次开发，使用QPYcom将会大大提高开发的效率。
+用户如需进行二次开发，使用QPYcom将会大大提高开发的效率。
 
 [点此下载QPYCom工具。](https://python.quectel.com/download)
 

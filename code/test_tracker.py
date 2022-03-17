@@ -1,5 +1,6 @@
 import ure
 import utime
+import _thread
 
 import usr.settings as settings
 from machine import UART
@@ -14,13 +15,38 @@ from usr.tracker import Tracker
 log = getLogger(__name__)
 
 
+class QuecIotLog(object):
+    def __init__(self):
+        self.cfg = settings.default_values_sys._gps_cfg
+        self.quecIot_log_queue = Queue(maxsize=16)
+        self.uart_obj = UART(
+            UART.UART0, self.cfg['buadrate'], self.cfg['databits'],
+            self.cfg['parity'], self.cfg['stopbits'], self.cfg['flowctl']
+        )
+        self.uart_obj.set_callback(self.quecIot_log_retrieve_cb)
+        _thread.start_new_thread(self.quecIot_log_retrieve_thread, ())
+
+    def quecIot_log_retrieve_cb(self, params):
+        log.debug('[quecIot_log] %s' % params)
+
+    def quecIot_log_retrieve_thread(self):
+        while True:
+            data = self.uart_obj.read()
+            log.info('[quecIot_log] UART0 Read Data:', data)
+            utime.sleep(3)
+
+    def uart_send_data(self):
+        self.uart_obj.write('test usrt0 log.')
+
+
 def test_quecthing():
     log.info('[x] start test_quecthing')
     current_settings = settings.settings.get()
     cloud_init_params = current_settings['sys']['cloud_init_params']
     downlink_queue = Queue(maxsize=64)
     cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], downlink_queue)
-    cloud.post_data(0x0, {'power_switch': True})
+    post_data_res = cloud.post_data(0x0, {'power_switch': True})
+    log.info('post_data_res:', post_data_res)
     log.info('[x] end test_quecthing')
 
 
@@ -70,40 +96,19 @@ def test_tracker():
 
     tracker = Tracker()
 
-    log.info('[.] sleep 10')
-    utime.sleep(10)
+    log.info('[.] sleep 3')
+    utime.sleep(3)
 
-    # log.debug('[x] start to machine check.')
-    # tracker.machine_check()
-    # log.debug('[x] end to machine check.')
+    log.info('[.] test tracker.loc_report()')
+    loc_report_res = tracker.loc_report()
+    log.info('[.] loc_report_res:', loc_report_res)
 
-    # log.info('[.] sleep 10')
-    # utime.sleep(10)
+    log.info('[.] sleep 3')
+    utime.sleep(3)
 
-    # log.debug('[.] set loc_mode 0x0.')
-    # settings.settings.set('loc_mode', 0x0)
-    # settings.settings.save()
-    # log.debug('[.] tracker_command_queue put loc_mode.')
-    # tracker.tracker_command_queue.put('loc_mode')
-
-    # log.info('[.] sleep 10')
-    # utime.sleep(10)
-
-    # log.debug('[.] set loc_mode 0x1.')
-    # settings.settings.set('loc_mode', 0x1)
-    # settings.settings.save()
-    # log.debug('[.] tracker_command_queue put loc_mode.')
-    # tracker.tracker_command_queue.put('loc_mode')
-
-    # log.info('[.] sleep 5')
-    # utime.sleep(5)
-
-    # log.info('[.] locator trigger')
-    # tracker.locator.trigger()
-    # log.info('[.] sleep 3')
-    # utime.sleep(3)
-    # log.info('[.] alert post_alert')
-    # tracker.alert.post_alert(40000, {'drive_behavior_code': 40001, 'local_time': utime.mktime(utime.localtime())})
+    log.info('[.] test tracker.machine_check()')
+    machine_check_res = tracker.machine_check()
+    log.info('[.] machine_check_res:', machine_check_res)
 
     log.info('[x] end test_tracker')
 
@@ -147,13 +152,13 @@ def test_gps():
 
 
 def main():
-    test_quecthing()
+    # test_quecthing()
     # test_settings()
     # test_uart()
     # test_remote()
-    # test_tracker()
     # test_location()
     # test_gps()
+    test_tracker()
 
 if __name__ == '__main__':
     main()

@@ -28,7 +28,6 @@ log = getLogger(__name__)
 class Tracker(Singleton):
     def __init__(self, *args, **kwargs):
         self.check = SelfCheck()
-
         self.energy_led = LED()
         self.running_led = LED()
         self.sensor = Sensor()
@@ -47,6 +46,7 @@ class Tracker(Singleton):
             self.usb.setCallback(self.usb_callback)
 
     def loc_report(self):
+        post_data_res = False
         data = None
         retry = 0
         while retry < 3:
@@ -72,11 +72,11 @@ class Tracker(Singleton):
                 elif loc_method == settings.default_values_app._loc_method.wifi:
                     loc_data = []
 
-            return self.remote.post_data(data_type, loc_data)
+            post_data_res = self.remote.post_data(data_type, loc_data)
         else:
             log.warn('Location data is not ready.')
 
-        return False
+        return post_data_res
 
     def alert_report(self, alert_code, alert_info):
         if settings.ALERTCODE.get(alert_code):
