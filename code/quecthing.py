@@ -1,4 +1,3 @@
-import utime
 import osTimer
 import quecIot
 from misc import Power
@@ -72,8 +71,6 @@ class QuecThing(object):
         return res
 
     def quec_timer_callback(self):
-        current_settings = settings.get()
-        utime.sleep(current_settings['sys']['quecIot_timeout'])
         Power.powerRestart()
 
     @staticmethod
