@@ -243,7 +243,6 @@ class Remote(Singleton):
         self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
-        self.block_io = True
         current_settings = settings.settings.get()
         cloud_init_params = current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
@@ -329,15 +328,15 @@ class Remote(Singleton):
     def clean_history(self):
         uos.remove(self._history)
 
-    def _post_data(self, data):
-        if data[0] == self.DATA_NON_LOCA or data[0] == self.DATA_LOCA_NON_GPS or data[0] == self.DATA_LOCA_GPS:
-            if not self.cloud.post_data(data[0], data[1]):
-                self.add_history(data[0], data[1])
+    def _post_data(self, data_type, data):
+        if data_type == self.DATA_NON_LOCA or data_type == self.DATA_LOCA_NON_GPS or data_type == self.DATA_LOCA_GPS:
+            if not self.cloud.post_data(data_type, data):
+                self.add_history(data_type, data)
                 return False
             else:
                 return True
         else:
-            raise RemoteError('Post data format is wrong. data: %s' % data)
+            raise RemoteError('data_type %s is wrong.' % data_type)
 
     '''
     Data format to post:
@@ -355,19 +354,12 @@ class Remote(Singleton):
     ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
 
     '''
-    def post_data(self, data_type, data):
-        if self.block_io is True:
-            return self._post_data((data_type, data))
-        else:
+    def post_data(self, data_type, data, bio=False):
+        if bio is False:
             self.uplink_queue.put((data_type, data))
             return True
-
-    def set_block_io(self, val):
-        try:
-            self.block_io = val
-            return True
-        except:
-            return False
+        else:
+            return self._post_data(data_type, data)
 
     def check_ota(self):
         current_settings = settings.settings.get()

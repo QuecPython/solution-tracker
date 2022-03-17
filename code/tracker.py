@@ -47,15 +47,7 @@ class Tracker(Singleton):
 
     def loc_report(self):
         post_data_res = False
-        data = None
-        retry = 0
-        while retry < 3:
-            data = self.locator.read()
-            if data:
-                break
-            else:
-                retry += 1
-                utime.sleep(1)
+        data = self.locator.read()
 
         if data:
             loc_method = data[0]
@@ -64,13 +56,6 @@ class Tracker(Singleton):
                 data_type = self.remote.DATA_LOCA_GPS
             else:
                 data_type = self.remote.DATA_LOCA_NON_GPS
-
-            current_settings = settings.settings.get()
-            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-                if loc_method == settings.default_values_app._loc_method.cell:
-                    loc_data = ['LBS']
-                elif loc_method == settings.default_values_app._loc_method.wifi:
-                    loc_data = []
 
             post_data_res = self.remote.post_data(data_type, loc_data)
         else:
@@ -87,7 +72,7 @@ class Tracker(Singleton):
                 alert_data = {settings.ALERTCODE.get(alert_code): alert_info}
                 return self.remote.post_data(data_type, alert_data)
             else:
-                log.warn('%s status is %s' % (settings.ALERTCODE.get(alert_code), alert_status))
+                log.warn('%s switch is %s' % (settings.ALERTCODE.get(alert_code), alert_status))
         else:
             log.error('altercode (%s) is not exists. alert info: %s' % (alert_code, alert_info))
 

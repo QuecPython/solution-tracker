@@ -82,12 +82,14 @@ location_info = tracker.locator.read()
 
 ```python
 import utime
+data_type = tracker.remote.DATA_NON_LOCA
 data = {
     'power_switch': True,
     'energy': tracker.battery.energy(),
     'local_time': utime.mktime(utime.localtime())
 }
-tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
+bio = False
+tracker.remote.post_data(data_type, data, bio=bio)
 ```
 
 - 参数:
@@ -96,6 +98,7 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 |:---|---|---|
 |data_type|int|数据类型|
 |data|dict|数据信息|
+|bio|boll|是否阻塞发送(True阻塞;False非阻塞)，默认False|
 
 - data_type 枚举值
 
@@ -147,26 +150,6 @@ tracker.remote.post_data(tracker.remote.DATA_NON_LOCA, data)
 |驾驶行为报警|`drive_behavior_alert`|`{'local_time': xxx, 'drive_behavior_code': 40001}`|
 |拆卸报警|`disassemble_alert`|`{'local_time': xxx}`|
 |超速报警|`over_speed_alert`|`{'local_time': xxx}`|
-
-- 返回值:
-
-返回`bool`类型数据, `True`成功, `False`失败。
-
-#### `set_block_io` 设置消息发送为阻塞或非阻塞方式。
-
->`tracker.remote.set_block_io`
-
-- 例:
-
-```python
-res = tracker.remote.set_block_io(False)
-```
-
-- 参数:
-
-|参数|参数类型|参数说明|
-|:---|---|---|
-|val|bool|是否阻塞发送消息(True:阻塞;False:非阻塞), 默认True。|
 
 - 返回值:
 

@@ -105,7 +105,7 @@ class default_values_app(object):
 
     loc_mode = _loc_mode.cycle
 
-    loc_cycle_period = 5
+    loc_cycle_period = 1
 
     low_power_alert_threshold = 20
 
@@ -174,6 +174,8 @@ class default_values_sys(object):
     cloud = _cloud.quecIot
 
     cloud_init_params = {}
+
+    quecIot_timeout = 180
 
     _quecIot = {
         'PK': 'p11275',
