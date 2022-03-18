@@ -46,7 +46,6 @@ class Tracker(Singleton):
             self.usb.setCallback(self.usb_callback)
 
     def loc_report(self):
-        post_data_res = False
         data = self.locator.read()
 
         if data:
@@ -62,7 +61,7 @@ class Tracker(Singleton):
         else:
             log.warn('Location data is not ready.')
 
-        return post_data_res
+        return False
 
     def alert_report(self, alert_code, alert_info):
         if settings.ALERTCODE.get(alert_code):
