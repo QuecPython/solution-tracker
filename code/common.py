@@ -1,4 +1,5 @@
 import _thread
+from misc import Power
 
 
 class Singleton(object):
@@ -17,3 +18,12 @@ class Singleton(object):
                 Singleton.instance_dict[str(cls)] = _instance
 
         return Singleton.instance_dict[str(cls)]
+
+
+def numiter():
+    for i in range(99999):
+        yield i
+
+
+def power_restart():
+    Power.powerRestart()

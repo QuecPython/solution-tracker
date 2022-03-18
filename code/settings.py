@@ -185,10 +185,10 @@ class default_values_sys(object):
     }
 
     _AliYun = {
-        'PK': '',
-        'PS': '',
-        'DK': '',
-        'DS': '',
+        'PK': 'guqqtu3edVY',
+        'PS': 'xChL7HREtPyYCtPM',
+        'DK': 'TrackerEC600N',
+        'DS': 'a3153ed0c2f68db6e2f47e0769f966a2',
     }
 
     _JTT808 = {

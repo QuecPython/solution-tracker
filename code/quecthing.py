@@ -1,9 +1,11 @@
 import osTimer
 import quecIot
-from misc import Power
+
 from queue import Queue
+
 from usr.logging import getLogger
 from usr.settings import settings
+from usr.common import power_restart
 
 DATA_NON_LOCA = 0x0
 DATA_LOCA_NON_GPS = 0x1
@@ -12,6 +14,7 @@ DATA_LOCA_GPS = 0x2
 log = getLogger(__name__)
 
 object_model = [
+    # property
     (9,  ('power_switch', 'rw')),
     (4,  ('energy', 'r')),
     (23, ('phone_num', 'rw')),
@@ -32,19 +35,21 @@ object_model = [
     (31, ('sw_disassemble_alert', 'rw')),
     (32, ('sw_drive_behavior_alert', 'rw')),
     (21, ('drive_behavior_code', 'r')),
-    (6,  ('sos_alert', 'rw')),
-    (14, ('fault_alert', 'rw')),
-    (17, ('low_power_alert', 'rw')),
-    (18, ('sim_out_alert', 'rw')),
-    (22, ('drive_behavior_alert', 'rw')),
-    (20, ('disassemble_alert', 'rw')),
     (33, ('power_restart', 'w')),
     (34, ('over_speed_threshold', 'rw')),
-    (35, ('over_speed_alert', 'rw')),
     (36, ('fault_code', 'r')),
     (37, ('gps_mode', 'r')),
     (38, ('user_ota_action', 'w')),
     (39, ('ota_status', 'r')),
+
+    # event
+    (6,  ('sos_alert', 'r')),
+    (14, ('fault_alert', 'r')),
+    (17, ('low_power_alert', 'r')),
+    (18, ('sim_out_alert', 'r')),
+    (20, ('disassemble_alert', 'r')),
+    (22, ('drive_behavior_alert', 'r')),
+    (35, ('over_speed_alert', 'r')),
 ]
 
 object_model_code = {i[1][0]: i[0] for i in object_model}
@@ -65,13 +70,10 @@ class QuecThing(object):
 
     def get_post_res(self):
         current_settings = settings.get()
-        self.quec_timer.start(current_settings['sys']['quecIot_timeout'] * 1000, 2, self.quec_timer_callback)
+        self.quec_timer.start(current_settings['sys']['cloud_timeout'] * 1000, 2, power_restart)
         res = self.post_result_wait_queue.get()
         self.quec_timer.stop()
         return res
-
-    def quec_timer_callback(self):
-        Power.powerRestart()
 
     @staticmethod
     def rm_empty_data(data):
