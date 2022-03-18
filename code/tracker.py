@@ -57,7 +57,8 @@ class Tracker(Singleton):
             else:
                 data_type = self.remote.DATA_LOCA_NON_GPS
 
-            post_data_res = self.remote.post_data(data_type, loc_data)
+            self.remote.post_data(data_type, loc_data)
+            return True
         else:
             log.warn('Location data is not ready.')
 
@@ -70,7 +71,8 @@ class Tracker(Singleton):
             if alert_status:
                 data_type = self.remote.DATA_NON_LOCA
                 alert_data = {settings.ALERTCODE.get(alert_code): alert_info}
-                return self.remote.post_data(data_type, alert_data)
+                self.remote.post_data(data_type, alert_data)
+                return True
             else:
                 log.warn('%s switch is %s' % (settings.ALERTCODE.get(alert_code), alert_status))
         else:
@@ -89,7 +91,8 @@ class Tracker(Singleton):
                 'ota_status': current_settings['sys']['ota_status']
             }
             machine_info.update(current_settings['app'])
-            return self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
+            self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
+            return True
 
         return False
 
