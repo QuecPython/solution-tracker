@@ -151,7 +151,7 @@ tracker.remote.post_data(data_type, data)
 
 - 返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
+无
 
 ### alert_report 告警功能
 
