@@ -175,7 +175,7 @@ class default_values_sys(object):
 
     cloud_init_params = {}
 
-    quecIot_timeout = 180
+    cloud_timeout = 180
 
     _quecIot = {
         'PK': 'p11275',
