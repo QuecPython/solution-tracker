@@ -63,6 +63,8 @@ class TrackerTimer(Singleton):
             if not self.tracker.locator.gps:
                 if not self.tracker.locator.gps.read_location_GxVTG_speed():
                     return
+                elif float(self.tracker.locator.gps.read_location_GxVTG_speed()) <= 0:
+                    return
             else:
                 return
 

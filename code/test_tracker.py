@@ -1,3 +1,4 @@
+import pm
 import ure
 import utime
 import _thread
@@ -172,6 +173,30 @@ def test_aliyuniot():
     log.debug('[x] end test_aliyuniot')
 
 
+def test_pm():
+    # create wakelock
+    lpm_fd = pm.create_wakelock("test_lock", len("test_lock"))
+    # set auto sleep
+    pm.autosleep(1)
+
+    # 模拟测试，实际开发请根据业务场景选择使用
+    count = 0
+    while count < 3:
+        utime.sleep(20)  # 休眠
+        res = pm.wakelock_lock(lpm_fd)
+        print("ql_lpm_idlelock_lock, g_c1_axi_fd = %d" % lpm_fd)
+        print("unlock  sleep")
+        utime.sleep(20)
+        res = pm.wakelock_unlock(lpm_fd)
+        print(res)
+        print("ql_lpm_idlelock_unlock, g_c1_axi_fd = %d" % lpm_fd)
+        num = pm.get_wakelock_num()  # 获取已创建锁的数量
+        print(num)
+        count += 1
+
+    pm.delete_wakelock(lpm_fd)
+
+
 def main():
     # test_quecthing()
     # test_settings()
@@ -180,7 +205,8 @@ def main():
     # test_location()
     # test_gps()
     # test_aliyuniot()
-    test_tracker()
+    # test_tracker()
+    test_pm()
 
 if __name__ == '__main__':
     main()
