@@ -2,15 +2,17 @@ import ure
 import utime
 import _thread
 
-import usr.settings as settings
+from queue import Queue
 from machine import UART
 
-from queue import Queue
+import usr.settings as settings
+
 from usr.logging import getLogger
 from usr.quecthing import QuecThing
 from usr.remote import Remote
 from usr.location import Location, GPS
 from usr.tracker import Tracker
+from usr.aliyunIot import AliYunIot
 
 log = getLogger(__name__)
 
@@ -99,16 +101,23 @@ def test_tracker():
     log.info('[.] sleep 3')
     utime.sleep(3)
 
+    # log.info('[.] test tracker.locator.read()')
+    # loc_read_res = tracker.locator.read()
+    # log.info('[.] loc_read_res:', loc_read_res)
+
+    # log.info('[.] sleep 3')
+    # utime.sleep(3)
+
     log.info('[.] test tracker.loc_report()')
     loc_report_res = tracker.loc_report()
     log.info('[.] loc_report_res:', loc_report_res)
 
-    log.info('[.] sleep 3')
-    utime.sleep(3)
+    # log.info('[.] sleep 3')
+    # utime.sleep(3)
 
-    log.info('[.] test tracker.machine_check()')
-    machine_check_res = tracker.machine_check()
-    log.info('[.] machine_check_res:', machine_check_res)
+    # log.info('[.] test tracker.machine_check()')
+    # machine_check_res = tracker.machine_check()
+    # log.info('[.] machine_check_res:', machine_check_res)
 
     log.info('[x] end test_tracker')
 
@@ -151,6 +160,18 @@ def test_gps():
     log.debug('[x] end test_gps')
 
 
+def test_aliyuniot():
+    log.debug('[x] start test_aliyuniot')
+
+    current_settings = settings.settings.get()
+    cloud_init_params = current_settings['sys']['cloud_init_params']
+    downlink_queue = Queue(maxsize=64)
+    cloud = AliYunIot(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], downlink_queue)
+    log.debug("cloud.ali.getAliyunSta(): ", cloud.ali.getAliyunSta())
+
+    log.debug('[x] end test_aliyuniot')
+
+
 def main():
     # test_quecthing()
     # test_settings()
@@ -158,6 +179,7 @@ def main():
     # test_remote()
     # test_location()
     # test_gps()
+    # test_aliyuniot()
     test_tracker()
 
 if __name__ == '__main__':

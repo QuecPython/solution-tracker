@@ -237,7 +237,7 @@ res = tracker.machine_info_report()
 
 - 返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
+无
 
 ### machine_check 机器自检功能
 

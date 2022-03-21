@@ -12,10 +12,14 @@ import usr.settings as settings
 from usr.battery import Battery
 from usr.common import Singleton
 from usr.logging import getLogger
+from usr.settings import DATA_NON_LOCA
+from usr.settings import DATA_LOCA_NON_GPS
+from usr.settings import DATA_LOCA_GPS
 
 if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
-    from usr.quecthing import DATA_NON_LOCA, DATA_LOCA_NON_GPS, DATA_LOCA_GPS
+if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+    from usr.aliyunIot import AliYunIot
 
 log = getLogger(__name__)
 
@@ -200,6 +204,8 @@ def uplink_process(argv):
                             key = 'loca_gps'
                         else:
                             continue
+                        if hist.get(key) is None:
+                            hist[key] = []
                         hist[key].append(msg[1])
                         need_refresh = True
                     else:
@@ -243,13 +249,17 @@ class Remote(Singleton):
         self.remote_read_cb = remote_read_cb
         self.downlink_queue = Queue(maxsize=64)
         self.uplink_queue = Queue(maxsize=64)
+
+        self.DATA_NON_LOCA = DATA_NON_LOCA
+        self.DATA_LOCA_NON_GPS = DATA_LOCA_NON_GPS
+        self.DATA_LOCA_GPS = DATA_LOCA_GPS
+
         current_settings = settings.settings.get()
         cloud_init_params = current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
             self.cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], self.downlink_queue)
-            self.DATA_NON_LOCA = DATA_NON_LOCA
-            self.DATA_LOCA_NON_GPS = DATA_LOCA_NON_GPS
-            self.DATA_LOCA_GPS = DATA_LOCA_GPS
+        elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+            self.cloud = AliYunIot(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], self.downlink_queue)
         else:
             raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
 

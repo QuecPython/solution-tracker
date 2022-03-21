@@ -132,6 +132,38 @@ class GPS(Singleton):
 
         return ""
 
+    def read_quecIot(self):
+        data = []
+        r = self.read_location_GxRMC()
+        if r:
+            data.append(r)
+
+        r = self.read_location_GxGGA()
+        if r:
+            data.append(r)
+
+        r = self.read_location_GxVTG()
+        if r:
+            data.append(r)
+
+        return data
+
+    def read_aliyun(self):
+        gga_data = self.read_location_GxGGA()
+        gps_data = {'CoordinateSystem': 1}
+        if gga_data:
+            Latitude_re = ure.search(r",[0-9]+\.[0-9]+,[NS],", gga_data)
+            if Latitude_re:
+                gps_data['Latitude'] = round(float(Latitude_re.group(0)[1:-3]), 2)
+            Longtitude_re = ure.search(r",[0-9]+\.[0-9]+,[EW],", gga_data)
+            if Longtitude_re:
+                gps_data['Longtitude'] = round(float(Longtitude_re.group(0)[1:-3]), 2)
+            Altitude_re = ure.search(r"-*[0-9]+\.[0-9]+,M,", gga_data)
+            if Altitude_re:
+                gps_data['Altitude'] = round(float(Altitude_re.group(0)[:-3]), 2)
+        gps_info = {'GeoLocation': gps_data}
+        return gps_info
+
 
 class CellLocator(object):
     def __init__(self, cellLocator_cfg):
@@ -149,6 +181,11 @@ class CellLocator(object):
     def read_quecIot(self):
         return ['LBS']
 
+    def read_aliyun(self):
+        gps_data = self.read()
+        gps_info = {'GeoLocation': {'Longtitude': round(gps_data[0], 2), 'Latitude': round(gps_data[1], 2), 'Altitude': 0.0, 'CoordinateSystem': 1}}
+        return gps_info
+
 
 class WiFiLocator(object):
     def __init__(self, wifiLocator_cfg):
@@ -159,6 +196,11 @@ class WiFiLocator(object):
 
     def read_quecIot(self):
         return []
+
+    def read_aliyun(self):
+        gps_data = self.read()
+        gps_info = {'GeoLocation': {'Longtitude': round(gps_data[0], 2), 'Latitude': round(gps_data[1], 2), 'Altitude': 0.0, 'CoordinateSystem': 1}}
+        return gps_info
 
 
 class Location(Singleton):
@@ -205,19 +247,12 @@ class Location(Singleton):
         current_settings = settings.settings.get()
 
         if self.gps:
-            data = []
             if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-                r = self.gps.read_location_GxRMC()
-                if r:
-                    data.append(r)
-
-                r = self.gps.read_location_GxGGA()
-                if r:
-                    data.append(r)
-
-                r = self.gps.read_location_GxVTG()
-                if r:
-                    data.append(r)
+                data = self.gps.read_quecIot()
+            elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+                data = self.gps.read_aliyun()
+            else:
+                data = self.gps.read()
 
             if len(data):
                 return (settings.default_values_app._loc_method.gps, data)
@@ -225,6 +260,8 @@ class Location(Singleton):
         if self.cellLoc:
             if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
                 data = self.cellLoc.read_quecIot()
+            elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+                data = self.cellLoc.read_aliyun()
             else:
                 data = self.cellLoc.read()
 
@@ -234,6 +271,8 @@ class Location(Singleton):
         if self.wifiLoc:
             if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
                 data = self.wifiLoc.read_quecIot()
+            elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+                data = self.wifiLoc.read_aliyun()
             else:
                 data = self.wifiLoc.read()
 

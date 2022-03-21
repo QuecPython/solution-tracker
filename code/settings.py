@@ -12,6 +12,10 @@ PROJECT_NAME = 'QuecPython_Tracker'
 
 PROJECT_VERSION = '2.0.0'
 
+DATA_NON_LOCA = 0x0
+DATA_LOCA_NON_GPS = 0x1
+DATA_LOCA_GPS = 0x2
+
 ALERTCODE = {
     20000: 'fault_alert',
     30002: 'low_power_alert',
@@ -105,7 +109,7 @@ class default_values_app(object):
 
     loc_mode = _loc_mode.cycle
 
-    loc_cycle_period = 1
+    loc_cycle_period = 30
 
     low_power_alert_threshold = 20
 
@@ -158,6 +162,10 @@ class default_values_sys(object):
         update_successed = 3
         update_failed = 4
 
+    class _ali_burning_method(object):
+        one_type_one_density = 0
+        one_machine_one_density = 1
+
     '''
     variables of system default settings below MUST NOT start with '_'
     '''
@@ -171,11 +179,13 @@ class default_values_sys(object):
 
     ota_status = _ota_status.none
 
-    cloud = _cloud.quecIot
+    cloud = _cloud.AliYun
 
     cloud_init_params = {}
 
     cloud_timeout = 180
+
+    ali_burning_method = _ali_burning_method.one_machine_one_density
 
     _quecIot = {
         'PK': 'p11275',

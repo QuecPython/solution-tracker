@@ -5,11 +5,10 @@ from queue import Queue
 
 from usr.logging import getLogger
 from usr.settings import settings
+from usr.settings import DATA_NON_LOCA
+from usr.settings import DATA_LOCA_GPS
+from usr.settings import DATA_LOCA_NON_GPS
 from usr.common import power_restart
-
-DATA_NON_LOCA = 0x0
-DATA_LOCA_NON_GPS = 0x1
-DATA_LOCA_GPS = 0x2
 
 log = getLogger(__name__)
 

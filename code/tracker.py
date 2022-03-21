@@ -80,20 +80,17 @@ class Tracker(Singleton):
         return False
 
     def machine_info_report(self, power_switch=True):
-        if self.loc_report():
-            # TODO: Other Machine Info.
-            current_settings = settings.settings.get()
-            machine_info = {
-                'power_switch': power_switch,
-                'energy': self.battery.energy(),
-                'local_time': utime.mktime(utime.localtime()),
-                'ota_status': current_settings['sys']['ota_status']
-            }
-            machine_info.update(current_settings['app'])
-            self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
-            return True
-
-        return False
+        self.loc_report()
+        # TODO: Other Machine Info.
+        current_settings = settings.settings.get()
+        machine_info = {
+            'power_switch': power_switch,
+            'energy': self.battery.energy(),
+            'local_time': utime.mktime(utime.localtime()),
+            'ota_status': current_settings['sys']['ota_status']
+        }
+        machine_info.update(current_settings['app'])
+        self.remote.post_data(self.remote.DATA_NON_LOCA, machine_info)
 
     def machine_check(self):
         net_check_res = self.check.net_check()
