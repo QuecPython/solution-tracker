@@ -79,7 +79,7 @@
 				"max":"15",
 				"step":"1"
 			},
-			"code":"loc_mode",
+			"code":"work_mode",
 			"dataType":"INT",
 			"name":"定位工作模式",
 			"subType":"RW",
@@ -95,9 +95,9 @@
 				"max":"",
 				"step":""
 			},
-			"code":"loc_cycle_period",
+			"code":"work_cycle_period",
 			"dataType":"INT",
-			"name":"定位周期",
+			"name":"工作循环周期",
 			"subType":"RW",
 			"id":26,
 			"sort":5,

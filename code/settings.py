@@ -85,13 +85,12 @@ class default_values_app(object):
         wifi = 0x4
         all = 0x7
 
-    class _loc_mode(object):
+    class _work_mode(object):
         none = 0x0
         cycle = 0x1
-        onAlert = 0x2
-        onPhoneCall = 0x4
-        onVoiceRecord = 0x8
-        all = 0xF
+        intelligent = 0x2
+        lowenergy = 0x4
+        all = 0x7
 
     class _drive_behavior(object):
         suddenly_start = 0
@@ -107,9 +106,9 @@ class default_values_app(object):
 
     loc_method = _loc_method.gps
 
-    loc_mode = _loc_mode.cycle
+    work_mode = _work_mode.cycle
 
-    loc_cycle_period = 30
+    work_cycle_period = 30
 
     low_power_alert_threshold = 20
 
@@ -324,15 +323,15 @@ class Settings(Singleton):
                 self.current_settings['sys']['locator_init_params'] = default_values_sys._get_locator_init_params(val)
                 return True
 
-            elif opt == 'loc_mode':
+            elif opt == 'work_mode':
                 if not isinstance(val, int):
                     return False
-                if val > default_values_app._loc_mode.all:
+                if val > default_values_app._work_mode.all:
                     return False
                 self.current_settings['app'][opt] = val
                 return True
 
-            elif opt == 'loc_cycle_period':
+            elif opt == 'work_cycle_period':
                 if not isinstance(val, int):
                     return False
                 if val < 1:

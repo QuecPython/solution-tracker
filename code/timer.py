@@ -34,9 +34,10 @@ class TrackerTimer(Singleton):
         self.gnss_count += 1
         self.quec_ota += 1
 
-        if (current_settings['app']['loc_mode'] & settings.default_values_app._loc_mode.cycle) \
-                and current_settings['app']['loc_cycle_period'] \
-                and self.loc_count >= current_settings['app']['loc_cycle_period']:
+        if (current_settings['app']['work_mode'] & settings.default_values_app._work_mode.cycle or
+            current_settings['app']['work_mode'] & settings.default_values_app._work_mode.intelligent) \
+                and current_settings['app']['work_cycle_period'] \
+                and self.loc_count >= current_settings['app']['work_cycle_period']:
             self.loc_count = 0
             self.loc_timer()
 
@@ -57,6 +58,14 @@ class TrackerTimer(Singleton):
             self.quecthing_ota_timer()
 
     def loc_timer(self):
+        current_settings = settings.settings.get()
+        if current_settings['app']['work_mode'] & settings.default_values_app._work_mode.intelligent:
+            if not self.tracker.locator.gps:
+                if not self.tracker.locator.gps.read_location_GxVTG_speed():
+                    return
+            else:
+                return
+
         self.tracker.over_speed_check()
         self.tracker.machine_info_report()
 

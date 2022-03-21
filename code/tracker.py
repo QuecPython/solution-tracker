@@ -1,5 +1,6 @@
 import utime
 import checkNet
+import dataCall
 
 import usr.settings as settings
 
@@ -44,6 +45,7 @@ class Tracker(Singleton):
         if USB is not None:
             self.usb = USB()
             self.usb.setCallback(self.usb_callback)
+        dataCall.setCallback(self.nw_callback)
 
     def loc_report(self):
         data = self.locator.read()
@@ -99,21 +101,21 @@ class Tracker(Singleton):
 
         alert_code = 20000
         fault_code = 0
-        if net_check_res and gps_check_res and sensor_check_res:
+        if net_check_res == (3, 1) and gps_check_res and sensor_check_res:
             self.running_led.period = 2
         else:
             self.running_led.period = 0.5
-            if not net_check_res:
+            if net_check_res != (3, 1):
                 fault_code = 20001
                 alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
+                self.alert_report(alert_code, alert_info)
             if not gps_check_res:
                 fault_code = 20002
                 alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
+                self.alert_report(alert_code, alert_info)
             if not sensor_check_res:
                 # TODO: Need To Check What Sensor Error To Report.
                 pass
-
-            self.alert_report(alert_code, alert_info)
         self.machine_info_report()
 
         return fault_code
@@ -158,6 +160,14 @@ class Tracker(Singleton):
         else:
             log.warn('Unknown USB Stauts:', status)
 
+    def nw_callback(self, args):
+        net_check_res = self.check.net_check()
+        if args[1] != 1:
+            if net_check_res[0] == 0 or (net_check_res[0] == 1 and net_check_res[1] == 0):
+                alert_code = 30004
+                alert_info = {'local_time': utime.mktime(utime.localtime())}
+                self.alert_report(alert_code, alert_info)
+
 
 class SelfCheck(object):
 
@@ -167,10 +177,7 @@ class SelfCheck(object):
         checknet = checkNet.CheckNetwork(settings.PROJECT_NAME, settings.PROJECT_VERSION)
         timeout = current_settings.get('sys', {}).get('checknet_timeout', 60)
         check_res = checknet.wait_network_connected(timeout)
-        if check_res == (3, 1):
-            return True
-        else:
-            return False
+        return check_res
 
     def gps_check(self):
         # return True if OK

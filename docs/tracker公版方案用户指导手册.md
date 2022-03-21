@@ -62,7 +62,7 @@
 - 根据不同的应用场景，上报工作模式分别有：
     1. 周期性模式 -- 周期性上报设备信息
     2. 智能模式 -- 开启GPS定位时，运动上报，静止不上报，可设置周期
-    3. 低功耗模式 -- 周期性开机后上报设备信息，上报完成后关机
+    3. 低功耗模式(开发中) -- 周期性开机后上报设备信息，上报完成后关机
 - 上报工作模式与上报周期，由云端或手机APP控制。
 
 #### OTA升级(开发中)
@@ -245,8 +245,8 @@ tracker.remote.post_data(data_type, data)
 |电量|`energy`|`int`|取值范围：0 ~ 100||只读|
 |电话号码|`phone_num`|`text`|数据长度：11||读写|
 |定位方式|`loc_method`|`int`|取值范围：0 ~ 7|0: 无;1: GPS;2: 基站;4: WIFI(暂不支持);7: 全部支持|读写|
-|定位工作模式|`loc_mode`|`int`|取值范围：0 ~ 15|0: 无;1: 循环;2: 报警时;4: 电话呼入;8: 开启录音时;15: 全部|读写|
-|定位周期|`loc_cycle_period`|`int`|取值范围： ~|单位s|读写|
+|工作模式|`work_mode`|`int`|取值范围：0 ~ 15|0: 无;1: 周期性模式;2: 智能模式;4: 低功耗模式;7: 全部|读写|
+|工作模式循环周期|`work_cycle_period`|`int`|取值范围： ~|单位s|读写|
 |本地时间|`local_time`|`int`|取值范围： ~||只读|
 |低电报警阈值|`low_power_alert_threshold`|`int`|取值范围：5 ~ 30||读写|
 |低电关机阈值|`low_power_shutdown_threshold`|`int`|取值范围：5 ~ 30||读写|
@@ -471,10 +471,10 @@ current_settings = settings.get()
 ```json
 {
     "app": {
-        "loc_cycle_period": 1,
+        "work_cycle_period": 30,
         "phone_num": "",
         "loc_method": 1,
-        "loc_mode": 0,
+        "work_mode": 0,
         "low_power_alert_threshold": 20,
         "low_power_shutdown_threshold": 5,
         "sw_over_speed_alert": true,
