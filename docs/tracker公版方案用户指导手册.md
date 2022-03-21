@@ -26,9 +26,9 @@
 
 ### 电量指示灯(开发中)
 
-- \>`low_power_alert_threshold`：长亮
-- `low_power_shutdown_threshold`~`low_power_alert_threshold`：1秒闪烁一次
-- <=`low_power_shutdown_threshold`：熄灭
+- \>`低电告警阈值`：长亮
+- `低电关机阈值`~`低电告警阈值`：1秒闪烁一次
+- <=`低电关机阈值`：熄灭
 
 ### 运行状态指示灯(开发中)
 
