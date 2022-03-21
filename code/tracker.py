@@ -118,6 +118,16 @@ class Tracker(Singleton):
 
         return fault_code
 
+    def over_speed_check(self):
+        if self.locator.gps:
+            speed = self.locator.gps.read_location_GxVTG_speed()
+            if speed:
+                current_settings = settings.settings.get()
+                if float(speed) > current_settings['app']['over_speed_threshold']:
+                    alert_code = 30003
+                    alert_info = {'local_time': utime.mktime(utime.localtime())}
+                    self.alert_report(alert_code, alert_info)
+
     def energy_led_show(self, energy):
         current_settings = settings.settings.get()
         if energy <= current_settings['app']['low_power_shutdown_threshold']:

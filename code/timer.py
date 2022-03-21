@@ -57,6 +57,7 @@ class TrackerTimer(Singleton):
             self.quecthing_ota_timer()
 
     def loc_timer(self):
+        self.tracker.over_speed_check()
         self.tracker.machine_info_report()
 
     def battery_timer(self):
