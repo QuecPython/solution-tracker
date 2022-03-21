@@ -353,7 +353,7 @@ res = tracker.loc_report()
 
 返回`bool`类型数据, `True`成功, `False`失败。
 
-#### machine_info_report 机器信息上报功能
+#### machine_info_report 设备信息上报功能
 
 该模块实现了机器信息的汇总上报功能, 会将机器的位置信息, 开机状态, 电池电量等相关设置信息全部实时上报云端。
 
@@ -371,7 +371,7 @@ res = tracker.machine_info_report()
 
 无
 
-#### machine_check 机器自检功能
+#### machine_check 设备自检功能
 
 该功能用于检测设备相关功能是否正常, 主要包括网络状态, GPS模组, 各类传感器, 麦克风是否正常工作(目前暂不支持各类传感器麦克风等外设检测)。 如异常会上报远端异常信息。 检查完毕后不论异常与否都会调用`machine_info_report`功能上报云端设备所有信息。
 
