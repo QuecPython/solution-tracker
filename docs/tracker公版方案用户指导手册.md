@@ -10,7 +10,7 @@
 
 - 关机状态下，USB充电时唤醒系统，做开机前的准备工作。
 - 充电时，检测电量是否正常：
-    - >5%：系统启动，电量指示灯1s闪烁一次
+    - \>5%：系统启动，电量指示灯1s闪烁一次
     - ≤5%：保持关机，电量指示灯1s闪烁一次
 
 ### 低电关机
@@ -26,7 +26,7 @@
 
 ### 电量指示灯(开发中)
 
-- >`low_power_alert_threshold`：长亮
+- \>`low_power_alert_threshold`：长亮
 - `low_power_shutdown_threshold`~`low_power_alert_threshold`：1秒闪烁一次
 - <=`low_power_shutdown_threshold`：熄灭
 
