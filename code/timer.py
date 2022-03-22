@@ -34,8 +34,7 @@ class TrackerTimer(Singleton):
         self.gnss_count += 1
         self.quec_ota += 1
 
-        if (current_settings['app']['work_mode'] & settings.default_values_app._work_mode.cycle or
-            current_settings['app']['work_mode'] & settings.default_values_app._work_mode.intelligent) \
+        if (current_settings['app']['work_mode'] != settings.default_values_app._work_mode.none) \
                 and current_settings['app']['work_cycle_period'] \
                 and self.loc_count >= current_settings['app']['work_cycle_period']:
             self.loc_count = 0
@@ -59,7 +58,7 @@ class TrackerTimer(Singleton):
 
     def loc_timer(self):
         current_settings = settings.settings.get()
-        if current_settings['app']['work_mode'] & settings.default_values_app._work_mode.intelligent:
+        if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.intelligent:
             if not self.tracker.locator.gps:
                 if not self.tracker.locator.gps.read_location_GxVTG_speed():
                     return
@@ -67,6 +66,9 @@ class TrackerTimer(Singleton):
                     return
             else:
                 return
+        elif current_settings['app']['work_mode'] == settings.default_values_app._work_mode.lowenergy:
+            self.tracker.low_energy_queue.put(True)
+            return
 
         self.tracker.over_speed_check()
         self.tracker.machine_info_report()

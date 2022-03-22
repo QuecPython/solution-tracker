@@ -89,8 +89,7 @@ class default_values_app(object):
         none = 0x0
         cycle = 0x1
         intelligent = 0x2
-        lowenergy = 0x4
-        all = 0x7
+        lowenergy = 0x3
 
     class _drive_behavior(object):
         suddenly_start = 0
@@ -106,7 +105,7 @@ class default_values_app(object):
 
     loc_method = _loc_method.gps
 
-    work_mode = _work_mode.cycle
+    work_mode = _work_mode.lowenergy
 
     work_cycle_period = 30
 
@@ -326,7 +325,7 @@ class Settings(Singleton):
             elif opt == 'work_mode':
                 if not isinstance(val, int):
                     return False
-                if val > default_values_app._work_mode.all:
+                if val > default_values_app._work_mode.lowenergy:
                     return False
                 self.current_settings['app'][opt] = val
                 return True

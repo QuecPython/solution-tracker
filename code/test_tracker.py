@@ -205,8 +205,8 @@ def main():
     # test_location()
     # test_gps()
     # test_aliyuniot()
-    # test_tracker()
-    test_pm()
+    test_tracker()
+    # test_pm()
 
 if __name__ == '__main__':
     main()

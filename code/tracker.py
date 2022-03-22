@@ -1,6 +1,10 @@
+import pm
 import utime
+import _thread
 import checkNet
 import dataCall
+
+from queue import Queue
 
 import usr.settings as settings
 
@@ -38,6 +42,10 @@ class Tracker(Singleton):
 
         self.tracker_timer = TrackerTimer(self)
         self.led_timer = LEDTimer(self)
+        self.low_energy_queue = Queue(maxsize=8)
+
+        self.lpm_fd = None
+        _thread.start_new_thread(self.low_energy_work, ())
 
         if PowerKey is not None:
             self.power_key = PowerKey()
@@ -167,6 +175,27 @@ class Tracker(Singleton):
                 alert_code = 30004
                 alert_info = {'local_time': utime.mktime(utime.localtime())}
                 self.alert_report(alert_code, alert_info)
+
+    def low_energy_work(self):
+        while True:
+            data = self.low_energy_queue.get()
+            if data:
+                current_settings = settings.settings.get()
+                if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.lowenergy:
+                    if self.lpm_fd is None:
+                        self.lpm_fd = pm.create_wakelock("tracker_lock", len("tracker_lock"))
+                        pm.autosleep(1)
+                    pm.wakelock_lock(self.lpm_fd)
+                    self.over_speed_check()
+                    self.machine_info_report()
+                    # TODO: Check after unlock, net active, is low energy active?
+                    utime.sleep(2)
+                    pm.wakelock_unlock(self.lpm_fd)
+                else:
+                    if self.lpm_fd is not None:
+                        pm.autosleep(0)
+                        pm.delete_wakelock(self.lpm_fd)
+                        self.lpm_fd = None
 
 
 class SelfCheck(object):
