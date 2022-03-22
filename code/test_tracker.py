@@ -109,9 +109,12 @@ def test_tracker():
     # log.info('[.] sleep 3')
     # utime.sleep(3)
 
-    log.info('[.] test tracker.loc_report()')
-    loc_report_res = tracker.loc_report()
-    log.info('[.] loc_report_res:', loc_report_res)
+    # log.info('[.] test tracker.loc_report()')
+    # loc_report_res = tracker.loc_report()
+    # log.info('[.] loc_report_res:', loc_report_res)
+
+    log.info('[.] test tracker.remote.check_ota()()')
+    tracker.remote.check_ota()
 
     # log.info('[.] sleep 3')
     # utime.sleep(3)

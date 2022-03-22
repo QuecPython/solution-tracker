@@ -179,26 +179,26 @@ class QuecThing(object):
         elif event == 7:
             if errcode == 10700:
                 log.info('New OTA plain.')
-                self.downlink_queue(('ota_plain', data))
-                self.downlink_queue(('object_model', ('ota_status', 1)))
+                self.downlink_queue.put(('ota_plain', data))
+                self.downlink_queue.put(('object_model', [('ota_status', 1)]))
             elif errcode == 10701:
                 log.info('The module starts to download.')
-                self.downlink_queue(('object_model', ('ota_status', 2)))
+                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
             elif errcode == 10702:
                 log.info('Package download.')
-                self.downlink_queue(('object_model', ('ota_status', 2)))
+                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
             elif errcode == 10703:
                 log.info('Package download complete.')
-                self.downlink_queue(('object_model', ('ota_status', 2)))
+                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
             elif errcode == 10704:
                 log.info('Package updating.')
-                self.downlink_queue(('object_model', ('ota_status', 2)))
+                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
             elif errcode == 10705:
                 log.info('Firmware update complete.')
-                self.downlink_queue(('object_model', ('ota_status', 3)))
+                self.downlink_queue.put(('object_model', [('ota_status', 3)]))
             elif errcode == 10706:
                 log.info('Failed to update firmware.')
-                self.downlink_queue(('object_model', ('ota_status', 4)))
+                self.downlink_queue.put(('object_model', [('ota_status', 4)]))
 
     def dev_info_report(self):
         quecIot.devInfoReport([i for i in range(1, 13)])

@@ -105,7 +105,7 @@ class default_values_app(object):
 
     loc_method = _loc_method.gps
 
-    work_mode = _work_mode.lowenergy
+    work_mode = _work_mode.cycle
 
     work_cycle_period = 30
 
@@ -177,7 +177,7 @@ class default_values_sys(object):
 
     ota_status = _ota_status.none
 
-    cloud = _cloud.AliYun
+    cloud = _cloud.quecIot
 
     cloud_init_params = {}
 
