@@ -146,7 +146,7 @@ class GPS(Singleton):
         if r:
             data.append(r)
 
-        return data
+        return {'gps': data}
 
     def read_aliyun(self):
         gga_data = self.read_location_GxGGA()
@@ -179,7 +179,7 @@ class CellLocator(object):
         )
 
     def read_quecIot(self):
-        return ['LBS']
+        return {'non_gps': ['LBS']}
 
     def read_aliyun(self):
         gps_data = self.read()
@@ -195,7 +195,7 @@ class WiFiLocator(object):
         return self.wifilocator_obj.getwifilocator()
 
     def read_quecIot(self):
-        return []
+        return {'non_gps': []}
 
     def read_aliyun(self):
         gps_data = self.read()
@@ -254,7 +254,7 @@ class Location(Singleton):
             else:
                 data = self.gps.read()
 
-            if len(data):
+            if data:
                 return (settings.default_values_app._loc_method.gps, data)
 
         if self.cellLoc:

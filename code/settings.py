@@ -105,9 +105,9 @@ class default_values_app(object):
 
     loc_method = _loc_method.gps
 
-    work_mode = _work_mode.cycle
+    work_mode = _work_mode.lowenergy
 
-    work_cycle_period = 30
+    work_cycle_period = 10
 
     low_power_alert_threshold = 20
 

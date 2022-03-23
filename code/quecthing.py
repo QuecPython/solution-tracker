@@ -5,9 +5,6 @@ from queue import Queue
 
 from usr.logging import getLogger
 from usr.settings import settings
-from usr.settings import DATA_NON_LOCA
-from usr.settings import DATA_LOCA_GPS
-from usr.settings import DATA_LOCA_NON_GPS
 from usr.common import power_restart
 
 log = getLogger(__name__)
@@ -80,42 +77,43 @@ class QuecThing(object):
             if not v:
                 del data[k]
 
-    def post_data(self, data_type, data):
-        if data_type == DATA_NON_LOCA:
-            for k, v in data.items():
-                if object_model_code.get(k) is not None and v:
-                    # Event Data Format From object_mode_code
+    def post_data(self, data):
+        res = True
+        for k, v in data.items():
+            if object_model_code.get(k) is not None:
+                # Event Data Format From object_mode_code
+                if v:
                     if isinstance(v, dict):
                         v = {object_model_code.get(ik) if object_model_code.get(ik) else ik: iv for ik, iv in v.items()}
                     phymodelReport_res = quecIot.phymodelReport(1, {object_model_code.get(k): v})
-                    if phymodelReport_res:
-                        res = self.get_post_res()
-                        if res:
-                            v = {}
-                            continue
-                        else:
-                            self.rm_empty_data(data)
-                            return False
-                    else:
-                        self.rm_empty_data(data)
-                        return False
-            self.rm_empty_data(data)
-            return True
-        elif data_type == DATA_LOCA_GPS:
-            locReportOutside_res = quecIot.locReportOutside(data)
-            if locReportOutside_res:
-                return self.get_post_res()
+                    if not phymodelReport_res:
+                        res = False
+                        break
+                else:
+                    continue
+            elif k == 'gps':
+                locReportOutside_res = quecIot.locReportOutside(v)
+                if not locReportOutside_res:
+                    res = False
+                    break
+            elif k == 'non_gps':
+                locReportInside_res = quecIot.locReportInside(v)
+                if not locReportInside_res:
+                    res = False
+                    break
             else:
-                return False
-        elif data_type == DATA_LOCA_NON_GPS:
-            locReportInside_res = quecIot.locReportInside(data)
-            if locReportInside_res:
-                return self.get_post_res()
+                v = {}
+                continue
+
+            res = self.get_post_res()
+            if res:
+                v = {}
             else:
-                return False
-        else:
-            return False
-            # raise ValueError('No such locator (0x%X).' % data_type)
+                res = False
+                break
+
+        self.rm_empty_data(data)
+        return res
 
     def eventCB(self, data):
         log.info("event:", data)

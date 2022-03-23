@@ -48,7 +48,7 @@ def test_quecthing():
     cloud_init_params = current_settings['sys']['cloud_init_params']
     downlink_queue = Queue(maxsize=64)
     cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], downlink_queue)
-    post_data_res = cloud.post_data(0x0, {'power_switch': True})
+    post_data_res = cloud.post_data({'power_switch': True})
     log.info('post_data_res:', post_data_res)
     log.info('[x] end test_quecthing')
 
@@ -102,9 +102,9 @@ def test_tracker():
     log.info('[.] sleep 3')
     utime.sleep(3)
 
-    # log.info('[.] test tracker.locator.read()')
-    # loc_read_res = tracker.locator.read()
-    # log.info('[.] loc_read_res:', loc_read_res)
+    log.info('[.] test tracker.device_check()')
+    device_check_res = tracker.device_check()
+    log.info('[.] device_check_res:', device_check_res)
 
     # log.info('[.] sleep 3')
     # utime.sleep(3)
@@ -113,8 +113,8 @@ def test_tracker():
     # loc_report_res = tracker.loc_report()
     # log.info('[.] loc_report_res:', loc_report_res)
 
-    log.info('[.] test tracker.remote.check_ota()()')
-    tracker.remote.check_ota()
+    # log.info('[.] test tracker.remote.check_ota()')
+    # tracker.remote.check_ota()
 
     # log.info('[.] sleep 3')
     # utime.sleep(3)

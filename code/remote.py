@@ -3,13 +3,12 @@ import utime
 import ql_fs
 import ujson
 import _thread
+import sys_bus
 
-from misc import Power
 from queue import Queue
 
 import usr.settings as settings
 
-from usr.battery import Battery
 from usr.common import Singleton
 from usr.logging import getLogger
 from usr.settings import DATA_NON_LOCA
@@ -46,25 +45,18 @@ class Controller(Singleton):
 
     def power_switch(self, perm, flag=None):
         if perm == 'r':
-            self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'power_switch': True})
+            self.tracker.device_data_report()
         elif perm == 'w':
             if flag is True:
-                self.tracker.machine_info_report()
+                self.tracker.device_data_report()
             elif flag is False:
-                self.tracker.machine_info_report(power_switch=flag)
-                utime.sleep(3)
-                self.tracker.energy_led.period = None
-                self.tracker.energy_led.switch(0)
-                self.tracker.running_led.period = None
-                self.tracker.running_led.switch(0)
-                Power.powerDown()
+                self.tracker.device_data_report(power_switch=False, callback='power_down')
         else:
             raise ControllerError('Controller switch permission error %s.' % perm)
 
     def energy(self, perm):
         if perm == 'r':
-            battery_energy = Battery().energy()
-            self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'energy': battery_energy})
+            self.tracker.device_data_report()
         else:
             raise ControllerError('Controller energy permission error %s.' % perm)
 
@@ -77,9 +69,7 @@ class Controller(Singleton):
 
     def ota_status(self, perm, status=None):
         if perm == 'r':
-            current_settings = settings.settings.get()
-            ota_status = current_settings['sys']['ota_status']
-            self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {'ota_status': ota_status})
+            self.tracker.device_data_report()
         elif perm == 'w':
             if status is not None:
                 settings.settings.set('ota_status', status)
@@ -110,14 +100,15 @@ class DownLinkOption(object):
             settings.settings.save()
 
     def query(self, *args, **kwargs):
-        for arg in args:
-            if hasattr(settings.default_values_app, arg):
-                current_settings = settings.settings.get()
-                self.tracker.remote.post_data(self.tracker.remote.DATA_NON_LOCA, {arg: current_settings.get('app', {}).get(arg)})
-            elif hasattr(self.controller, arg):
-                getattr(self.controller, arg)(*('r'))
-            else:
-                pass
+        self.tracker.device_data_report()
+        # for arg in args:
+        #     if hasattr(settings.default_values_app, arg):
+        #         current_settings = settings.settings.get()
+        #         self.tracker.remote.post_data({arg: current_settings.get('app', {}).get(arg)})
+        #     elif hasattr(self.controller, arg):
+        #         getattr(self.controller, arg)(*('r'))
+        #     else:
+        #         pass
 
     def ota_plain(self, *args, **kwargs):
         current_settings = settings.settings.get()
@@ -173,17 +164,11 @@ def uplink_process(argv):
         try:
             for key, value in hist.items():
                 # Check if non_loca data (sensor or device info data) or location gps data or location non-gps data (cell/wifi-locator data)
-                if key == 'non_loca' or key == 'loca_non_gps' or key == 'loca_gps':
-                    if key == 'non_loca':
-                        data_type = self.DATA_NON_LOCA
-                    elif key == 'loca_non_gps':
-                        data_type = self.DATA_LOCA_NON_GPS
-                    else:
-                        data_type = self.DATA_LOCA_GPS
+                if key == 'hist_data':
                     for i, data in enumerate(value):
                         ntry = 0
                         # Try at most 3 times to post data to server.
-                        while not self.cloud.post_data(data_type, data):
+                        while not self.cloud.post_data(data):
                             ntry += 1
                             if ntry >= 3:  # Data post failed after 3 times, maybe network error?
                                 raise RemoteError('Data post failed.')  # Stop posting more data, go to exception handler.
@@ -194,29 +179,19 @@ def uplink_process(argv):
         except Exception:
             while True:  # Put all data in uplink_queue to hist-dictionary.
                 if self.uplink_queue.size():
-                    msg = self.uplink_queue.get()
-                    if msg:
-                        if msg[0] == self.DATA_NON_LOCA:
-                            key = 'non_loca'
-                        elif msg[0] == self.DATA_LOCA_NON_GPS:
-                            key = 'loca_non_gps'
-                        elif msg[0] == self.DATA_LOCA_GPS:
-                            key = 'loca_gps'
-                        else:
-                            continue
-                        if hist.get(key) is None:
-                            hist[key] = []
-                        hist[key].append(msg[1])
+                    data = self.uplink_queue.get()
+                    if data[1]:
+                        if hist.get('hist_data') is None:
+                            hist['hist_data'] = []
+                        hist['hist_data'].append(data[1])
                         need_refresh = True
-                    else:
-                        continue
+                    sys_bus.publish(data[0], 'false')
                 else:
                     break
         finally:
             if need_refresh:
                 # Flush data in hist-dictionary to tracker_data.hist file.
                 self.refresh_history(hist)
-                need_refresh = False
 
             '''
             If history data exists, put a empty msg to uplink_queue to trriger the return of self.uplink_queue.get() API below.
@@ -224,21 +199,21 @@ def uplink_process(argv):
             Without this, history data could only be processed after new data being put into uplink_queue.
             But is this necessary ???
             '''
-            if len(hist.get('non_loca', [])) + len(hist.get('loca_non_gps', [])) + len(hist.get('loca_gps', [])):
+            # TODO: dataCall nw_callback to put
+            if len(hist.get('hist_data', [])):
                 self.uplink_queue.put(())
 
         # When comes to this, wait for new data coming into uplink_queue.
-        msg = self.uplink_queue.get()
-        if msg:
-            if msg[0] == self.DATA_NON_LOCA or msg[0] == self.DATA_LOCA_NON_GPS or msg[0] == self.DATA_LOCA_GPS:
-                if not self.cloud.post_data(msg[0], msg[1]):
-                    self.add_history(msg[0], msg[1])
+        data = self.uplink_queue.get()
+        if data:
+            if data[1]:
+                if not self.cloud.post_data(data[1]):
+                    self.add_history(data)
+                    sys_bus.publish(data[0], 'false')
                 else:
-                    continue
+                    sys_bus.publish(data[0], 'true')
             else:
-                continue
-        else:
-            continue
+                sys_bus.publish(data[0], 'true')
 
 
 class Remote(Singleton):
@@ -303,7 +278,7 @@ class Remote(Singleton):
         else:
             return {}
 
-    def add_history(self, data_type, data):
+    def add_history(self, data):
         try:
             with open(self._history, 'r') as f:
                 res = ujson.load(f)
@@ -313,17 +288,10 @@ class Remote(Singleton):
         if not isinstance(res, dict):
             res = {}
 
-        if data_type == self.DATA_NON_LOCA:
-            key = 'non_loca'
-        elif data_type == self.DATA_LOCA_NON_GPS:
-            key = 'loca_non_gps'
-        elif data_type == self.DATA_LOCA_GPS:
-            key = 'loca_gps'
+        if res.get('hist_data') is None:
+            res['hist_data'] = []
 
-        if key not in res:
-            res[key] = []
-
-        res[key].append(data)
+        res['hist_data'].append(data)
 
         return self.refresh_history(res)
 
@@ -338,24 +306,19 @@ class Remote(Singleton):
     def clean_history(self):
         uos.remove(self._history)
 
-    def post_data(self, data_type, data):
+    def post_data(self, topic, data):
         '''
         Data format to post:
 
-        --- non_loca ---
         {
             'switch': True,
-            'energy': 100
+            'energy': 100,
+            'non_gps': [],
+            'gps': []
         }
-
-        --- loca_non_gps ---
-        (117.1138, 31.82279, 550)
-
-        --- loca_gps ---
-        ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
-
         '''
-        self.uplink_queue.put((data_type, data))
+
+        self.uplink_queue.put((topic, data))
 
     def check_ota(self):
         current_settings = settings.settings.get()

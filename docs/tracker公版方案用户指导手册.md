@@ -208,13 +208,12 @@ location_info = tracker.locator.read()
 
 ```python
 import utime
-data_type = tracker.remote.DATA_NON_LOCA
 data = {
     'power_switch': True,
     'energy': tracker.battery.energy(),
     'local_time': utime.mktime(utime.localtime())
 }
-tracker.remote.post_data(data_type, data)
+tracker.remote.post_data(data)
 ```
 
 - 参数:
@@ -330,31 +329,14 @@ res = tracker.alert_report(alert_code, alert_info)
 |-|40004|`quick_turn_right`|右急转弯|
 |50001|-|`sos_alert`|SOS求救报警|
 
-#### `loc_report` 用于立即向云端报告设备定位信息功能。
-
->`tracker.loc_report`
-
-- 例:
-
-```python
-res = tracker.loc_report()
-```
-
-- 参数:
-无
-
-- 返回值:
-
-返回`bool`类型数据, `True`成功, `False`失败。
-
-#### machine_info_report 设备信息上报功能
+#### device_data_report 设备信息上报功能
 
 该模块实现了机器信息的汇总上报功能, 会将机器的位置信息, 开机状态, 电池电量等相关设置信息全部实时上报云端。
 
 - 例:
 
 ```python
-res = tracker.machine_info_report()
+res = tracker.device_data_report()
 ```
 
 - 参数:
@@ -365,14 +347,14 @@ res = tracker.machine_info_report()
 
 无
 
-#### machine_check 设备自检功能
+#### device_check 设备自检功能
 
-该功能用于检测设备相关功能是否正常, 主要包括网络状态, GPS模组, 各类传感器, 麦克风是否正常工作(目前暂不支持各类传感器麦克风等外设检测)。 如异常会上报远端异常信息。 检查完毕后不论异常与否都会调用`machine_info_report`功能上报云端设备所有信息。
+该功能用于检测设备相关功能是否正常, 主要包括网络状态, GPS模组, 各类传感器, 麦克风是否正常工作(目前暂不支持各类传感器麦克风等外设检测)。 如异常会上报远端异常信息。 检查完毕后不论异常与否都会调用`device_data_report`功能上报云端设备所有信息。
 
 - 例:
 
 ```python
-res = tracker.machine_check()
+res = tracker.device_check()
 ```
 
 - 参数:

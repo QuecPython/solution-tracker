@@ -141,7 +141,7 @@ class AliYunIot(object):
         res = self.post_res.pop(msg_id)
         return res
 
-    def post_data(self, data_type, data):
+    def post_data(self, data):
         msg_ids = []
         if self.ali.getAliyunSta() == 0:
             try:

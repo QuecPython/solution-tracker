@@ -1,8 +1,6 @@
 import utime
 import osTimer
 
-from misc import Power
-
 import usr.settings as settings
 from usr.common import Singleton
 from usr.logging import getLogger
@@ -70,8 +68,8 @@ class TrackerTimer(Singleton):
             self.tracker.low_energy_queue.put(True)
             return
 
-        self.tracker.over_speed_check()
-        self.tracker.machine_info_report()
+        over_speed_check_res = self.tracker.get_over_speed_check()
+        self.tracker.device_data_report(event_data=over_speed_check_res)
 
     def battery_timer(self):
         current_settings = settings.settings.get()
@@ -81,15 +79,10 @@ class TrackerTimer(Singleton):
             self.tracker.energy_led_show(energy)
             if current_settings['app']['sw_low_power_alert']:
                 if energy <= current_settings['app']['low_power_alert_threshold']:
-                    self.tracker.alert_report(30002, {'local_time': utime.mktime(utime.localtime())})
-                    self.tracker.machine_info_report()
+                    alert_data = self.tracker.get_alert_data(30002, {'local_time': utime.mktime(utime.localtime())})
+                    self.tracker.device_data_report(event_data=alert_data)
             if energy <= current_settings['app']['low_power_shutdown_threshold']:
-                self.tracker.machine_info_report(power_switch=False)
-                self.tracker.energy_led.period = None
-                self.tracker.energy_led.switch(0)
-                self.tracker.running_led.period = None
-                self.tracker.running_led.switch(0)
-                Power.powerDown()
+                self.tracker.device_data_report(power_switch=False, callback='power_down')
         elif is_charge == 1:
             self.tracker.energy_led_show(energy)
 
