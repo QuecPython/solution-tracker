@@ -4,7 +4,9 @@ import utime
 import _thread
 
 from queue import Queue
+from machine import RTC
 from machine import UART
+# from misc import Power
 
 import usr.settings as settings
 
@@ -102,16 +104,20 @@ def test_tracker():
     log.info('[.] sleep 3')
     utime.sleep(3)
 
-    log.info('[.] test tracker.device_check()')
-    device_check_res = tracker.device_check()
-    log.info('[.] device_check_res:', device_check_res)
+    # log.info('[.] test tracker.device_data_report()')
+    # device_data_report_res = tracker.device_data_report()
+    # log.info('[.] device_data_report_res:', device_data_report_res)
 
     # log.info('[.] sleep 3')
     # utime.sleep(3)
 
-    # log.info('[.] test tracker.loc_report()')
-    # loc_report_res = tracker.loc_report()
-    # log.info('[.] loc_report_res:', loc_report_res)
+    log.info('[.] test tracker.power_manage.start_rtc()')
+    tracker.power_manage.start_rtc()
+    log.info('[.] end tracker.power_manage.start_rtc()')
+
+    # log.info('[.] test tracker.device_check()')
+    # device_check_res = tracker.device_check()
+    # log.info('[.] device_check_res:', device_check_res)
 
     # log.info('[.] test tracker.remote.check_ota()')
     # tracker.remote.check_ota()
@@ -200,6 +206,31 @@ def test_pm():
     pm.delete_wakelock(lpm_fd)
 
 
+def test_rtc():
+    rtc_queue = Queue(maxsize=8)
+
+    def rtc_cb(df):
+        global rtc_queue
+        print('rtc call back test. [%s]' % df)
+        rtc_queue.put('rtc')
+
+    rtc = RTC()
+    log.debug('rtc.datatime: %s' % str(rtc.datetime()))
+    rtc.register_callback(rtc_cb)
+
+    atime = utime.localtime(utime.mktime(utime.localtime()) + 10)
+    alarm_time = (atime[0], atime[1], atime[2], 0, atime[3], atime[4], atime[5], 0)
+    log.debug('rtc.set_alarm alarm_time: %s' % str(alarm_time))
+    rtc.set_alarm(alarm_time)
+    log.debug('rtc.enable_alarm')
+    rtc.enable_alarm(1)
+    rtc_data = rtc_queue.get()
+    log.debug('rtc_data: %s' % rtc_data)
+
+    # log.debug('Power.powerDown')
+    # Power.powerDown()
+
+
 def main():
     # test_quecthing()
     # test_settings()
@@ -210,6 +241,7 @@ def main():
     # test_aliyuniot()
     test_tracker()
     # test_pm()
+    # test_rtc()
 
 if __name__ == '__main__':
     main()

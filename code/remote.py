@@ -50,7 +50,7 @@ class Controller(Singleton):
             if flag is True:
                 self.tracker.device_data_report()
             elif flag is False:
-                self.tracker.device_data_report(power_switch=False, callback='power_down')
+                self.tracker.device_data_report(power_switch=False, msg='power_down')
         else:
             raise ControllerError('Controller switch permission error %s.' % perm)
 
@@ -180,12 +180,13 @@ def uplink_process(argv):
             while True:  # Put all data in uplink_queue to hist-dictionary.
                 if self.uplink_queue.size():
                     data = self.uplink_queue.get()
-                    if data[1]:
-                        if hist.get('hist_data') is None:
-                            hist['hist_data'] = []
-                        hist['hist_data'].append(data[1])
-                        need_refresh = True
-                    sys_bus.publish(data[0], 'false')
+                    if data:
+                        if data[1]:
+                            if hist.get('hist_data') is None:
+                                hist['hist_data'] = []
+                            hist['hist_data'].append(data[1])
+                            need_refresh = True
+                        sys_bus.publish(data[0], 'false')
                 else:
                     break
         finally:
@@ -208,7 +209,7 @@ def uplink_process(argv):
         if data:
             if data[1]:
                 if not self.cloud.post_data(data[1]):
-                    self.add_history(data)
+                    self.add_history(data[1])
                     sys_bus.publish(data[0], 'false')
                 else:
                     sys_bus.publish(data[0], 'true')

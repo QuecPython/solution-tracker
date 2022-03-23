@@ -1,6 +1,7 @@
 
 import ure
-import _thread
+# import _thread
+import osTimer
 import cellLocator
 import usr.settings as settings
 
@@ -35,7 +36,10 @@ def gps_data_retrieve_cb(para_list):
     '''
     global gps_data_retrieve_queue
     toRead = para_list[2]
+    log.debug('gps_data_retrieve_cb para_list: %s' % str(para_list))
     if toRead:
+        if gps_data_retrieve_queue.size() >= 8:
+            gps_data_retrieve_queue.get()
         gps_data_retrieve_queue.put(toRead)
 
 
@@ -51,15 +55,20 @@ def gps_data_retrieve_thread(argv):
     self = argv
 
     while True:
-        toRead = gps_data_retrieve_queue.get()
-        if toRead:
-            self.gps_data = self.uart_read(toRead).decode()
+        current_settings = settings.settings.get()
+        if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
+            self.gps_data = self.uart_read().decode()
+        elif current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
+            self.gps_data = self.quecgnss_read()
 
 
 class GPS(Singleton):
     def __init__(self, gps_cfg):
         self.gps_data = ''
         self.gps_cfg = gps_cfg
+        self.gps_timer = osTimer()
+        self.gps_over_timer = osTimer()
+        self.break_flag = 0
         current_settings = settings.settings.get()
         if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
             self.uart_init()
@@ -78,90 +87,117 @@ class GPS(Singleton):
         )
         self.uart_obj.set_callback(gps_data_retrieve_cb)
         gps_data_retrieve_queue = Queue(maxsize=8)
-        _thread.start_new_thread(gps_data_retrieve_thread, (self,))
+        # _thread.start_new_thread(gps_data_retrieve_thread, (self,))
 
-    def uart_read(self, nread):
+    def gps_timer_callback(self, args):
+        self.break_flag = 1
+
+    def gps_over_timer_cb(self, args):
+        global gps_data_retrieve_queue
+        gps_data_retrieve_queue.put(0)
+
+    def uart_read(self):
+        log.debug('start uart_read')
+        global gps_data_retrieve_queue
+        while self.break_flag == 0:
+            self.gps_timer.start(200, 1, self.gps_timer_callback)
+            self.gps_over_timer.start(20000, 1, self.gps_over_timer_cb)
+            nread = gps_data_retrieve_queue.get()
+            self.gps_timer.stop()
+            self.gps_over_timer.stop()
+
+        log.debug('uart_read nread')
+        self.break_flag = 0
         return self.uart_obj.read(nread).decode()
 
     def quecgnss_read(self):
         if quecgnss.get_state() == 0:
             quecgnss.gnssEnable(1)
 
-        data = quecgnss.read(4096)
-        self.gps_data = data[1].decode()
+        while self.break_flag == 0:
+            self.gps_timer.start(500, 1, self.gps_timer_callback)
+            quecgnss.read(4096)
+            self.gps_timer.stop()
 
-        return self.gps_data
+        self.break_flag = 0
+        data = None
+        while not data:
+            data = quecgnss.read(4096)
+
+        return data[1].decode()
 
     def read(self):
+        current_settings = settings.settings.get()
+        if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
+            self.gps_data = self.uart_read().decode()
+        elif current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
+            self.gps_data = self.quecgnss_read()
+
         return self.gps_data
 
-    def read_location_GxRMC(self):
-        gps_data = self.read()
+    def read_location_GxRMC(self, gps_data):
         rmc_re = ure.search(
             r"\$G[NP]RMC,[0-9]+\.[0-9]+,A,[0-9]+\.[0-9]+,[NS],[0-9]+\.[0-9]+,[EW],[0-9]+\.[0-9]+,[0-9]+\.[0-9]+,[0-9]+,,,[ADE],[SCUV]\*[0-9]+",
             gps_data)
         if rmc_re:
             return rmc_re.group(0)
-        else:
-            return ""
+        return ""
 
-    def read_location_GxGGA(self):
-        gps_data = self.read()
+    def read_location_GxGGA(self, gps_data):
         gga_re = ure.search(
             r"\$G[BLPN]GGA,[0-9]+\.[0-9]+,[0-9]+\.[0-9]+,[NS],[0-9]+\.[0-9]+,[EW],[126],[0-9]+,[0-9]+\.[0-9]+,-*[0-9]+\.[0-9]+,M,-*[0-9]+\.[0-9]+,M,,\*[0-9]+",
             gps_data)
         if gga_re:
             return gga_re.group(0)
-        else:
-            return ""
+        return ""
 
-    def read_location_GxVTG(self):
-        gps_data = self.read()
+    def read_location_GxVTG(self, gps_data):
         vtg_re = ure.search(r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,([0-9]+\.[0-9]+)??,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN]\*\w*", gps_data)
         if vtg_re:
             return vtg_re.group(0)
-        else:
-            return ""
+        return ""
 
-    def read_location_GxVTG_speed(self):
-        vtg_data = self.read_location_GxVTG()
+    def read_location_GxVTG_speed(self, gps_data):
+        vtg_data = self.read_location_GxVTG(gps_data)
         if vtg_data:
             speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", vtg_data)
             if speed_re:
                 return speed_re.group(0)[3:-3]
-
         return ""
 
     def read_quecIot(self):
         data = []
-        r = self.read_location_GxRMC()
+        gps_data = self.read()
+        log.debug('read_quecIot gps_data: %s' % gps_data)
+        r = self.read_location_GxRMC(gps_data)
         if r:
             data.append(r)
 
-        r = self.read_location_GxGGA()
+        r = self.read_location_GxGGA(gps_data)
         if r:
             data.append(r)
 
-        r = self.read_location_GxVTG()
+        r = self.read_location_GxVTG(gps_data)
         if r:
             data.append(r)
 
         return {'gps': data}
 
     def read_aliyun(self):
-        gga_data = self.read_location_GxGGA()
-        gps_data = {'CoordinateSystem': 1}
+        gps_data = self.read()
+        gga_data = self.read_location_GxGGA(gps_data)
+        data = {'CoordinateSystem': 1}
         if gga_data:
             Latitude_re = ure.search(r",[0-9]+\.[0-9]+,[NS],", gga_data)
             if Latitude_re:
-                gps_data['Latitude'] = round(float(Latitude_re.group(0)[1:-3]), 2)
+                data['Latitude'] = round(float(Latitude_re.group(0)[1:-3]), 2)
             Longtitude_re = ure.search(r",[0-9]+\.[0-9]+,[EW],", gga_data)
             if Longtitude_re:
-                gps_data['Longtitude'] = round(float(Longtitude_re.group(0)[1:-3]), 2)
+                data['Longtitude'] = round(float(Longtitude_re.group(0)[1:-3]), 2)
             Altitude_re = ure.search(r"-*[0-9]+\.[0-9]+,M,", gga_data)
             if Altitude_re:
-                gps_data['Altitude'] = round(float(Altitude_re.group(0)[:-3]), 2)
-        gps_info = {'GeoLocation': gps_data}
+                data['Altitude'] = round(float(Altitude_re.group(0)[:-3]), 2)
+        gps_info = {'GeoLocation': data}
         return gps_info
 
 

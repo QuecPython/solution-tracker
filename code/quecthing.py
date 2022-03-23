@@ -113,6 +113,7 @@ class QuecThing(object):
                 break
 
         self.rm_empty_data(data)
+        log.info('post_data res: %s' % res)
         return res
 
     def eventCB(self, data):

@@ -47,29 +47,17 @@ class TrackerTimer(Singleton):
             self.gnss_count = 0
             self.gnss_timer()
 
-        if current_settings['app']['sw_ota'] is False:
-            self.quec_ota = 0
-        if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot and \
-                self.quec_ota >= 3600:
-            self.quec_ota = 0
-            self.quecthing_ota_timer()
-
     def loc_timer(self):
         current_settings = settings.settings.get()
         if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.intelligent:
-            if not self.tracker.locator.gps:
+            if self.tracker.locator.gps:
                 if not self.tracker.locator.gps.read_location_GxVTG_speed():
                     return
                 elif float(self.tracker.locator.gps.read_location_GxVTG_speed()) <= 0:
                     return
             else:
                 return
-        elif current_settings['app']['work_mode'] == settings.default_values_app._work_mode.lowenergy:
-            self.tracker.low_energy_queue.put(True)
-            return
-
-        over_speed_check_res = self.tracker.get_over_speed_check()
-        self.tracker.device_data_report(event_data=over_speed_check_res)
+        self.tracker.low_energy_queue.put(True)
 
     def battery_timer(self):
         current_settings = settings.settings.get()
@@ -82,15 +70,12 @@ class TrackerTimer(Singleton):
                     alert_data = self.tracker.get_alert_data(30002, {'local_time': utime.mktime(utime.localtime())})
                     self.tracker.device_data_report(event_data=alert_data)
             if energy <= current_settings['app']['low_power_shutdown_threshold']:
-                self.tracker.device_data_report(power_switch=False, callback='power_down')
+                self.tracker.device_data_report(power_switch=False, msg='power_down')
         elif is_charge == 1:
             self.tracker.energy_led_show(energy)
 
     def gnss_timer(self):
         self.tracker.locator.gps.quecgnss_read()
-
-    def quecthing_ota_timer(self):
-        self.tracker.remote.check_ota()
 
 
 class LEDTimer(Singleton):

@@ -6,7 +6,6 @@ import checkNet
 import dataCall
 
 from misc import Power
-from queue import Queue
 
 import usr.settings as settings
 
@@ -16,9 +15,11 @@ from usr.remote import Remote
 from usr.battery import Battery
 from usr.common import numiter
 from usr.common import Singleton
+from usr.mpower import PowerManage
 from usr.logging import getLogger
 from usr.location import Location, GPS
-from usr.timer import TrackerTimer, LEDTimer
+# from usr.timer import TrackerTimer
+from usr.timer import LEDTimer
 
 try:
     from misc import USB
@@ -42,16 +43,13 @@ class Tracker(Singleton):
         self.locator = Location()
         self.battery = Battery()
         self.remote = Remote(self)
+        self.power_manage = PowerManage(self)
 
-        self.tracker_timer = TrackerTimer(self)
+        # self.tracker_timer = TrackerTimer(self)
         self.led_timer = LEDTimer(self)
-        self.low_energy_queue = Queue(maxsize=8)
 
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
-
-        self.lpm_fd = None
-        _thread.start_new_thread(self.low_energy_work, ())
 
         if PowerKey is not None:
             self.power_key = PowerKey()
@@ -76,22 +74,29 @@ class Tracker(Singleton):
         return alert_data
 
     def get_device_data(self, power_switch=True):
+        log.debug('start get_device_data')
         device_data = {}
 
         loc_info = self.locator.read()
+        log.debug('loc_info: %s' % str(loc_info))
         if loc_info:
             device_data.update(loc_info[1])
 
-        # TODO: Other Machine Info.
         current_settings = settings.settings.get()
+
+        energy = self.battery.energy()
+        if energy <= current_settings['app']['low_power_alert_threshold']:
+            alert_data = self.get_alert_data(30002, {'local_time': utime.mktime(utime.localtime())})
+            device_data.update(alert_data)
+
+        # TODO: Other Machine Info.
         device_data.update({
             'power_switch': power_switch,
-            'energy': self.battery.energy(),
+            'energy': energy,
             'local_time': utime.mktime(utime.localtime()),
             'ota_status': current_settings['sys']['ota_status'],
         })
         device_data.update(current_settings['app'])
-
         return device_data
 
     def get_device_check(self):
@@ -126,12 +131,11 @@ class Tracker(Singleton):
 
     def get_over_speed_check(self):
         alert_data = {}
-
-        if self.locator.gps:
-            speed = self.locator.gps.read_location_GxVTG_speed()
-            if speed:
-                current_settings = settings.settings.get()
-                if float(speed) > current_settings['app']['over_speed_threshold']:
+        current_settings = settings.settings.get()
+        if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.intelligent:
+            if self.locator.gps:
+                speed = self.locator.gps.read_location_GxVTG_speed()
+                if speed and float(speed) >= current_settings['app']['over_speed_threshold']:
                     alert_code = 30003
                     alert_info = {'local_time': utime.mktime(utime.localtime())}
                     alert_data = self.get_alert_data(alert_code, alert_info)
@@ -149,25 +153,31 @@ class Tracker(Singleton):
         return str(num)
 
     def data_report_cb(self, topic, msg):
-        if topic.startswith('wakelock_unlock'):
-            pm.wakelock_unlock(self.lpm_fd)
-        elif topic.startswith('power_down'):
+        sys_bus.unsubscribe(topic)
+
+        if topic.endswith('/wakelock_unlock'):
+            pm.wakelock_unlock(self.power_manage.lpm_fd)
+        elif topic.endswith('/power_down'):
             self.energy_led.period = None
             self.energy_led.switch(0)
             self.running_led.period = None
             self.running_led.switch(0)
             Power.powerDown()
 
-        sys_bus.unsubscribe(topic)
+        if self.power_manage.callback:
+            self.power_manage.callback()
+        self.power_manage.start_rtc()
 
-    def device_data_report(self, power_switch=True, event_data={}, callback=''):
+    def device_data_report(self, power_switch=True, event_data={}, msg=''):
+        log.debug('start device_data_report')
         device_data = self.get_device_data(power_switch)
         if event_data:
             device_data.update(event_data)
 
         num = self.get_num()
-        topic = callback + '_' + num if callback else num
+        topic = num + '/' + msg if msg else num
         sys_bus.subscribe(topic, self.data_report_cb)
+        log.debug("topic: %s, device_data: %s" % (topic, device_data))
         self.remote.post_data(topic, device_data)
 
     def device_check(self):
@@ -210,30 +220,15 @@ class Tracker(Singleton):
     def nw_callback(self, args):
         net_check_res = self.check.net_check()
         if args[1] != 1:
+            # TODO: Check Internet disconected then do something
             if net_check_res[0] == 0 or (net_check_res[0] == 1 and net_check_res[1] == 0):
                 alert_code = 30004
                 alert_info = {'local_time': utime.mktime(utime.localtime())}
                 alert_data = self.get_alert_data(alert_code, alert_info)
                 self.device_data_report(event_data=alert_data)
-
-    def low_energy_work(self):
-        while True:
-            data = self.low_energy_queue.get()
-            if data:
-                current_settings = settings.settings.get()
-                if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.lowenergy:
-                    if self.lpm_fd is None:
-                        self.lpm_fd = pm.create_wakelock("tracker_lock", len("tracker_lock"))
-                        pm.autosleep(1)
-                    pm.wakelock_lock(self.lpm_fd)
-                    over_speed_check_res = self.get_over_speed_check()
-
-                    self.device_data_report(event_data=over_speed_check_res, callback='wakelock_unlock')
-                else:
-                    if self.lpm_fd is not None:
-                        pm.autosleep(0)
-                        pm.delete_wakelock(self.lpm_fd)
-                        self.lpm_fd = None
+        else:
+            # TODO: Check Internet conected then do something
+            pass
 
 
 class SelfCheck(object):
