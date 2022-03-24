@@ -92,7 +92,6 @@ class GPS(Singleton):
             break
 
         self.break_flag = 0
-        log.debug('utc_time: %s' % self.read_location_utc(data))
         return data
 
     def quecgnss_read(self):
@@ -144,14 +143,6 @@ class GPS(Singleton):
             speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", vtg_data)
             if speed_re:
                 return speed_re.group(0)[3:-3]
-        return ""
-
-    def read_location_utc(self, gps_data):
-        gga_data = self.read_location_GxGGA(gps_data)
-        if gga_data:
-            utc_re = ure.search(r"GGA,[0-9]+\.[0-9]+,", gga_data)
-            if utc_re:
-                return utc_re.group(0)[4:-1]
         return ""
 
     def read_quecIot(self):
