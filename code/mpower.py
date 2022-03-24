@@ -85,24 +85,21 @@ class PowerManage(Singleton):
             self.low_energy_queue.put('power_dwon')
 
     def get_low_energy_method(self):
+        current_settings = settings.get()
         device_model = modem.getDevModel()
         support_methds = LOWENERGYMAP.get(device_model)
         if not support_methds:
             raise SettingsError('This Model %s Not Set LOWENERGYMAP.' % device_model)
 
-        if self.period >= 3600:
-            if "POWERDOWN" in support_methds:
-                self.low_energy_method = "POWERDOWN"
-            elif "PSM" in support_methds:
-                self.low_energy_method = "PSM"
-            elif "PM" in support_methds:
-                self.low_energy_method = "PM"
-        elif 60 <= self.period < 3600:
+        if self.period >= current_settings['sys']['work_mode_timeline']:
             if "PSM" in support_methds:
                 self.low_energy_method = "PSM"
+            elif "POWERDOWN" in support_methds:
+                self.low_energy_method = "POWERDOWN"
             elif "PM" in support_methds:
                 self.low_energy_method = "PM"
-        elif self.period < 60:
+                self.low_energy_method = "PM"
+        else:
             if "PM" in support_methds:
                 self.low_energy_method = "PM"
 

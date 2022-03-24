@@ -211,6 +211,8 @@ class default_values_sys(object):
 
     cloud_timeout = 180
 
+    work_mode_timeline = 3600
+
     ali_burning_method = _ali_burning_method.one_machine_one_density
 
     _quecIot = {
