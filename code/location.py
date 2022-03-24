@@ -116,8 +116,22 @@ class GPS(Singleton):
             data = quecgnss.read(4096)
             self.gps_timer.stop()
 
+        while True:
+            gnss_data = quecgnss.read(4096)
+            data = gnss_data[1].decode()
+            rmc_data = self.read_location_GxRMC(data)
+            if not rmc_data:
+                continue
+            gga_data = self.read_location_GxGGA(data)
+            if not gga_data:
+                continue
+            vtg_data = self.read_location_GxVTG(data)
+            if not vtg_data:
+                continue
+            break
+
         self.break_flag = 0
-        return data[1].decode()
+        return data
 
     def read(self):
         current_settings = settings.settings.get()
