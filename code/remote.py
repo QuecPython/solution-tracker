@@ -161,6 +161,8 @@ def uplink_process(argv):
         # Read history data that didn't send to server intime to hist-dictionary.
         hist = self.read_history()
         try:
+            if self.tracker.net_enable is False:
+                raise RemoteError('Net Is Disconnected.')
             for key, value in hist.items():
                 # Check if non_loca data (sensor or device info data) or location gps data or location non-gps data (cell/wifi-locator data)
                 if key == 'hist_data':
@@ -193,27 +195,16 @@ def uplink_process(argv):
                 # Flush data in hist-dictionary to tracker_data.hist file.
                 self.refresh_history(hist)
 
-            '''
-            If history data exists, put a empty msg to uplink_queue to trriger the return of self.uplink_queue.get() API below.
-            So that history data could be processed again immediately.
-            Without this, history data could only be processed after new data being put into uplink_queue.
-            But is this necessary ???
-            '''
-            # TODO: dataCall nw_callback to put
-            if len(hist.get('hist_data', [])):
-                self.uplink_queue.put(())
-
         # When comes to this, wait for new data coming into uplink_queue.
         data = self.uplink_queue.get()
         if data:
             if data[1]:
-                if not self.cloud.post_data(data[1]):
-                    self.add_history(data[1])
-                    sys_bus.publish(data[0], 'false')
-                else:
-                    sys_bus.publish(data[0], 'true')
-            else:
-                sys_bus.publish(data[0], 'true')
+                if self.tracker.net_enable is True:
+                    if self.cloud.post_data(data[1]):
+                        sys_bus.publish(data[0], 'true')
+                        continue
+                self.add_history(data[1])
+            sys_bus.publish(data[0], 'false')
 
 
 class Remote(Singleton):

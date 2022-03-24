@@ -122,7 +122,7 @@ class default_values_app(object):
 
     work_mode = _work_mode.cycle
 
-    work_cycle_period = 60
+    work_cycle_period = 30
 
     low_power_alert_threshold = 20
 
@@ -192,7 +192,7 @@ class default_values_sys(object):
 
     ota_status = _ota_status.none
 
-    cloud = _cloud.quecIot
+    cloud = _cloud.AliYun
 
     cloud_init_params = {}
 

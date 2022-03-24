@@ -50,6 +50,8 @@ class Tracker(Singleton):
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
 
+        self.net_enable = True
+
         if PowerKey is not None:
             self.power_key = PowerKey()
             self.power_key.powerKeyEventRegister(self.pwk_callback)
@@ -105,10 +107,12 @@ class Tracker(Singleton):
         sensor_check_res = self.check.sensor_check()
 
         if net_check_res == (3, 1) and gps_check_res and sensor_check_res:
+            self.net_enable = True
             self.running_led.period = 2
         else:
             self.running_led.period = 0.5
             if net_check_res != (3, 1):
+                self.net_enable = False
                 fault_code = 20001
                 alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
                 alert_data_res = self.get_alert_data(alert_code, alert_info)
@@ -215,15 +219,15 @@ class Tracker(Singleton):
     def nw_callback(self, args):
         net_check_res = self.check.net_check()
         if args[1] != 1:
-            # TODO: Check Internet disconected then do something
-            if net_check_res[0] == 0 or (net_check_res[0] == 1 and net_check_res[1] == 0):
+            self.net_enable = False
+            if net_check_res == (1, 0):
                 alert_code = 30004
                 alert_info = {'local_time': utime.mktime(utime.localtime())}
                 alert_data = self.get_alert_data(alert_code, alert_info)
                 self.device_data_report(event_data=alert_data)
         else:
-            # TODO: Check Internet conected then do something
-            pass
+            if net_check_res == (3, 1):
+                self.net_enable = True
 
 
 class SelfCheck(object):
