@@ -188,12 +188,11 @@ location_info = tracker.locator.read()
     - 7 -- GPS&基站&WIFI
 
 - `loc_data` 定位信息
-    - `loc_method` -- 1
-        - `['GxRMC,XXX...', 'GxGGA,XXX...', 'GxVTG,XXX...']`
-    - `loc_method` -- 2
-        - `['LBS']`
-    - `loc_method` -- 4
-        - `[]`
+
+|平台|GPS|基站|WIFI|
+|:---|---|---|---|
+|移远云|`{'gps': ['GPRMC,XXX','GPGGA,XXX','GPVTG,XXX']}`|`{'non_gps': ['LBS']}`|`{'non_gps': []}`|
+|阿里云|`{'GeoLocation': {'Longtitude': x.xx, 'Latitude': x.xx, 'Altitude': x.xx, 'CoordinateSystem': 1}}`|同GPS|同GPS|
 
 #### remote 信息通信功能
 
@@ -207,28 +206,29 @@ location_info = tracker.locator.read()
 
 ```python
 import utime
+topic = '1'
 data = {
     'power_switch': True,
     'energy': tracker.battery.energy(),
     'local_time': utime.mktime(utime.localtime())
 }
-tracker.remote.post_data(data)
+tracker.remote.post_data(topic, data)
 ```
 
 - 参数:
 
 |参数|参数类型|参数说明|
 |:---|---|---|
-|data_type|int|数据类型|
-|data|dict|数据信息|
+|topic|str|发送消息唯一标识|
+|data|dict|数据信息(见下表)|
 
-- data_type 枚举值
+- GPS定位信息标识符
 
-|枚举值|标识符|说明|
+|平台|标识符|数据定义|
 |:---|---|---|
-|0|`DATA_NON_LOCA`|非定位数据|
-|1|`DATA_LOCA_NON_GPS`|非GPS定位数据|
-|2|`DATA_LOCA_GPS`|GPS定位数据|
+|移远云|`gps`|list|
+|移远云|`non_gps`|list|
+|阿里云|`GeoLocation`|dict|
 
 - 属性功能定义标识符
 
@@ -277,11 +277,11 @@ tracker.remote.post_data(data)
 
 无
 
-#### alert_report 告警功能
+#### get_alert_data 格式化报警数据
 
-该功能提供`alert_report`方法, 将定义好的报警编码与报警信息上报到云端。
+该功能提供`get_alert_data`方法, 返回格式化上报告警数据。
 
->`tracker.alert_report`
+>`tracker.get_alert_data`
 
 - 例:
 
@@ -292,7 +292,7 @@ alert_info = {
     'fault_code': 20001,
     'local_time': utime.mktime(utime.localtime())
 }
-res = tracker.alert_report(alert_code, alert_info)
+res = tracker.get_alert_data(alert_code, alert_info)
 ```
 
 - 参数:
@@ -304,7 +304,7 @@ res = tracker.alert_report(alert_code, alert_info)
 
 - 返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
+报警编码结构，字典数据。
 
 - 报警编码与标识符
 
