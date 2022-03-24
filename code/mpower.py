@@ -34,7 +34,6 @@ class PowerManage(Singleton):
         self.low_energy_method = None
         self.set_period()
         self.get_low_energy_method()
-        self.low_energy_init()
 
         self.rtc = RTC()
         self.rtc.register_callback(self.rtc_callback)
@@ -46,7 +45,6 @@ class PowerManage(Singleton):
         self.period = seconds
 
     def start_rtc(self):
-        log.debug('start PowerManage start_rtc')
         current_settings = settings.get()
         if current_settings['app']['work_mode'] == default_values_app._work_mode.intelligent:
             if self.tracker.locator.gps:
@@ -61,11 +59,9 @@ class PowerManage(Singleton):
         atime = utime.localtime(utime.mktime(utime.localtime()) + self.period)
         alarm_time = [atime[0], atime[1], atime[2], atime[6], atime[3], atime[4], atime[5], 0]
         self.rtc.set_alarm(alarm_time)
-        log.debug('rtc set_alarm')
         self.rtc.enable_alarm(1)
 
     def rtc_callback(self, args):
-        log.debug('start rtc_callback')
         self.rtc.enable_alarm(0)
         if self.low_energy_method == 'PM':
             self.low_energy_queue.put('wakelock_unlock')

@@ -103,7 +103,6 @@ class default_values_app(object):
         all = 0x7
 
     class _work_mode(object):
-        none = 0x0
         cycle = 0x1
         intelligent = 0x2
 

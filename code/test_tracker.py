@@ -104,14 +104,16 @@ def test_tracker():
     log.info('[.] sleep 3')
     utime.sleep(3)
 
-    # log.info('[.] test tracker.device_data_report()')
-    # device_data_report_res = tracker.device_data_report()
-    # log.info('[.] device_data_report_res:', device_data_report_res)
+    log.info('[.] tracker.device_data_report()')
+    device_data_report_res = tracker.device_data_report()
+    log.info('[.] device_data_report_res:', device_data_report_res)
 
-    # log.info('[.] sleep 3')
-    # utime.sleep(3)
+    log.info('[.] sleep 3')
+    utime.sleep(3)
 
-    log.info('[.] test tracker.power_manage.start_rtc()')
+    log.info('[.] tracker.power_manage.low_energy_init()')
+    tracker.power_manage.low_energy_init()
+    log.info('[.] tracker.power_manage.start_rtc()')
     tracker.power_manage.start_rtc()
     log.info('[.] end tracker.power_manage.start_rtc()')
 
@@ -207,12 +209,9 @@ def test_pm():
 
 
 def test_rtc():
-    rtc_queue = Queue(maxsize=8)
 
     def rtc_cb(df):
-        global rtc_queue
         print('rtc call back test. [%s]' % df)
-        rtc_queue.put('rtc')
 
     rtc = RTC()
     log.debug('rtc.datatime: %s' % str(rtc.datetime()))
@@ -224,11 +223,35 @@ def test_rtc():
     rtc.set_alarm(alarm_time)
     log.debug('rtc.enable_alarm')
     rtc.enable_alarm(1)
-    rtc_data = rtc_queue.get()
-    log.debug('rtc_data: %s' % rtc_data)
 
-    # log.debug('Power.powerDown')
-    # Power.powerDown()
+
+gps_uart_queue = Queue(maxsize=64)
+
+
+def test_gps_uart_cb(args):
+    global gps_uart_queue
+    log.debug('[test_gps_uart_cb] args: %s' % str(args))
+    if args:
+        if gps_uart_queue.size() >= 64:
+            gps_uart_queue.get()
+        gps_uart_queue.put(args)
+
+
+def test_gps_uart():
+    global gps_uart_queue
+
+    gps_cfg = settings.default_values_sys._gps_cfg
+    uart_obj = UART(
+        gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'],
+        gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl']
+    )
+    uart_obj.set_callback(test_gps_uart_cb)
+    while True:
+        log.debug('[test_gps_uart] gps_uart_queue get')
+        gps_uart_data = gps_uart_queue.get()
+        log.debug('[test_gps_uart] gps_uart_data: %s' % str(gps_uart_data))
+        gps_info = uart_obj.read(gps_uart_data[2]).decode()
+        log.debug('[test_gps_uart] gps_info size: %s' % len(gps_info))
 
 
 def main():
@@ -242,6 +265,8 @@ def main():
     test_tracker()
     # test_pm()
     # test_rtc()
+    # test_gps_uart()
+
 
 if __name__ == '__main__':
     main()

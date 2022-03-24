@@ -128,7 +128,6 @@ def downlink_process(argv):
         ('query', ['phone_num',...])
         '''
         data = self.downlink_queue.get()
-        log.debug('downlink_queue data:', data)
 
         DownLinkOptionObj = DownLinkOption(tracker=self.tracker)
         option_attr = data[0]

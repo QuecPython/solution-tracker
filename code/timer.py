@@ -1,7 +1,5 @@
-import utime
 import osTimer
 
-import usr.settings as settings
 from usr.common import Singleton
 from usr.logging import getLogger
 
@@ -11,71 +9,6 @@ except ImportError:
     USB = None
 
 log = getLogger(__name__)
-
-
-class TrackerTimer(Singleton):
-
-    def __init__(self, tracker):
-        self.tracker = tracker
-        self.tracker_timer = osTimer()
-        self.tracker_timer.start(1000, 1, self.timer_callback)
-        self.loc_count = 0
-        self.battery_count = 0
-        self.gnss_count = 0
-        self.quec_ota = 0
-
-    def timer_callback(self, args):
-        current_settings = settings.settings.get()
-
-        self.loc_count += 1
-        self.battery_count += 1
-        self.gnss_count += 1
-        self.quec_ota += 1
-
-        if (current_settings['app']['work_mode'] != settings.default_values_app._work_mode.none) \
-                and current_settings['app']['work_cycle_period'] \
-                and self.loc_count >= current_settings['app']['work_cycle_period']:
-            self.loc_count = 0
-            self.loc_timer()
-
-        if self.battery_count >= 60:
-            self.battery_count = 0
-            self.battery_timer()
-
-        if current_settings['app']['loc_method'] & settings.default_values_app._loc_method.gps and \
-                current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
-            self.gnss_count = 0
-            self.gnss_timer()
-
-    def loc_timer(self):
-        current_settings = settings.settings.get()
-        if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.intelligent:
-            if self.tracker.locator.gps:
-                if not self.tracker.locator.gps.read_location_GxVTG_speed():
-                    return
-                elif float(self.tracker.locator.gps.read_location_GxVTG_speed()) <= 0:
-                    return
-            else:
-                return
-        self.tracker.low_energy_queue.put(True)
-
-    def battery_timer(self):
-        current_settings = settings.settings.get()
-        energy = self.tracker.battery.energy()
-        is_charge = USB().getStatus() if USB is not None else 1
-        if is_charge == 0:
-            self.tracker.energy_led_show(energy)
-            if current_settings['app']['sw_low_power_alert']:
-                if energy <= current_settings['app']['low_power_alert_threshold']:
-                    alert_data = self.tracker.get_alert_data(30002, {'local_time': utime.mktime(utime.localtime())})
-                    self.tracker.device_data_report(event_data=alert_data)
-            if energy <= current_settings['app']['low_power_shutdown_threshold']:
-                self.tracker.device_data_report(power_switch=False, msg='power_down')
-        elif is_charge == 1:
-            self.tracker.energy_led_show(energy)
-
-    def gnss_timer(self):
-        self.tracker.locator.gps.quecgnss_read()
 
 
 class LEDTimer(Singleton):

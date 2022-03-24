@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220316114050639"
+		"version":"20220324132257527"
 	},
 	"properties":[
 		{
@@ -75,34 +75,34 @@
 		{
 			"specs":{
 				"unit":"",
-				"min":"0",
-				"max":"15",
+				"min":"1",
+				"max":"2",
 				"step":"1"
 			},
 			"code":"work_mode",
 			"dataType":"INT",
-			"name":"定位工作模式",
+			"name":"工作模式",
 			"subType":"RW",
 			"id":25,
 			"sort":4,
 			"type":"PROPERTY",
-			"desc":"0: 无\n1: 循环\n2: 报警时\n4: 电话呼入\n8: 开启录音时\n15: 全部"
+			"desc":"1: 周期性模式\n2: 智能模式"
 		},
 		{
 			"specs":{
-				"unit":"",
-				"min":"",
-				"max":"",
-				"step":""
+				"unit":"s",
+				"min":"5",
+				"max":"2147483647",
+				"step":"1"
 			},
 			"code":"work_cycle_period",
 			"dataType":"INT",
-			"name":"工作循环周期",
+			"name":"工作模式循环周期",
 			"subType":"RW",
 			"id":26,
 			"sort":5,
 			"type":"PROPERTY",
-			"desc":"单位s"
+			"desc":""
 		},
 		{
 			"specs":{

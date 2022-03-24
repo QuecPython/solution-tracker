@@ -1,6 +1,5 @@
 
 import ure
-# import _thread
 import osTimer
 import cellLocator
 import usr.settings as settings
@@ -36,30 +35,10 @@ def gps_data_retrieve_cb(para_list):
     '''
     global gps_data_retrieve_queue
     toRead = para_list[2]
-    log.debug('gps_data_retrieve_cb para_list: %s' % str(para_list))
     if toRead:
         if gps_data_retrieve_queue.size() >= 8:
             gps_data_retrieve_queue.get()
         gps_data_retrieve_queue.put(toRead)
-
-
-def gps_data_retrieve_thread(argv):
-    '''
-    GPS data retrieve thread
-    Receive a message from queue of data length.
-    Then read the corresponding length of data from UART into self.gps_data.
-    So self.gps_data will be updated immediately once the data comes to UART that
-    the self.gps_data could keep the latest data.
-    '''
-    global gps_data_retrieve_queue
-    self = argv
-
-    while True:
-        current_settings = settings.settings.get()
-        if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
-            self.gps_data = self.uart_read().decode()
-        elif current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
-            self.gps_data = self.quecgnss_read()
 
 
 class GPS(Singleton):
@@ -67,7 +46,6 @@ class GPS(Singleton):
         self.gps_data = ''
         self.gps_cfg = gps_cfg
         self.gps_timer = osTimer()
-        self.gps_over_timer = osTimer()
         self.break_flag = 0
         current_settings = settings.settings.get()
         if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
@@ -87,43 +65,45 @@ class GPS(Singleton):
         )
         self.uart_obj.set_callback(gps_data_retrieve_cb)
         gps_data_retrieve_queue = Queue(maxsize=8)
-        # _thread.start_new_thread(gps_data_retrieve_thread, (self,))
 
     def gps_timer_callback(self, args):
         self.break_flag = 1
 
-    def gps_over_timer_cb(self, args):
-        global gps_data_retrieve_queue
-        gps_data_retrieve_queue.put(0)
-
     def uart_read(self):
-        log.debug('start uart_read')
         global gps_data_retrieve_queue
         while self.break_flag == 0:
             self.gps_timer.start(200, 1, self.gps_timer_callback)
-            self.gps_over_timer.start(20000, 1, self.gps_over_timer_cb)
             nread = gps_data_retrieve_queue.get()
+            data = self.uart_obj.read(nread).decode()
             self.gps_timer.stop()
-            self.gps_over_timer.stop()
 
-        log.debug('uart_read nread')
+        while True:
+            nread = gps_data_retrieve_queue.get()
+            data = self.uart_obj.read(nread).decode()
+            rmc_data = self.read_location_GxRMC(data)
+            if not rmc_data:
+                continue
+            gga_data = self.read_location_GxGGA(data)
+            if not gga_data:
+                continue
+            vtg_data = self.read_location_GxVTG(data)
+            if not vtg_data:
+                continue
+            break
+
         self.break_flag = 0
-        return self.uart_obj.read(nread).decode()
+        return data
 
     def quecgnss_read(self):
         if quecgnss.get_state() == 0:
             quecgnss.gnssEnable(1)
 
         while self.break_flag == 0:
-            self.gps_timer.start(500, 1, self.gps_timer_callback)
-            quecgnss.read(4096)
+            self.gps_timer.start(200, 1, self.gps_timer_callback)
+            data = quecgnss.read(4096)
             self.gps_timer.stop()
 
         self.break_flag = 0
-        data = None
-        while not data:
-            data = quecgnss.read(4096)
-
         return data[1].decode()
 
     def read(self):
@@ -168,7 +148,6 @@ class GPS(Singleton):
     def read_quecIot(self):
         data = []
         gps_data = self.read()
-        log.debug('read_quecIot gps_data: %s' % gps_data)
         r = self.read_location_GxRMC(gps_data)
         if r:
             data.append(r)

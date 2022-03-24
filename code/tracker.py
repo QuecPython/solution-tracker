@@ -17,8 +17,8 @@ from usr.common import numiter
 from usr.common import Singleton
 from usr.mpower import PowerManage
 from usr.logging import getLogger
-from usr.location import Location, GPS
-# from usr.timer import TrackerTimer
+from usr.location import GPS
+from usr.location import Location
 from usr.timer import LEDTimer
 
 try:
@@ -45,7 +45,6 @@ class Tracker(Singleton):
         self.remote = Remote(self)
         self.power_manage = PowerManage(self)
 
-        # self.tracker_timer = TrackerTimer(self)
         self.led_timer = LEDTimer(self)
 
         self.num_iter = numiter()
@@ -74,11 +73,9 @@ class Tracker(Singleton):
         return alert_data
 
     def get_device_data(self, power_switch=True):
-        log.debug('start get_device_data')
         device_data = {}
 
         loc_info = self.locator.read()
-        log.debug('loc_info: %s' % str(loc_info))
         if loc_info:
             device_data.update(loc_info[1])
 
@@ -169,7 +166,6 @@ class Tracker(Singleton):
         self.power_manage.start_rtc()
 
     def device_data_report(self, power_switch=True, event_data={}, msg=''):
-        log.debug('start device_data_report')
         device_data = self.get_device_data(power_switch)
         if event_data:
             device_data.update(event_data)
@@ -177,7 +173,6 @@ class Tracker(Singleton):
         num = self.get_num()
         topic = num + '/' + msg if msg else num
         sys_bus.subscribe(topic, self.data_report_cb)
-        log.debug("topic: %s, device_data: %s" % (topic, device_data))
         self.remote.post_data(topic, device_data)
 
     def device_check(self):
