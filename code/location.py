@@ -84,25 +84,27 @@ class GPS(Singleton):
 
     def uart_read(self):
         global gps_data_retrieve_queue
+
         while self.break_flag == 0:
-            self.gps_timer.start(200, 1, self.gps_timer_callback)
+            self.gps_timer.start(50, 1, self.gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             data = self.uart_obj.read(nread).decode()
             self.gps_timer.stop()
 
+        data = ''
+        rmc_data = ''
+        gga_data = ''
+        vtg_data = ''
         while True:
             nread = gps_data_retrieve_queue.get()
-            data = self.uart_obj.read(nread).decode()
-            rmc_data = self.read_location_GxRMC(data)
-            if not rmc_data:
-                continue
-            gga_data = self.read_location_GxGGA(data)
-            if not gga_data:
-                continue
-            vtg_data = self.read_location_GxVTG(data)
-            if not vtg_data:
-                continue
-            break
+            udata = self.uart_obj.read(nread).decode()
+            rmc_data = self.read_location_GxRMC(udata)
+            gga_data = self.read_location_GxGGA(udata)
+            vtg_data = self.read_location_GxVTG(udata)
+            if rmc_data or gga_data or vtg_data:
+                data += udata
+            if rmc_data and gga_data and vtg_data:
+                break
 
         self.break_flag = 0
         return data
@@ -112,23 +114,24 @@ class GPS(Singleton):
             quecgnss.gnssEnable(1)
 
         while self.break_flag == 0:
-            self.gps_timer.start(200, 1, self.gps_timer_callback)
+            self.gps_timer.start(50, 1, self.gps_timer_callback)
             data = quecgnss.read(4096)
             self.gps_timer.stop()
 
+        data = ''
+        rmc_data = ''
+        gga_data = ''
+        vtg_data = ''
         while True:
             gnss_data = quecgnss.read(4096)
-            data = gnss_data[1].decode()
-            rmc_data = self.read_location_GxRMC(data)
-            if not rmc_data:
-                continue
-            gga_data = self.read_location_GxGGA(data)
-            if not gga_data:
-                continue
-            vtg_data = self.read_location_GxVTG(data)
-            if not vtg_data:
-                continue
-            break
+            udata = gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
+            rmc_data = self.read_location_GxRMC(udata)
+            gga_data = self.read_location_GxGGA(udata)
+            vtg_data = self.read_location_GxVTG(udata)
+            if rmc_data or gga_data or vtg_data:
+                data += udata
+            if rmc_data and gga_data and vtg_data:
+                break
 
         self.break_flag = 0
         return data

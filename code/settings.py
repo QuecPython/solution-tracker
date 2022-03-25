@@ -33,7 +33,7 @@ ALERTCODE = {
     20000: 'fault_alert',
     30002: 'low_power_alert',
     30003: 'over_speed_alert',
-    30004: 'sim_out_alert',
+    30004: 'sim_abnormal_alert',
     30005: 'disassemble_alert',
     40000: 'drive_behavior_alert',
     50001: 'sos_alert',
@@ -157,7 +157,7 @@ class default_values_app(object):
 
     sw_over_speed_alert = True
 
-    sw_sim_out_alert = True
+    sw_sim_abnormal_alert = True
 
     sw_disassemble_alert = True
 
@@ -379,7 +379,7 @@ class Settings(Singleton):
             elif opt in (
                     'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
                     'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
-                    'sw_sim_out_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
+                    'sw_sim_abnormal_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
                 if not isinstance(val, bool):
                     return False
                 self.current_settings['app'][opt] = val

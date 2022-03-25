@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220324132257527"
+		"version":"20220325114956585"
 	},
 	"properties":[
 		{
@@ -319,9 +319,9 @@
 					"value":"false"
 				}
 			],
-			"code":"sw_sim_out_alert",
+			"code":"sw_sim_abnormal_alert",
 			"dataType":"BOOL",
-			"name":"拔卡报警功能开关",
+			"name":"SIM卡异常报警功能开关",
 			"subType":"RW",
 			"id":30,
 			"sort":16,
@@ -428,13 +428,11 @@
 		},
 		{
 			"specs":{
-				"unit":"",
-				"min":"20001",
-				"max":"29999",
-				"step":"1"
+				"size":"10",
+				"dataType":"INT"
 			},
 			"code":"fault_code",
-			"dataType":"INT",
+			"dataType":"ARRAY",
 			"name":"故障代码",
 			"subType":"R",
 			"id":36,
@@ -555,8 +553,8 @@
 					"$ref":"#/properties/id/19"
 				}
 			],
-			"code":"sim_out_alert",
-			"name":"拔卡报警",
+			"code":"sim_abnormal_alert",
+			"name":"SIM卡异常报警",
 			"subType":"WARN",
 			"id":18,
 			"sort":23,

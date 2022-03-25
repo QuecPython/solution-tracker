@@ -289,8 +289,8 @@
       }
     },
     {
-      "identifier": "sw_sim_out_alert",
-      "name": "拔卡报警功能开关",
+      "identifier": "sw_sim_abnormal_alert",
+      "name": "SIM卡异常报警功能开关",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -382,7 +382,9 @@
           "20001": "net_error",
           "20002": "gps_error",
           "20003": "temp_sensor_error",
-          "20004": "light_sensor_error"
+          "20004": "light_sensor_error",
+          "20005": "move_sensor_error",
+          "20006": "mike_error"
         }
       }
     },
@@ -690,8 +692,8 @@
           }
         },
         {
-          "identifier": "sw_sim_out_alert",
-          "name": "拔卡报警功能开关",
+          "identifier": "sw_sim_abnormal_alert",
+          "name": "SIM卡异常报警功能开关",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -769,7 +771,9 @@
               "20001": "net_error",
               "20002": "gps_error",
               "20003": "temp_sensor_error",
-              "20004": "light_sensor_error"
+              "20004": "light_sensor_error",
+              "20005": "move_sensor_error",
+              "20006": "mike_error"
             }
           }
         },
@@ -831,14 +835,12 @@
           "identifier": "fault_code",
           "name": "故障代码",
           "dataType": {
-            "type": "enum",
+            "type": "array",
             "specs": {
-              "20001": "net_error",
-              "20002": "gps_error",
-              "20003": "temp_sensor_error",
-              "20004": "light_sensor_error",
-              "20005": "move_sensor_error",
-              "20006": "mike_error"
+              "size": "10",
+              "item": {
+                "type": "int"
+              }
             }
           }
         }
@@ -868,11 +870,11 @@
       ]
     },
     {
-      "identifier": "sim_out_alert",
-      "name": "拔卡报警",
+      "identifier": "sim_abnormal_alert",
+      "name": "SIM卡异常报警",
       "type": "alert",
       "required": false,
-      "method": "thing.event.sim_out_alert.post",
+      "method": "thing.event.sim_abnormal_alert.post",
       "outputData": []
     },
     {
@@ -1085,8 +1087,8 @@
           }
         },
         {
-          "identifier": "sw_sim_out_alert",
-          "name": "拔卡报警功能开关",
+          "identifier": "sw_sim_abnormal_alert",
+          "name": "SIM卡异常报警功能开关",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1181,7 +1183,7 @@
         "sw_fault_alert",
         "sw_low_power_alert",
         "sw_over_speed_alert",
-        "sw_sim_out_alert",
+        "sw_sim_abnormal_alert",
         "sw_disassemble_alert",
         "sw_drive_behavior_alert",
         "drive_behavior_code",
@@ -1443,8 +1445,8 @@
           }
         },
         {
-          "identifier": "sw_sim_out_alert",
-          "name": "拔卡报警功能开关",
+          "identifier": "sw_sim_abnormal_alert",
+          "name": "SIM卡异常报警功能开关",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1522,7 +1524,9 @@
               "20001": "net_error",
               "20002": "gps_error",
               "20003": "temp_sensor_error",
-              "20004": "light_sensor_error"
+              "20004": "light_sensor_error",
+              "20005": "move_sensor_error",
+              "20006": "mike_error"
             }
           }
         },

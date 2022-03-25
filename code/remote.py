@@ -249,7 +249,7 @@ class Remote(Singleton):
     def read_history(self):
         '''
         {
-            "non_loca": [
+            "hist_data": [
                 {
                     'switch': True,
                     'energy': 100
@@ -257,18 +257,10 @@ class Remote(Singleton):
                 {
                     'switch': True,
                     'energy': 100
-                }
+                },
+                'gps': ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x'],
+                'non_gps': ['LBS'],
             ],
-
-            "loca_non_gps": [
-                (117.1138, 31.82279, 550),
-                (117.1138, 31.82279, 550)
-            ],
-
-            "loca_gps": [
-                ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x'],
-                ['$GPRMCx,x,x,x', '$GPGGAx,x,x,x']
-            ]
         }
         '''
         if ql_fs.path_exists(self._history):

@@ -24,7 +24,6 @@ from usr.common import Singleton
 from usr.logging import getLogger
 from usr.settings import settings
 from usr.settings import LOWENERGYMAP
-from usr.settings import SettingsError
 from usr.settings import default_values_app
 
 try:
@@ -80,50 +79,51 @@ class PowerManage(Singleton):
         if self.low_energy_method == 'PM':
             self.low_energy_queue.put('wakelock_unlock')
         elif self.low_energy_method == 'PSM':
-            pass
+            self.low_energy_queue.put('psm')
         elif self.low_energy_method == 'POWERDOWN':
             self.low_energy_queue.put('power_dwon')
+        elif self.low_energy_method is None:
+            self.low_energy_queue.put('cycle_report')
 
     def get_low_energy_method(self):
         current_settings = settings.get()
         device_model = modem.getDevModel()
-        support_methds = LOWENERGYMAP.get(device_model)
-        if not support_methds:
-            raise SettingsError('This Model %s Not Set LOWENERGYMAP.' % device_model)
-
-        if self.period >= current_settings['sys']['work_mode_timeline']:
-            if "PSM" in support_methds:
-                self.low_energy_method = "PSM"
-            elif "POWERDOWN" in support_methds:
-                self.low_energy_method = "POWERDOWN"
-            elif "PM" in support_methds:
-                self.low_energy_method = "PM"
-                self.low_energy_method = "PM"
-        else:
-            if "PM" in support_methds:
-                self.low_energy_method = "PM"
+        support_methds = LOWENERGYMAP.get(device_model, [])
+        if support_methds:
+            if self.period >= current_settings['sys']['work_mode_timeline']:
+                if "PSM" in support_methds:
+                    self.low_energy_method = "PSM"
+                elif "POWERDOWN" in support_methds:
+                    self.low_energy_method = "POWERDOWN"
+                elif "PM" in support_methds:
+                    self.low_energy_method = "PM"
+            else:
+                if "PM" in support_methds:
+                    self.low_energy_method = "PM"
 
         return self.low_energy_method
 
     def low_energy_init(self):
-        if self.low_energy_method == 'POWERDOWN':
-            pass
-        elif self.low_energy_method == 'PM':
-            _thread.start_new_thread(self.low_energy_work, ())
-            self.lpm_fd = pm.create_wakelock("tracker_lock", len("tracker_lock"))
+        if self.low_energy_method == 'PM':
+            _thread.start_new_thread(self.low_energy_work, (True,))
+            self.lpm_fd = pm.create_wakelock("lowenergy_lock", len("lowenergy_lock"))
             pm.autosleep(1)
         elif self.low_energy_method == 'PSM':
-            # TODO: PSM LOW ENERGY
             pass
+        elif self.low_energy_method == 'POWERDOWN':
+            pass
+        elif self.low_energy_method is None:
+            _thread.start_new_thread(self.low_energy_work, (False,))
 
-    def low_energy_work(self):
+    def low_energy_work(self, lowenergy_tag):
         while True:
             data = self.low_energy_queue.get()
             if data:
-                if self.lpm_fd is None:
-                    self.lpm_fd = pm.create_wakelock("tracker_lock", len("tracker_lock"))
-                    pm.autosleep(1)
-                pm.wakelock_lock(self.lpm_fd)
+                if lowenergy_tag:
+                    if self.lpm_fd is None:
+                        self.lpm_fd = pm.create_wakelock("lowenergy_lock", len("lowenergy_lock"))
+                        pm.autosleep(1)
+                    pm.wakelock_lock(self.lpm_fd)
 
                 over_speed_check_res = self.tracker.get_over_speed_check()
                 self.tracker.device_data_report(event_data=over_speed_check_res, msg=data)

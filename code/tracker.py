@@ -110,10 +110,12 @@ class Tracker(Singleton):
             'ota_status': current_settings['sys']['ota_status'],
         })
         device_data.update(current_settings['app'])
+
         return device_data
 
     def get_device_check(self):
-        alert_data = []
+        alert_data = {}
+        fault_code = []
         alert_code = 20000
 
         net_check_res = self.check.net_check()
@@ -127,20 +129,16 @@ class Tracker(Singleton):
             self.running_led.period = 0.5
             if net_check_res != (3, 1):
                 self.net_enable = False
-                fault_code = 20001
-                alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
-                alert_data_res = self.get_alert_data(alert_code, alert_info)
-                if alert_data_res:
-                    alert_data.append(alert_data_res)
+                fault_code.append(20001)
             if not gps_check_res:
-                fault_code = 20002
-                alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
-                alert_data_res = self.get_alert_data(alert_code, alert_info)
-                if alert_data_res:
-                    alert_data.append(alert_data_res)
+                fault_code.append(20002)
             if not sensor_check_res:
                 # TODO: Need To Check What Sensor Error To Report.
                 pass
+
+            if fault_code:
+                alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
+                alert_data = self.get_alert_data(alert_code, alert_info)
 
         return alert_data
 
@@ -193,12 +191,15 @@ class Tracker(Singleton):
         sys_bus.subscribe(topic, self.data_report_cb)
         self.remote.post_data(topic, device_data)
 
+        # OTA Status RST
+        current_settings = settings.settings.get()
+        if current_settings['sys']['ota_status'] in (3, 4):
+            settings.settings.set('ota_status', 0)
+            settings.settings.save()
+
     def device_check(self):
         device_check_res = self.get_device_check()
-        if device_check_res:
-            [self.device_data_report(event_data=device_check) for device_check in device_check_res]
-        else:
-            self.device_data_report()
+        self.device_data_report(event_data=device_check_res)
 
     def energy_led_show(self, energy):
         current_settings = settings.settings.get()
@@ -234,7 +235,7 @@ class Tracker(Singleton):
         net_check_res = self.check.net_check()
         if args[1] != 1:
             self.net_enable = False
-            if net_check_res == (1, 0):
+            if net_check_res != (1, 1):
                 alert_code = 30004
                 alert_info = {'local_time': utime.mktime(utime.localtime())}
                 alert_data = self.get_alert_data(alert_code, alert_info)

@@ -51,9 +51,10 @@
 
 - 上报设备定位信息，电量，开关机状态，定位方式，电话号码等信息；
 - 默认上报设备信息的场景：
-    1. 报警发生时
-    2. 语音监听时
-    3. 录音时
+    1. 周期性定时
+    2. 报警发生时
+    3. 语音监听时
+    4. 录音时
 - 根据不同的应用场景，上报工作模式分别有以下三种：
     1. 周期性模式 -- 周期性上报设备信息，上报完成后进入低功耗模式
     2. 智能模式 -- 开启GPS定位时，运动上报，上报完成后进入低功耗模式，静止不上报直接进入低功耗模式
@@ -71,7 +72,7 @@
 - 功能开启的状态下，可由云端或手机APP配置是否自动升级。默认开启自动升级。
 
 #### 远程配置或控制
-- 远程配置：电话号码、远程配置定位器工作模式、定位使用的技术手段、语音监听、自动录音上报、固件升级及自动升级、故障报警、低电报警、超速报警、拔卡报警、拆卸报警、振动报警和驾驶行为监测功能的开关。
+- 远程配置：电话号码、远程配置定位器工作模式、定位使用的技术手段、语音监听、自动录音上报、固件升级及自动升级、故障报警、低电报警、超速报警、SIM卡异常报警、拆卸报警、振动报警和驾驶行为监测功能的开关。
 - 远程控制：远程控制固件升级的流程。
 
 ### 设备报警功能
@@ -95,7 +96,7 @@
 - 功能的开启，超速阈值，可由云端或手机APP控制。默认关闭该功能。
 - 报警代码：30003
 
-#### 拔卡报警
+#### SIM卡异常报警
 
 - SIM卡拔出时报警，此时网络不通，按照网络不通的逻辑处理。
 - 功能的开启，可由云端或手机APP控制。默认开启该功能。
@@ -250,7 +251,7 @@ tracker.remote.post_data(topic, data)
 |故障报警功能开关|`sw_fault_alert`|`bool`|`True`:开启,`False`:关闭||读写|
 |低电报警功能开关|`sw_low_power_alert`|`bool`|`True`:开启,`False`:关闭||读写|
 |超速报警功能开关|`sw_over_speed_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|拔卡报警功能开关|`sw_sim_out_alert`|`bool`|`True`:开启,`False`:关闭||读写|
+|SIM卡异常报警功能开关|`sw_sim_abnormal_alert`|`bool`|`True`:开启,`False`:关闭||读写|
 |拆卸报警功能开关|`sw_disassemble_alert`|`bool`|`True`:开启,`False`:关闭||读写|
 |驾驶行为报警功能开关|`sw_drive_behavior_alert`|`bool`|`True`:开启,`False`:关闭||读写|
 |驾驶行为代码|`drive_behavior_code`|`int`|取值范围：40001 ~ 40004|40001: quick_start;40002: quick_stop;40003: quick_turn_left;40004: quick_turn_right|只读|
@@ -268,7 +269,7 @@ tracker.remote.post_data(topic, data)
 |SOS报警|`sos_alert`|`{'local_time': xxx}`|
 |故障报警|`fault_alert`|`{'local_time': xxx, 'fault_code': 20001}`|
 |低电报警|`low_power_alert`|`{'local_time': xxx, 'energy': 20}`|
-|拔卡报警|`sim_out_alert`|`{'local_time': xxx}`|
+|SIM卡异常报警|`sim_abnormal_alert`|`{'local_time': xxx}`|
 |驾驶行为报警|`drive_behavior_alert`|`{'local_time': xxx, 'drive_behavior_code': 40001}`|
 |拆卸报警|`disassemble_alert`|`{'local_time': xxx}`|
 |超速报警|`over_speed_alert`|`{'local_time': xxx}`|
@@ -319,7 +320,7 @@ res = tracker.get_alert_data(alert_code, alert_info)
 |-|20006|`mike_error`|麦克风异常|
 |30002|-|`low_power_alert`|低电量报警|
 |30003|-|`over_speed_alert`|超速报警|
-|30004|-|`sim_out_alert`|拔卡报警|
+|30004|-|`sim_abnormal_alert`|SIM卡异常报警|
 |30005|-|`disassemble_alert`|拆卸报警|
 |40000|-|`drive_behavior_alert`|驾驶行为监测报警|
 |-|40001|`quick_start`|急起|
@@ -460,7 +461,7 @@ current_settings = settings.get()
         "sw_low_power_alert": true,
         "sw_voice_record": false,
         "sw_voice_listen": false,
-        "sw_sim_out_alert": true,
+        "sw_sim_abnormal_alert": true,
         "gps_mode": 2,
         "sw_drive_behavior_alert": true,
         "sw_ota": true,
