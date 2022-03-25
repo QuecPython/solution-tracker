@@ -137,11 +137,11 @@ class default_values_app(object):
 
     work_cycle_period = 30
 
-    low_power_alert_threshold = 20
+    low_power_alert_threshold = 30
 
     low_power_shutdown_threshold = 5
 
-    over_speed_threshold = 120
+    over_speed_threshold = 60
 
     sw_ota = True
 
@@ -205,11 +205,9 @@ class default_values_sys(object):
 
     ota_status = _ota_status.none
 
-    cloud = _cloud.AliYun
+    cloud = _cloud.quecIot
 
     cloud_init_params = {}
-
-    cloud_timeout = 180
 
     work_mode_timeline = 3600
 

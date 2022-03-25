@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import _thread
-from misc import Power
 
 
 class Singleton(object):
@@ -37,7 +36,3 @@ class Singleton(object):
 def numiter():
     for i in range(99999):
         yield i
-
-
-def power_restart():
-    Power.powerRestart()

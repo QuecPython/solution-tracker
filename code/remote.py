@@ -191,7 +191,8 @@ def uplink_process(argv):
                         else:
                             value.pop(i)         # Pop data from data-list after posting sueecss.
                             need_refresh = True  # Data in hist-dictionary changed, need to refresh history file.
-        except Exception:
+        except Exception as e:
+            log.error('uplink_process error: %s' % e)
             while True:  # Put all data in uplink_queue to hist-dictionary.
                 if self.uplink_queue.size():
                     data = self.uplink_queue.get()
@@ -217,6 +218,8 @@ def uplink_process(argv):
                     if self.cloud.post_data(data[1]):
                         sys_bus.publish(data[0], 'true')
                         continue
+                else:
+                    log.warn('Net Is Disconnected.')
                 self.add_history(data[1])
             sys_bus.publish(data[0], 'false')
 
@@ -314,7 +317,6 @@ class Remote(Singleton):
             'gps': []
         }
         '''
-
         self.uplink_queue.put((topic, data))
 
     def check_ota(self):

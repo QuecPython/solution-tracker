@@ -50,6 +50,10 @@ log = getLogger(__name__)
 
 class Tracker(Singleton):
     def __init__(self, *args, **kwargs):
+        self.net_enable = True
+        self.num_iter = numiter()
+        self.num_lock = _thread.allocate_lock()
+
         self.check = SelfCheck()
         self.energy_led = LED()
         self.running_led = LED()
@@ -60,11 +64,8 @@ class Tracker(Singleton):
         self.power_manage = PowerManage(self)
 
         self.led_timer = LEDTimer(self)
-
-        self.num_iter = numiter()
-        self.num_lock = _thread.allocate_lock()
-
-        self.net_enable = True
+        # self.energy = 100
+        # self.cenergy = -10
 
         if PowerKey is not None:
             self.power_key = PowerKey()
@@ -73,6 +74,11 @@ class Tracker(Singleton):
             self.usb = USB()
             self.usb.setCallback(self.usb_callback)
         dataCall.setCallback(self.nw_callback)
+
+    def get_local_time(self):
+        now = utime.localtime()
+        # return '%s/%s/%s %s:%s:%s' % (now[1], now[2], now[0], now[3], now[4], now[5])
+        return '%s:%s:%s' % (now[3], now[4], now[5])
 
     def get_alert_data(self, alert_code, alert_info):
         alert_data = {}
@@ -97,16 +103,24 @@ class Tracker(Singleton):
 
         current_settings = settings.settings.get()
 
+        # TODO: Test Energy
+        # if self.energy <= 10:
+        #     self.cenergy = 10
+        # if self.energy >= 100:
+        #     self.cenergy = -10
+        # self.energy = self.energy + self.cenergy
+        # energy = self.energy
+
         energy = self.battery.energy()
         if energy <= current_settings['app']['low_power_alert_threshold']:
-            alert_data = self.get_alert_data(30002, {'local_time': utime.mktime(utime.localtime())})
+            alert_data = self.get_alert_data(30002, {'local_time': self.get_local_time()})
             device_data.update(alert_data)
 
         # TODO: Other Machine Info.
         device_data.update({
             'power_switch': power_switch,
             'energy': energy,
-            'local_time': utime.mktime(utime.localtime()),
+            'local_time': self.get_local_time(),
             'ota_status': current_settings['sys']['ota_status'],
         })
         device_data.update(current_settings['app'])
@@ -137,7 +151,7 @@ class Tracker(Singleton):
                 pass
 
             if fault_code:
-                alert_info = {'fault_code': fault_code, 'local_time': utime.mktime(utime.localtime())}
+                alert_info = {'fault_code': fault_code, 'local_time': self.get_local_time()}
                 alert_data = self.get_alert_data(alert_code, alert_info)
 
         return alert_data
@@ -150,7 +164,7 @@ class Tracker(Singleton):
                 speed = self.locator.gps.read_location_GxVTG_speed()
                 if speed and float(speed) >= current_settings['app']['over_speed_threshold']:
                     alert_code = 30003
-                    alert_info = {'local_time': utime.mktime(utime.localtime())}
+                    alert_info = {'local_time': self.get_local_time()}
                     alert_data = self.get_alert_data(alert_code, alert_info)
 
         return alert_data
@@ -166,6 +180,7 @@ class Tracker(Singleton):
         return str(num)
 
     def data_report_cb(self, topic, msg):
+        log.debug('[x] recive res topic [%s]' % topic)
         sys_bus.unsubscribe(topic)
 
         if topic.endswith('/wakelock_unlock'):
@@ -179,7 +194,9 @@ class Tracker(Singleton):
 
         if self.power_manage.callback:
             self.power_manage.callback()
-        self.power_manage.start_rtc()
+
+        if topic.endswith('/wakelock_unlock'):
+            self.power_manage.start_rtc()
 
     def device_data_report(self, power_switch=True, event_data={}, msg=''):
         device_data = self.get_device_data(power_switch)
@@ -189,6 +206,7 @@ class Tracker(Singleton):
         num = self.get_num()
         topic = num + '/' + msg if msg else num
         sys_bus.subscribe(topic, self.data_report_cb)
+        log.debug('[x] post data topic [%s]' % topic)
         self.remote.post_data(topic, device_data)
 
         # OTA Status RST
@@ -235,11 +253,12 @@ class Tracker(Singleton):
         net_check_res = self.check.net_check()
         if args[1] != 1:
             self.net_enable = False
-            if net_check_res != (1, 1):
+            if net_check_res[0] == 1 and net_check_res[1] != 1:
+                log.warn('SIM abnormal!')
                 alert_code = 30004
-                alert_info = {'local_time': utime.mktime(utime.localtime())}
+                alert_info = {'local_time': self.get_local_time()}
                 alert_data = self.get_alert_data(alert_code, alert_info)
-                self.device_data_report(event_data=alert_data)
+                self.device_data_report(event_data=alert_data, msg='sim_abnormal')
         else:
             if net_check_res == (3, 1):
                 self.net_enable = True

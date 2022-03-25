@@ -23,7 +23,6 @@ from usr.logging import getLogger
 from usr.settings import settings
 from usr.settings import default_values_sys
 from usr.common import numiter
-from usr.common import power_restart
 
 log = getLogger(__name__)
 
@@ -85,6 +84,7 @@ class AliYunIot(object):
 
     def __init__(self, pk, ps, dk, ds, downlink_queue):
         self.post_res = {}
+        self.breack_flag = 0
         self.ali_timer = osTimer()
         self.downlink_queue = downlink_queue
 
@@ -148,12 +148,19 @@ class AliYunIot(object):
 
     def get_post_res(self, msg_id):
         current_settings = settings.get()
-        self.ali_timer.start(current_settings['sys']['cloud_timeout'] * 1000, 2, power_restart)
+        self.ali_timer.start(current_settings['sys']['checknet_timeout'] * 1000, 2, self.ali_timer_cb)
         while self.post_res.get(msg_id) is None:
             utime.sleep_ms(200)
+            if self.breack_flag:
+                self.post_res[msg_id] = False
+                break
         self.ali_timer.stop()
+        self.breack_flag = 0
         res = self.post_res.pop(msg_id)
         return res
+
+    def ali_timer_cb(self, args):
+        self.breack_flag = 1
 
     def post_data(self, data):
         msg_ids = []

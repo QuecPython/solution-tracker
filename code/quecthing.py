@@ -15,11 +15,11 @@
 import osTimer
 import quecIot
 
+# from misc import Power
 from queue import Queue
 
 from usr.logging import getLogger
 from usr.settings import settings
-from usr.common import power_restart
 
 log = getLogger(__name__)
 
@@ -80,10 +80,14 @@ class QuecThing(object):
 
     def get_post_res(self):
         current_settings = settings.get()
-        self.quec_timer.start(current_settings['sys']['cloud_timeout'] * 1000, 2, power_restart)
+        self.quec_timer.start(current_settings['sys']['checknet_timeout'] * 1000, 1, self.quec_timer_cb)
         res = self.post_result_wait_queue.get()
         self.quec_timer.stop()
         return res
+
+    def quec_timer_cb(self, args):
+        # Power.powerRestart()
+        self.post_result_wait_queue.put(False)
 
     @staticmethod
     def rm_empty_data(data):

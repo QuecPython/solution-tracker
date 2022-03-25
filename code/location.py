@@ -98,9 +98,12 @@ class GPS(Singleton):
         while True:
             nread = gps_data_retrieve_queue.get()
             udata = self.uart_obj.read(nread).decode()
-            rmc_data = self.read_location_GxRMC(udata)
-            gga_data = self.read_location_GxGGA(udata)
-            vtg_data = self.read_location_GxVTG(udata)
+            if not rmc_data:
+                rmc_data = self.read_location_GxRMC(udata)
+            if not gga_data:
+                gga_data = self.read_location_GxGGA(udata)
+            if not vtg_data:
+                vtg_data = self.read_location_GxVTG(udata)
             if rmc_data or gga_data or vtg_data:
                 data += udata
             if rmc_data and gga_data and vtg_data:
@@ -125,9 +128,12 @@ class GPS(Singleton):
         while True:
             gnss_data = quecgnss.read(4096)
             udata = gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
-            rmc_data = self.read_location_GxRMC(udata)
-            gga_data = self.read_location_GxGGA(udata)
-            vtg_data = self.read_location_GxVTG(udata)
+            if not rmc_data:
+                rmc_data = self.read_location_GxRMC(udata)
+            if not gga_data:
+                gga_data = self.read_location_GxGGA(udata)
+            if not vtg_data:
+                vtg_data = self.read_location_GxVTG(udata)
             if rmc_data or gga_data or vtg_data:
                 data += udata
             if rmc_data and gga_data and vtg_data:
