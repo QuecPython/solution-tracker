@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import utime
 import osTimer
 import quecIot
 
@@ -70,13 +71,28 @@ class QuecThing(object):
         self.downlink_queue = downlink_queue
         self.post_result_wait_queue = Queue(maxsize=16)
         self.quec_timer = osTimer()
+        self.queciot_init(pk, ps, dk, ds)
 
+    def queciot_init(self, pk, ps, dk, ds):
         quecIot.init()
         quecIot.setEventCB(self.eventCB)
         quecIot.setProductinfo(pk, ps)
         quecIot.setDkDs(dk, ds)
         quecIot.setServer(1, "iot-south.quectel.com:2883")
         quecIot.setConnmode(1)
+        if not ds and dk:
+            count = 0
+            while count < 3:
+                ndk, nds = quecIot.getDkDs()
+                if nds:
+                    break
+                count += 1
+                utime.sleep(count)
+            current_settings = settings.get()
+            cloud_init_params = current_settings['sys']['cloud_init_params']
+            cloud_init_params['DS'] = nds
+            settings.set('cloud_init_params', cloud_init_params)
+            settings.save()
 
     def get_post_res(self):
         current_settings = settings.get()

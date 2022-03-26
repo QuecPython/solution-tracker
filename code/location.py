@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ure
+import utime
 import osTimer
 import cellLocator
 import usr.settings as settings
@@ -80,7 +81,12 @@ class GPS(Singleton):
         gps_data_retrieve_queue = Queue(maxsize=8)
 
     def gps_timer_callback(self, args):
-        self.break_flag = 1
+        if self.break_flag == 0:
+            self.break_flag = 1
+        elif self.break_flag == 1:
+            self.break_flag = 2
+            if gps_data_retrieve_queue is not None:
+                gps_data_retrieve_queue.put(0)
 
     def uart_read(self):
         global gps_data_retrieve_queue
@@ -95,21 +101,24 @@ class GPS(Singleton):
         rmc_data = ''
         gga_data = ''
         vtg_data = ''
-        while True:
+        while self.break_flag == 1:
+            self.gps_timer.start(3000, 1, self.gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
-            udata = self.uart_obj.read(nread).decode()
-            if not rmc_data:
-                rmc_data = self.read_location_GxRMC(udata)
-            if not gga_data:
-                gga_data = self.read_location_GxGGA(udata)
-            if not vtg_data:
-                vtg_data = self.read_location_GxVTG(udata)
-            if rmc_data or gga_data or vtg_data:
-                data += udata
-            if rmc_data and gga_data and vtg_data:
-                break
-
+            if nread:
+                udata = self.uart_obj.read(nread).decode()
+                if not rmc_data:
+                    rmc_data = self.read_location_GxRMC(udata)
+                if not gga_data:
+                    gga_data = self.read_location_GxGGA(udata)
+                if not vtg_data:
+                    vtg_data = self.read_location_GxVTG(udata)
+                if rmc_data or gga_data or vtg_data:
+                    data += udata
+                if rmc_data and gga_data and vtg_data:
+                    self.break_flag = 2
+            self.gps_timer.stop()
         self.break_flag = 0
+
         return data
 
     def quecgnss_read(self):
@@ -125,21 +134,30 @@ class GPS(Singleton):
         rmc_data = ''
         gga_data = ''
         vtg_data = ''
-        while True:
+        count = 0
+        while self.break_flag == 1:
+            self.gps_timer.start(3000, 1, self.gps_timer_callback)
             gnss_data = quecgnss.read(4096)
-            udata = gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
-            if not rmc_data:
-                rmc_data = self.read_location_GxRMC(udata)
-            if not gga_data:
-                gga_data = self.read_location_GxGGA(udata)
-            if not vtg_data:
-                vtg_data = self.read_location_GxVTG(udata)
-            if rmc_data or gga_data or vtg_data:
-                data += udata
-            if rmc_data and gga_data and vtg_data:
-                break
+            if gnss_data and gnss_data[1]:
+                udata = gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
+                if not rmc_data:
+                    rmc_data = self.read_location_GxRMC(udata)
+                if not gga_data:
+                    gga_data = self.read_location_GxGGA(udata)
+                if not vtg_data:
+                    vtg_data = self.read_location_GxVTG(udata)
+                if rmc_data or gga_data or vtg_data:
+                    data += udata
+                if rmc_data and gga_data and vtg_data:
+                    self.break_flag = 2
+            self.gps_timer.stop()
 
+            if count > 5:
+                self.break_flag = 2
+            count += 1
+            utime.sleep_ms(300)
         self.break_flag = 0
+
         return data
 
     def read(self):
@@ -182,8 +200,10 @@ class GPS(Singleton):
         return ""
 
     def read_quecIot(self):
+        res = {}
         data = []
         gps_data = self.read()
+        log.debug('read_quecIot gps_data: %s' % gps_data)
         r = self.read_location_GxRMC(gps_data)
         if r:
             data.append(r)
@@ -195,13 +215,16 @@ class GPS(Singleton):
         r = self.read_location_GxVTG(gps_data)
         if r:
             data.append(r)
+        if data:
+            res = {'gps': data}
 
-        return {'gps': data}
+        return res
 
     def read_aliyun(self):
+        gps_info = {}
         gps_data = self.read()
         gga_data = self.read_location_GxGGA(gps_data)
-        data = {'CoordinateSystem': 1}
+        data = {}
         if gga_data:
             Latitude_re = ure.search(r",[0-9]+\.[0-9]+,[NS],", gga_data)
             if Latitude_re:
@@ -212,7 +235,10 @@ class GPS(Singleton):
             Altitude_re = ure.search(r"-*[0-9]+\.[0-9]+,M,", gga_data)
             if Altitude_re:
                 data['Altitude'] = round(float(Altitude_re.group(0)[:-3]), 2)
-        gps_info = {'GeoLocation': data}
+            if data:
+                data['CoordinateSystem'] = 1
+        if data:
+            gps_info = {'GeoLocation': data}
         return gps_info
 
 
@@ -233,8 +259,10 @@ class CellLocator(object):
         return {'non_gps': ['LBS']}
 
     def read_aliyun(self):
+        gps_info = {}
         gps_data = self.read()
-        gps_info = {'GeoLocation': {'Longtitude': round(gps_data[0], 2), 'Latitude': round(gps_data[1], 2), 'Altitude': 0.0, 'CoordinateSystem': 1}}
+        if gps_data:
+            gps_info = {'GeoLocation': {'Longtitude': round(gps_data[0], 2), 'Latitude': round(gps_data[1], 2), 'Altitude': 0.0, 'CoordinateSystem': 1}}
         return gps_info
 
 
@@ -246,11 +274,14 @@ class WiFiLocator(object):
         return self.wifilocator_obj.getwifilocator()
 
     def read_quecIot(self):
-        return {'non_gps': []}
+        # TODO: {'non_gps': []}
+        return {}
 
     def read_aliyun(self):
+        gps_info = {}
         gps_data = self.read()
-        gps_info = {'GeoLocation': {'Longtitude': round(gps_data[0], 2), 'Latitude': round(gps_data[1], 2), 'Altitude': 0.0, 'CoordinateSystem': 1}}
+        if gps_data:
+            gps_info = {'GeoLocation': {'Longtitude': round(gps_data[0], 2), 'Latitude': round(gps_data[1], 2), 'Altitude': 0.0, 'CoordinateSystem': 1}}
         return gps_info
 
 

@@ -99,6 +99,7 @@ class Tracker(Singleton):
 
         loc_info = self.locator.read()
         if loc_info:
+            log.debug('loc_method: %s' % loc_info[0])
             device_data.update(loc_info[1])
 
         current_settings = settings.settings.get()

@@ -21,7 +21,7 @@ log = getLogger(__name__)
 
 PROJECT_NAME = 'QuecPython_Tracker'
 
-PROJECT_VERSION = '2.0.0'
+PROJECT_VERSION = '2.0.1'
 
 
 def main():

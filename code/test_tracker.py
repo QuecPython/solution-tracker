@@ -73,9 +73,6 @@ def test_settings():
     log.info('[x] start test_settings')
     current_settings = settings.settings.get()
     log.info("current_settings", current_settings)
-    settings.Settings().reset()
-    current_settings = settings.settings.get()
-    log.info("current_settings", current_settings)
     log.info('[x] end test_settings')
 
 

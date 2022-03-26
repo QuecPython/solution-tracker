@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ql_fs
-import ujson
 import uos
 import ure
+import ql_fs
+import ujson
 import _thread
-import quecIot
 from machine import UART
 from usr.common import Singleton
 
 PROJECT_NAME = 'QuecPython_Tracker'
 
-PROJECT_VERSION = '2.0.0'
+PROJECT_VERSION = '2.0.1'
 
 DATA_NON_LOCA = 0x0
 DATA_LOCA_NON_GPS = 0x1
@@ -131,7 +130,7 @@ class default_values_app(object):
 
     phone_num = ''
 
-    loc_method = _loc_method.gps
+    loc_method = _loc_method.all
 
     work_mode = _work_mode.cycle
 
@@ -213,6 +212,7 @@ class default_values_sys(object):
 
     ali_burning_method = _ali_burning_method.one_machine_one_density
 
+    # trackdev0304
     _quecIot = {
         'PK': 'p11275',
         'PS': 'Q0ZQQndaN3pCUFd6',
@@ -220,12 +220,44 @@ class default_values_sys(object):
         'DS': '8eba9389af434974c3c846d1922d949f',
     }
 
+    # # trackerdemo0326
+    # _quecIot = {
+    #     'PK': 'p11275',
+    #     'PS': 'Q0ZQQndaN3pCUFd6',
+    #     'DK': 'trackerdemo0326',
+    #     'DS': '32d540996e32f95c58dd98f18d473d52',
+    # }
+
+    # _quecIot = {
+    #     'PK': 'p11275',
+    #     'PS': 'Q0ZQQndaN3pCUFd6',
+    #     'DK': '',
+    #     'DS': '',
+    # }
+
+    # TrackerEC600N
     _AliYun = {
         'PK': 'guqqtu3edVY',
         'PS': 'xChL7HREtPyYCtPM',
         'DK': 'TrackerEC600N',
         'DS': 'a3153ed0c2f68db6e2f47e0769f966a2',
     }
+
+    # # alitrackerdemo0326
+    # _AliYun = {
+    #     'PK': 'guqqtu3edVY',
+    #     'PS': 'xChL7HREtPyYCtPM',
+    #     'DK': 'alitrackerdemo0326',
+    #     'DS': 'b01307100686698bbc71fc4af230baf9',
+    # }
+
+    # # ali_tracker_demo_0306_jun
+    # _AliYun = {
+    #     'PK': 'guqqtu3edVY',
+    #     'PS': 'xChL7HREtPyYCtPM',
+    #     'DK': 'ali_tracker_demo_0306_jun',
+    #     'DS': '38d78764407d08776c74e319a7802d88',
+    # }
 
     _JTT808 = {
         'PK': '',
@@ -276,23 +308,11 @@ class default_values_sys(object):
 
         if cloud & default_values_sys._cloud.quecIot:
             cloud_init_params = default_values_sys._quecIot
-            cloud_init_params = default_values_sys._quecIot_init_params(cloud_init_params)
         if cloud & default_values_sys._cloud.AliYun:
             cloud_init_params = default_values_sys._AliYun
         if cloud & default_values_sys._cloud.JTT808:
             cloud_init_params = default_values_sys._JTT808
 
-        return cloud_init_params
-
-    @staticmethod
-    def _quecIot_init_params(cloud_init_params):
-        if not cloud_init_params['DK'] or not cloud_init_params['DS']:
-            if quecIot.init():
-                if quecIot.setProductinfo(cloud_init_params['PK'], cloud_init_params['PS']):
-                    if quecIot.setDkDs(cloud_init_params['DK'], cloud_init_params['DS']):
-                        ndk, nds = quecIot.getDkDs()
-                        cloud_init_params['DK'] = ndk
-                        cloud_init_params['DS'] = nds
         return cloud_init_params
 
 
@@ -389,12 +409,17 @@ class Settings(Singleton):
             if opt == 'sw_log':
                 if not isinstance(val, bool):
                     return False
-                self.current_settings['app'][opt] = val
+                self.current_settings['sys'][opt] = val
                 return True
             elif opt == 'ota_status':
                 if not isinstance(val, int):
                     return False
-                self.current_settings['app'][opt] = val
+                self.current_settings['sys'][opt] = val
+                return True
+            elif opt == 'cloud_init_params':
+                if not isinstance(val, dict):
+                    return False
+                self.current_settings['sys'][opt] = val
                 return True
         else:
             return False
