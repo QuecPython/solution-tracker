@@ -114,9 +114,9 @@ def test_tracker():
     log.info('[.] sleep 3')
     utime.sleep(3)
 
-    log.info('[.] tracker.device_data_report()')
-    device_data_report_res = tracker.device_data_report()
-    log.info('[.] device_data_report_res:', device_data_report_res)
+    log.info('[.] tracker.device_check()')
+    device_check_res = tracker.device_check()
+    log.info('[.] device_check_res:', device_check_res)
 
     log.info('[.] sleep 3')
     utime.sleep(3)

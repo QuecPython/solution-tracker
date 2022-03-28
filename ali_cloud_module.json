@@ -121,8 +121,11 @@
           "0": "无",
           "1": "GPS",
           "2": "基站",
-          "4": "WIFI",
-          "7": "全部支持"
+          "3": "GPS_基站",
+          "4": "Wifi",
+          "5": "GPS_Wifi",
+          "6": "基站_Wifi",
+          "7": "GPS_基站_Wifi"
         }
       }
     },
@@ -161,12 +164,8 @@
       "accessMode": "r",
       "required": false,
       "dataType": {
-        "type": "int",
-        "specs": {
-          "min": "0",
-          "max": "2147483647",
-          "step": "1"
-        }
+        "type": "date",
+        "specs": {}
       }
     },
     {
@@ -329,16 +328,17 @@
     },
     {
       "identifier": "drive_behavior_code",
-      "name": "驾驶行为代码",
+      "name": "异常驾驶行为",
       "accessMode": "r",
       "required": false,
       "dataType": {
         "type": "enum",
         "specs": {
-          "40001": "quick_start",
-          "40002": "quick_stop",
-          "40003": "quick_turn_left",
-          "40004": "quick_turn_right"
+          "0": "无",
+          "1": "急起",
+          "2": "急停",
+          "3": "左急转弯",
+          "4": "右急转弯"
         }
       }
     },
@@ -348,10 +348,9 @@
       "accessMode": "rw",
       "required": false,
       "dataType": {
-        "type": "bool",
+        "type": "enum",
         "specs": {
-          "0": "关",
-          "1": "开"
+          "1": "重启"
         }
       }
     },
@@ -372,20 +371,80 @@
       }
     },
     {
-      "identifier": "fault_code",
-      "name": "故障代码",
+      "identifier": "device_module_status",
+      "name": "设备模块状态",
       "accessMode": "r",
       "required": false,
       "dataType": {
-        "type": "enum",
-        "specs": {
-          "20001": "net_error",
-          "20002": "gps_error",
-          "20003": "temp_sensor_error",
-          "20004": "light_sensor_error",
-          "20005": "move_sensor_error",
-          "20006": "mike_error"
-        }
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "net_error",
+            "name": "网络状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "正常",
+                "1": "异常"
+              }
+            }
+          },
+          {
+            "identifier": "gps_error",
+            "name": "GPS状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "正常",
+                "1": "异常"
+              }
+            }
+          },
+          {
+            "identifier": "temp_sensor_error",
+            "name": "温湿度传感器状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "正常",
+                "1": "异常"
+              }
+            }
+          },
+          {
+            "identifier": "light_sensor_error",
+            "name": "光照传感器状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "正常",
+                "1": "异常"
+              }
+            }
+          },
+          {
+            "identifier": "move_sensor_error",
+            "name": "三轴加速传感器状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "正常",
+                "1": "异常"
+              }
+            }
+          },
+          {
+            "identifier": "mike_error",
+            "name": "麦克风状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "正常",
+                "1": "异常"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -409,10 +468,10 @@
       "desc": "用户操作，只写功能",
       "required": false,
       "dataType": {
-        "type": "bool",
+        "type": "enum",
         "specs": {
-          "0": "拒绝升级",
-          "1": "接受升级"
+          "0": "取消升级",
+          "1": "确认升级"
         }
       }
     },
@@ -548,8 +607,11 @@
               "0": "无",
               "1": "GPS",
               "2": "基站",
-              "4": "WIFI",
-              "7": "全部支持"
+              "3": "GPS_基站",
+              "4": "Wifi",
+              "5": "GPS_Wifi",
+              "6": "基站_Wifi",
+              "7": "GPS_基站_Wifi"
             }
           }
         },
@@ -582,12 +644,8 @@
           "identifier": "local_time",
           "name": "本地时间",
           "dataType": {
-            "type": "int",
-            "specs": {
-              "min": "0",
-              "max": "2147483647",
-              "step": "1"
-            }
+            "type": "date",
+            "specs": {}
           }
         },
         {
@@ -726,14 +784,15 @@
         },
         {
           "identifier": "drive_behavior_code",
-          "name": "驾驶行为代码",
+          "name": "异常驾驶行为",
           "dataType": {
             "type": "enum",
             "specs": {
-              "40001": "quick_start",
-              "40002": "quick_stop",
-              "40003": "quick_turn_left",
-              "40004": "quick_turn_right"
+              "0": "无",
+              "1": "急起",
+              "2": "急停",
+              "3": "左急转弯",
+              "4": "右急转弯"
             }
           }
         },
@@ -741,10 +800,9 @@
           "identifier": "power_restart",
           "name": "模块重启",
           "dataType": {
-            "type": "bool",
+            "type": "enum",
             "specs": {
-              "0": "关",
-              "1": "开"
+              "1": "重启"
             }
           }
         },
@@ -763,18 +821,78 @@
           }
         },
         {
-          "identifier": "fault_code",
-          "name": "故障代码",
+          "identifier": "device_module_status",
+          "name": "设备模块状态",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "20001": "net_error",
-              "20002": "gps_error",
-              "20003": "temp_sensor_error",
-              "20004": "light_sensor_error",
-              "20005": "move_sensor_error",
-              "20006": "mike_error"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "net_error",
+                "name": "网络状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "gps_error",
+                "name": "GPS状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "temp_sensor_error",
+                "name": "温湿度传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "light_sensor_error",
+                "name": "光照传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "move_sensor_error",
+                "name": "三轴加速传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "mike_error",
+                "name": "麦克风状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -793,10 +911,10 @@
           "identifier": "user_ota_action",
           "name": "是否OTA升级",
           "dataType": {
-            "type": "bool",
+            "type": "enum",
             "specs": {
-              "0": "拒绝升级",
-              "1": "接受升级"
+              "0": "取消升级",
+              "1": "确认升级"
             }
           }
         },
@@ -830,21 +948,7 @@
       "type": "error",
       "required": false,
       "method": "thing.event.fault_alert.post",
-      "outputData": [
-        {
-          "identifier": "fault_code",
-          "name": "故障代码",
-          "dataType": {
-            "type": "array",
-            "specs": {
-              "size": "10",
-              "item": {
-                "type": "int"
-              }
-            }
-          }
-        }
-      ]
+      "outputData": []
     },
     {
       "identifier": "low_power_alert",
@@ -852,22 +956,7 @@
       "type": "alert",
       "required": false,
       "method": "thing.event.low_power_alert.post",
-      "outputData": [
-        {
-          "identifier": "energy",
-          "name": "电量",
-          "dataType": {
-            "type": "int",
-            "specs": {
-              "min": "0",
-              "max": "100",
-              "unit": "%",
-              "unitName": "百分比",
-              "step": "1"
-            }
-          }
-        }
-      ]
+      "outputData": []
     },
     {
       "identifier": "sim_abnormal_alert",
@@ -879,25 +968,11 @@
     },
     {
       "identifier": "drive_behavior_alert",
-      "name": "驾驶行为报警",
+      "name": "异常驾驶行为报警",
       "type": "alert",
       "required": false,
       "method": "thing.event.drive_behavior_alert.post",
-      "outputData": [
-        {
-          "identifier": "drive_behavior_code",
-          "name": "驾驶行为代码",
-          "dataType": {
-            "type": "enum",
-            "specs": {
-              "40001": "quick_start",
-              "40002": "quick_stop",
-              "40003": "quick_turn_left",
-              "40004": "quick_turn_right"
-            }
-          }
-        }
-      ]
+      "outputData": []
     },
     {
       "identifier": "disassemble_alert",
@@ -955,8 +1030,11 @@
               "0": "无",
               "1": "GPS",
               "2": "基站",
-              "4": "WIFI",
-              "7": "全部支持"
+              "3": "GPS_基站",
+              "4": "Wifi",
+              "5": "GPS_Wifi",
+              "6": "基站_Wifi",
+              "7": "GPS_基站_Wifi"
             }
           }
         },
@@ -1123,10 +1201,9 @@
           "identifier": "power_restart",
           "name": "模块重启",
           "dataType": {
-            "type": "bool",
+            "type": "enum",
             "specs": {
-              "0": "关",
-              "1": "开"
+              "1": "重启"
             }
           }
         },
@@ -1148,10 +1225,10 @@
           "identifier": "user_ota_action",
           "name": "是否OTA升级",
           "dataType": {
-            "type": "bool",
+            "type": "enum",
             "specs": {
-              "0": "拒绝升级",
-              "1": "接受升级"
+              "0": "取消升级",
+              "1": "确认升级"
             }
           }
         }
@@ -1189,7 +1266,7 @@
         "drive_behavior_code",
         "power_restart",
         "over_speed_threshold",
-        "fault_code",
+        "device_module_status",
         "gps_mode",
         "user_ota_action",
         "ota_status"
@@ -1301,8 +1378,11 @@
               "0": "无",
               "1": "GPS",
               "2": "基站",
-              "4": "WIFI",
-              "7": "全部支持"
+              "3": "GPS_基站",
+              "4": "Wifi",
+              "5": "GPS_Wifi",
+              "6": "基站_Wifi",
+              "7": "GPS_基站_Wifi"
             }
           }
         },
@@ -1335,12 +1415,8 @@
           "identifier": "local_time",
           "name": "本地时间",
           "dataType": {
-            "type": "int",
-            "specs": {
-              "min": "0",
-              "max": "2147483647",
-              "step": "1"
-            }
+            "type": "date",
+            "specs": {}
           }
         },
         {
@@ -1479,14 +1555,15 @@
         },
         {
           "identifier": "drive_behavior_code",
-          "name": "驾驶行为代码",
+          "name": "异常驾驶行为",
           "dataType": {
             "type": "enum",
             "specs": {
-              "40001": "quick_start",
-              "40002": "quick_stop",
-              "40003": "quick_turn_left",
-              "40004": "quick_turn_right"
+              "0": "无",
+              "1": "急起",
+              "2": "急停",
+              "3": "左急转弯",
+              "4": "右急转弯"
             }
           }
         },
@@ -1494,10 +1571,9 @@
           "identifier": "power_restart",
           "name": "模块重启",
           "dataType": {
-            "type": "bool",
+            "type": "enum",
             "specs": {
-              "0": "关",
-              "1": "开"
+              "1": "重启"
             }
           }
         },
@@ -1516,18 +1592,78 @@
           }
         },
         {
-          "identifier": "fault_code",
-          "name": "故障代码",
+          "identifier": "device_module_status",
+          "name": "设备模块状态",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "20001": "net_error",
-              "20002": "gps_error",
-              "20003": "temp_sensor_error",
-              "20004": "light_sensor_error",
-              "20005": "move_sensor_error",
-              "20006": "mike_error"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "net_error",
+                "name": "网络状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "gps_error",
+                "name": "GPS状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "temp_sensor_error",
+                "name": "温湿度传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "light_sensor_error",
+                "name": "光照传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "move_sensor_error",
+                "name": "三轴加速传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              },
+              {
+                "identifier": "mike_error",
+                "name": "麦克风状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "正常",
+                    "1": "异常"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -1546,10 +1682,10 @@
           "identifier": "user_ota_action",
           "name": "是否OTA升级",
           "dataType": {
-            "type": "bool",
+            "type": "enum",
             "specs": {
-              "0": "拒绝升级",
-              "1": "接受升级"
+              "0": "取消升级",
+              "1": "确认升级"
             }
           }
         },

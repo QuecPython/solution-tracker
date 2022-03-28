@@ -257,7 +257,7 @@ tracker.remote.post_data(topic, data)
 |驾驶行为代码|`drive_behavior_code`|`int`|取值范围：40001 ~ 40004|40001: quick_start;40002: quick_stop;40003: quick_turn_left;40004: quick_turn_right|只读|
 |模块重启|`power_restart`|`bool`|`True`:重启,`False`:无动作||读写|
 |超速报警阈值|`over_speed_threshold`|`int`|取值范围：0 ~ 132|单位km/h|读写|
-|故障代码|`fault_code`|`int`|取值范围：20001 ~ 29999|20001: net_error,20002: gps_error,20003: temp_sensor_error,20004: light_sensor_error,20005: move_sensor_error,20006: mike_error|只读|
+|设备模块状态|`device_module_status`|`int`|1: net_error,2: gps_error,3: temp_sensor_error,4: light_sensor_error,5: move_sensor_error,6: mike_error|只读|
 |GPS模块类型|`gps_mode`|`int`|取值范围：0 ~ 2|0: 无GPS模块,1: 内置GPS模块,2: 外置GPS模块|只读|
 |是否OTA升级|`user_ota_action`|`bool`|`True`:接受升级,`False`:拒绝升级||只写|
 |OTA升级状态|`ota_status`|`int`|取值范围：0 ~ 5|0: 无升级;1: 待升级;2: 升级中;3: 升级成功;4: 升级失败|只读|
@@ -267,10 +267,10 @@ tracker.remote.post_data(topic, data)
 |功能名称|标识符|数据定义|
 |:---|:---|:---|
 |SOS报警|`sos_alert`|`{'local_time': xxx}`|
-|故障报警|`fault_alert`|`{'local_time': xxx, 'fault_code': 20001}`|
-|低电报警|`low_power_alert`|`{'local_time': xxx, 'energy': 20}`|
+|故障报警|`fault_alert`|`{'local_time': xxx}`|
+|低电报警|`low_power_alert`|`{'local_time': xxx}`|
 |SIM卡异常报警|`sim_abnormal_alert`|`{'local_time': xxx}`|
-|驾驶行为报警|`drive_behavior_alert`|`{'local_time': xxx, 'drive_behavior_code': 40001}`|
+|驾驶行为报警|`drive_behavior_alert`|`{'local_time': xxx}`|
 |拆卸报警|`disassemble_alert`|`{'local_time': xxx}`|
 |超速报警|`over_speed_alert`|`{'local_time': xxx}`|
 
@@ -290,7 +290,6 @@ tracker.remote.post_data(topic, data)
 import utime
 alert_code = 20000
 alert_info = {
-    'fault_code': 20001,
     'local_time': utime.mktime(utime.localtime())
 }
 res = tracker.get_alert_data(alert_code, alert_info)

@@ -48,7 +48,7 @@ object_model = [
     (21, ('drive_behavior_code', 'r')),
     (33, ('power_restart', 'w')),
     (34, ('over_speed_threshold', 'rw')),
-    (36, ('fault_code', 'r')),
+    (36, ('device_module_status', 'r')),
     (37, ('gps_mode', 'r')),
     (38, ('user_ota_action', 'w')),
     (39, ('ota_status', 'r')),
@@ -62,6 +62,17 @@ object_model = [
     (22, ('drive_behavior_alert', 'r')),
     (35, ('over_speed_alert', 'r')),
 ]
+
+object_model_struct = {
+    'device_module_status': {
+        'net_error': 1,
+        'gps_error': 2,
+        'temp_sensor_error': 3,
+        'light_sensor_error': 4,
+        'move_sensor_error': 5,
+        'mike_error': 6,
+    }
+}
 
 object_model_code = {i[1][0]: i[0] for i in object_model}
 
@@ -113,12 +124,25 @@ class QuecThing(object):
 
     def post_data(self, data):
         res = True
+        log.debug('quecIot post_data: %s' % str(data))
         for k, v in data.items():
             if object_model_code.get(k) is not None:
                 # Event Data Format From object_mode_code
-                if v:
+                if v is not None:
                     if isinstance(v, dict):
-                        v = {object_model_code.get(ik) if object_model_code.get(ik) else ik: iv for ik, iv in v.items()}
+                        nv = {}
+                        for ik, iv in v.items():
+                            if object_model_code.get(ik):
+                                nv[object_model_code.get(ik)] = iv
+                            else:
+                                if object_model_struct.get(k):
+                                    nv[object_model_struct[k].get(ik)] = iv
+                                else:
+                                    nv[ik] = iv
+                        log.debug('nv: %s' % str(nv))
+                        v = nv
+                        log.debug('v: %s' % str(v))
+                    log.debug('k: %s, v: %s' % (k, v))
                     phymodelReport_res = quecIot.phymodelReport(1, {object_model_code.get(k): v})
                     if not phymodelReport_res:
                         res = False

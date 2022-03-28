@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220325114956585"
+		"version":"20220328195506205"
 	},
 	"properties":[
 		{
@@ -57,36 +57,78 @@
 			"desc":""
 		},
 		{
-			"specs":{
-				"unit":"",
-				"min":"0",
-				"max":"7",
-				"step":"1"
-			},
+			"specs":[
+				{
+					"dataType":"ENUM",
+					"name":"无",
+					"value":"0"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"GPS",
+					"value":"1"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"基站",
+					"value":"2"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"GPS_基站",
+					"value":"3"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"Wifi",
+					"value":"4"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"GPS_Wifi",
+					"value":"5"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"基站_Wifi",
+					"value":"6"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"GPS_基站_Wifi",
+					"value":"7"
+				}
+			],
 			"code":"loc_method",
-			"dataType":"INT",
+			"dataType":"ENUM",
 			"name":"定位方式",
 			"subType":"RW",
 			"id":24,
 			"sort":3,
 			"type":"PROPERTY",
-			"desc":"0: 无\n1: GPS\n2: 基站\n4: WIFI(暂不支持)\n7: 全部支持"
+			"desc":""
 		},
 		{
-			"specs":{
-				"unit":"",
-				"min":"1",
-				"max":"2",
-				"step":"1"
-			},
+			"specs":[
+				{
+					"dataType":"ENUM",
+					"name":"周期性模式",
+					"value":"1"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"智能模式",
+					"value":"2"
+				}
+			],
 			"code":"work_mode",
-			"dataType":"INT",
+			"dataType":"ENUM",
 			"name":"工作模式",
 			"subType":"RW",
 			"id":25,
 			"sort":4,
 			"type":"PROPERTY",
-			"desc":"1: 周期性模式\n2: 智能模式"
+			"desc":""
 		},
 		{
 			"specs":{
@@ -105,14 +147,8 @@
 			"desc":""
 		},
 		{
-			"specs":{
-				"unit":"",
-				"min":"",
-				"max":"",
-				"step":""
-			},
 			"code":"local_time",
-			"dataType":"INT",
+			"dataType":"DATE",
 			"name":"本地时间",
 			"subType":"R",
 			"id":19,
@@ -189,7 +225,7 @@
 			],
 			"code":"sw_ota_auto_upgrade",
 			"dataType":"BOOL",
-			"name":"OTA自动升级功能开关",
+			"name":"OTA自动升级开关",
 			"subType":"RW",
 			"id":13,
 			"sort":10,
@@ -373,38 +409,54 @@
 			"desc":""
 		},
 		{
-			"specs":{
-				"unit":"",
-				"min":"40001",
-				"max":"40004",
-				"step":"1"
-			},
+			"specs":[
+				{
+					"dataType":"ENUM",
+					"name":"无",
+					"value":"0"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"急起",
+					"value":"1"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"急停",
+					"value":"2"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"左急转弯",
+					"value":"3"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"右急转弯",
+					"value":"4"
+				}
+			],
 			"code":"drive_behavior_code",
-			"dataType":"INT",
-			"name":"驾驶行为代码",
+			"dataType":"ENUM",
+			"name":"异常驾驶行为",
 			"subType":"R",
 			"id":21,
 			"sort":19,
 			"type":"PROPERTY",
-			"desc":"40001: quick_start\n40002: quick_stop\n40003: quick_turn_left\n40004: quick_turn_right"
+			"desc":""
 		},
 		{
 			"specs":[
 				{
-					"dataType":"BOOL",
+					"dataType":"ENUM",
 					"name":"重启",
-					"value":"true"
-				},
-				{
-					"dataType":"BOOL",
-					"name":"无动作",
-					"value":"false"
+					"value":"1"
 				}
 			],
 			"code":"power_restart",
-			"dataType":"BOOL",
+			"dataType":"ENUM",
 			"name":"模块重启",
-			"subType":"W",
+			"subType":"RW",
 			"id":33,
 			"sort":26,
 			"type":"PROPERTY",
@@ -427,72 +479,211 @@
 			"desc":"单位km/h"
 		},
 		{
-			"specs":{
-				"size":"10",
-				"dataType":"INT"
-			},
-			"code":"fault_code",
-			"dataType":"ARRAY",
-			"name":"故障代码",
+			"specs":[
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"正常",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"异常",
+							"value":"1"
+						}
+					],
+					"code":"net_error",
+					"dataType":"ENUM",
+					"name":"网络状态",
+					"id":1
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"正常",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"异常",
+							"value":"1"
+						}
+					],
+					"code":"gps_error",
+					"dataType":"ENUM",
+					"name":"GPS状态",
+					"id":2
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"正常",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"异常",
+							"value":"1"
+						}
+					],
+					"code":"temp_sensor_error",
+					"dataType":"ENUM",
+					"name":"温湿度传感器状态",
+					"id":3
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"正常",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"异常",
+							"value":"1"
+						}
+					],
+					"code":"light_sensor_error",
+					"dataType":"ENUM",
+					"name":"光照传感器状态",
+					"id":4,
+					"desc":""
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"正常",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"异常",
+							"value":"1"
+						}
+					],
+					"code":"move_sensor_error",
+					"dataType":"ENUM",
+					"name":"三轴加速传感器状态",
+					"id":5
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"正常",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"异常",
+							"value":"1"
+						}
+					],
+					"code":"mike_error",
+					"dataType":"ENUM",
+					"name":"麦克风状态",
+					"id":6
+				}
+			],
+			"code":"device_module_status",
+			"dataType":"STRUCT",
+			"name":"设备模块状态",
 			"subType":"R",
 			"id":36,
 			"sort":29,
 			"type":"PROPERTY",
-			"desc":"20001: net_error,\n20002: gps_error,\n20003: temp_sensor_error,\n20004: light_sensor_error,\n20005: move_sensor_error,\n20006: mike_error,"
+			"desc":""
 		},
 		{
-			"specs":{
-				"unit":"",
-				"min":"0",
-				"max":"2",
-				"step":"1"
-			},
+			"specs":[
+				{
+					"dataType":"ENUM",
+					"name":"无GPS模块",
+					"value":"0"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"内置GPS模块",
+					"value":"1"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"外置GPS模块",
+					"value":"2"
+				}
+			],
 			"code":"gps_mode",
-			"dataType":"INT",
+			"dataType":"ENUM",
 			"name":"GPS模块类型",
 			"subType":"R",
 			"id":37,
 			"sort":30,
 			"type":"PROPERTY",
-			"desc":"0: 无GPS模块,\n1: 内置GPS模块,\n2: 外置GPS模块,"
+			"desc":""
 		},
 		{
 			"specs":[
 				{
-					"dataType":"BOOL",
-					"name":"接受升级",
-					"value":"true"
+					"dataType":"ENUM",
+					"name":"取消升级",
+					"value":"0"
 				},
 				{
-					"dataType":"BOOL",
-					"name":"拒绝升级",
-					"value":"false"
+					"dataType":"ENUM",
+					"name":"确认升级",
+					"value":"1"
 				}
 			],
 			"code":"user_ota_action",
-			"dataType":"BOOL",
+			"dataType":"ENUM",
 			"name":"是否OTA升级",
-			"subType":"W",
+			"subType":"RW",
 			"id":38,
 			"sort":31,
 			"type":"PROPERTY",
 			"desc":"当OTA自动升级关闭时, 用户通过查看设备当前是否有OTA升级来进行自主选择升级或不升级"
 		},
 		{
-			"specs":{
-				"unit":"",
-				"min":"0",
-				"max":"5",
-				"step":"1"
-			},
+			"specs":[
+				{
+					"dataType":"ENUM",
+					"name":"无升级",
+					"value":"0"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"待升级",
+					"value":"1"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"升级中",
+					"value":"2"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"升级成功",
+					"value":"3"
+				},
+				{
+					"dataType":"ENUM",
+					"name":"升级失败",
+					"value":"4"
+				}
+			],
 			"code":"ota_status",
-			"dataType":"INT",
+			"dataType":"ENUM",
 			"name":"OTA升级状态",
 			"subType":"R",
 			"id":39,
 			"sort":32,
 			"type":"PROPERTY",
-			"desc":"0: 无升级;\n1: 待升级;\n2: 升级中;\n3: 升级成功;\n4: 升级失败"
+			"desc":""
 		}
 	],
 	"events":[
@@ -514,9 +705,6 @@
 			"outputData":[
 				{
 					"$ref":"#/properties/id/19"
-				},
-				{
-					"$ref":"#/properties/id/36"
 				}
 			],
 			"code":"fault_alert",
@@ -530,13 +718,7 @@
 		{
 			"outputData":[
 				{
-					"$ref":"#/properties/id/4"
-				},
-				{
 					"$ref":"#/properties/id/19"
-				},
-				{
-					"$ref":"#/properties/id/15"
 				}
 			],
 			"code":"low_power_alert",
@@ -564,14 +746,11 @@
 		{
 			"outputData":[
 				{
-					"$ref":"#/properties/id/21"
-				},
-				{
 					"$ref":"#/properties/id/19"
 				}
 			],
 			"code":"drive_behavior_alert",
-			"name":"驾驶行为报警",
+			"name":"异常驾驶行为报警",
 			"subType":"WARN",
 			"id":22,
 			"sort":24,

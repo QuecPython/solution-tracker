@@ -76,9 +76,9 @@ class Controller(Singleton):
 
     def user_ota_action(self, perm, action):
         if perm == 'w':
-            if action is False:
+            if action == 0:
                 self.tracker.remote.cloud_ota_action(0)
-            elif action is True:
+            elif action == 1:
                 self.tracker.remote.cloud_ota_action(1)
 
     def ota_status(self, perm, status=None):
@@ -88,6 +88,10 @@ class Controller(Singleton):
             if status is not None:
                 settings.settings.set('ota_status', status)
                 settings.settings.save()
+
+    def power_restart(self, perm, flag):
+        if perm == 'w':
+            self.tracker.device_data_report(power_switch=False, msg='power_restart')
 
 
 class DownLinkOption(object):

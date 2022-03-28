@@ -38,20 +38,21 @@ ALERTCODE = {
     50001: 'sos_alert',
 }
 
-FAULT_CODE = {
-    20001: 'net_error',
-    20002: 'gps_error',
-    20003: 'temp_sensor_error',
-    20004: 'light_sensor_error',
-    20005: 'move_sensor_error',
-    20006: 'mike_error',
+DEVICE_MODULE_STATUS = {
+    'net_error': 1,
+    'gps_error': 2,
+    'temp_sensor_error': 3,
+    'light_sensor_error': 4,
+    'move_sensor_error': 5,
+    'mike_error': 6,
 }
 
 DRIVE_BEHAVIOR_CODE = {
-    40001: 'quick_start',
-    40002: 'quick_stop',
-    40003: 'quick_turn_left',
-    40004: 'quick_turn_right',
+    0: 'none',
+    1: 'quick_start',
+    2: 'quick_stop',
+    3: 'quick_turn_left',
+    4: 'quick_turn_right',
 }
 
 LOWENERGYMAP = {
@@ -204,7 +205,9 @@ class default_values_sys(object):
 
     ota_status = _ota_status.none
 
-    cloud = _cloud.quecIot
+    drive_behavior_code = 0
+
+    cloud = _cloud.AliYun
 
     cloud_init_params = {}
 

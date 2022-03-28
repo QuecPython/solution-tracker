@@ -63,7 +63,7 @@ object_model = {
         'drive_behavior_code',
         'power_restart',
         'over_speed_threshold',
-        'fault_code',
+        'device_module_status',
         'gps_mode',
         'user_ota_action',
         'ota_status',
@@ -177,7 +177,7 @@ class AliYunIot(object):
                         }
                     elif k in object_model['event']:
                         event_params[k] = {
-                            'value': v,
+                            'value': {},
                             'time': utime.mktime(utime.localtime()) * 1000
                         }
                     else:
