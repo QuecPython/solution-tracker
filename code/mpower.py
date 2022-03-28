@@ -26,11 +26,6 @@ from usr.settings import settings
 from usr.settings import LOWENERGYMAP
 from usr.settings import default_values_app
 
-try:
-    from misc import USB
-except ImportError:
-    USB = None
-
 log = getLogger(__name__)
 
 

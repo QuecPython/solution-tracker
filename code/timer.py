@@ -17,11 +17,6 @@ import osTimer
 from usr.common import Singleton
 from usr.logging import getLogger
 
-try:
-    from misc import USB
-except ImportError:
-    USB = None
-
 log = getLogger(__name__)
 
 

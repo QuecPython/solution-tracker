@@ -20,7 +20,6 @@ import _thread
 from queue import Queue
 from machine import RTC
 from machine import UART
-# from misc import Power
 
 import usr.settings as settings
 

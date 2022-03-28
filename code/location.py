@@ -16,13 +16,14 @@ import ure
 import utime
 import osTimer
 import cellLocator
-import usr.settings as settings
 
 from queue import Queue
 from machine import UART
+from wifilocator import wifilocator
+
+import usr.settings as settings
 from usr.logging import getLogger
 from usr.common import Singleton
-from wifilocator import wifilocator
 
 try:
     import quecgnss
