@@ -15,6 +15,7 @@
 import ure
 import utime
 import osTimer
+import _thread
 import cellLocator
 
 from queue import Queue
@@ -33,6 +34,15 @@ except ImportError:
 log = getLogger(__name__)
 
 gps_data_retrieve_queue = None
+
+_gps_read_lock = _thread.allocate_lock()
+
+
+def gps_read_lock(func):
+    def wrapperd_fun(*args, **kwargs):
+        with _gps_read_lock:
+            return func(*args, **kwargs)
+    return wrapperd_fun
 
 
 class LocationError(Exception):
@@ -60,8 +70,9 @@ class GPS(Singleton):
     def __init__(self, gps_cfg):
         self.gps_data = ''
         self.gps_cfg = gps_cfg
-        self.gps_timer = osTimer()
-        self.break_flag = 0
+        self.__gps_timer = osTimer()
+        self.__first_break = 0
+        self.__second_break = 0
         current_settings = settings.settings.get()
         if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
             self.uart_init()
@@ -82,44 +93,46 @@ class GPS(Singleton):
         gps_data_retrieve_queue = Queue(maxsize=8)
 
     def first_gps_timer_callback(self, args):
-        self.break_flag = 1
+        global gps_data_retrieve_queue
+        self.__first_break = 1
+        if gps_data_retrieve_queue is not None:
+            gps_data_retrieve_queue.put(0)
 
     def second_gps_timer_callback(self, args):
         global gps_data_retrieve_queue
-        self.break_flag = 2
+        self.__second_break = 1
         if gps_data_retrieve_queue is not None:
             gps_data_retrieve_queue.put(0)
 
     def uart_read(self):
         global gps_data_retrieve_queue
 
-        while self.break_flag == 0:
-            self.gps_timer.start(50, 1, self.first_gps_timer_callback)
+        while self.__first_break == 0:
+            self.__gps_timer.start(50, 1, self.first_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             data = self.uart_obj.read(nread).decode()
-            self.gps_timer.stop()
+            self.__gps_timer.stop()
+        self.__first_break = 0
 
         data = ''
         rmc_data = ''
         gga_data = ''
         vtg_data = ''
-        while self.break_flag == 1:
-            self.gps_timer.start(1500, 1, self.second_gps_timer_callback)
+        while self.__second_break == 0:
+            self.__gps_timer.start(1500, 1, self.second_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             if nread:
-                udata = self.uart_obj.read(nread).decode()
+                data += self.uart_obj.read(nread).decode()
                 if not rmc_data:
-                    rmc_data = self.read_location_GxRMC(udata)
+                    rmc_data = self.read_location_GxRMC(data)
                 if not gga_data:
-                    gga_data = self.read_location_GxGGA(udata)
+                    gga_data = self.read_location_GxGGA(data)
                 if not vtg_data:
-                    vtg_data = self.read_location_GxVTG(udata)
-                if rmc_data or gga_data or vtg_data:
-                    data += udata
+                    vtg_data = self.read_location_GxVTG(data)
                 if rmc_data and gga_data and vtg_data:
-                    self.break_flag = 2
-            self.gps_timer.stop()
-        self.break_flag = 0
+                    self.__second_break = 1
+            self.__gps_timer.stop()
+        self.__second_break = 0
 
         return data
 
@@ -127,47 +140,49 @@ class GPS(Singleton):
         if quecgnss.get_state() == 0:
             quecgnss.gnssEnable(1)
 
-        while self.break_flag == 0:
-            self.gps_timer.start(50, 1, self.first_gps_timer_callback)
-            data = quecgnss.read(4096)
-            self.gps_timer.stop()
+        while self.__first_break == 0:
+            self.__gps_timer.start(50, 1, self.first_gps_timer_callback)
+            data = quecgnss.read(1024)
+            self.__gps_timer.stop()
+        self.__first_break = 0
 
         data = ''
         rmc_data = ''
         gga_data = ''
         vtg_data = ''
         count = 0
-        while self.break_flag == 1:
-            self.gps_timer.start(1500, 1, self.second_gps_timer_callback)
-            gnss_data = quecgnss.read(4096)
+        while self.__second_break == 0:
+            self.__gps_timer.start(1500, 1, self.second_gps_timer_callback)
+            gnss_data = quecgnss.read(1024)
             if gnss_data and gnss_data[1]:
-                udata = gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
+                data += gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
                 if not rmc_data:
-                    rmc_data = self.read_location_GxRMC(udata)
+                    rmc_data = self.read_location_GxRMC(data)
                 if not gga_data:
-                    gga_data = self.read_location_GxGGA(udata)
+                    gga_data = self.read_location_GxGGA(data)
                 if not vtg_data:
-                    vtg_data = self.read_location_GxVTG(udata)
-                if rmc_data or gga_data or vtg_data:
-                    data += udata
+                    vtg_data = self.read_location_GxVTG(data)
                 if rmc_data and gga_data and vtg_data:
-                    self.break_flag = 2
-            self.gps_timer.stop()
+                    self.__second_break = 1
+            self.__gps_timer.stop()
 
             if count > 5:
-                self.break_flag = 2
+                self.__second_break = 1
             count += 1
             utime.sleep_ms(300)
-        self.break_flag = 0
+        self.__second_break = 0
 
         return data
 
+    @gps_read_lock
     def read(self):
         current_settings = settings.settings.get()
         if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
             self.gps_data = self.uart_read().decode()
         elif current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
             self.gps_data = self.quecgnss_read()
+        else:
+            self.gps_data = ''
 
         return self.gps_data
 
