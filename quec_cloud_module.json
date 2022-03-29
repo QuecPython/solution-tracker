@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220329105723754"
+		"version":"20220329170419124"
 	},
 	"properties":[
 		{
@@ -498,70 +498,73 @@
 					"specs":[
 						{
 							"dataType":"ENUM",
-							"name":"正常",
+							"name":"异常",
 							"value":"0"
 						},
 						{
 							"dataType":"ENUM",
-							"name":"异常",
+							"name":"正常",
 							"value":"1"
 						}
 					],
-					"code":"net_error",
+					"code":"net",
 					"dataType":"ENUM",
 					"name":"网络状态",
-					"id":1
+					"id":1,
+					"desc":""
 				},
 				{
 					"specs":[
 						{
 							"dataType":"ENUM",
-							"name":"正常",
+							"name":"异常",
 							"value":"0"
 						},
 						{
 							"dataType":"ENUM",
-							"name":"异常",
+							"name":"正常",
 							"value":"1"
 						}
 					],
-					"code":"gps_error",
+					"code":"location",
 					"dataType":"ENUM",
-					"name":"GPS状态",
-					"id":2
+					"name":"定位状态",
+					"id":2,
+					"desc":""
 				},
 				{
 					"specs":[
 						{
 							"dataType":"ENUM",
-							"name":"正常",
+							"name":"异常",
 							"value":"0"
 						},
 						{
 							"dataType":"ENUM",
-							"name":"异常",
+							"name":"正常",
 							"value":"1"
 						}
 					],
-					"code":"temp_sensor_error",
+					"code":"temp_sensor",
 					"dataType":"ENUM",
 					"name":"温湿度传感器状态",
-					"id":3
+					"id":3,
+					"desc":""
 				},
 				{
 					"specs":[
 						{
 							"dataType":"ENUM",
-							"name":"正常",
+							"name":"异常",
 							"value":"0"
 						},
 						{
 							"dataType":"ENUM",
-							"name":"异常",
+							"name":"正常",
 							"value":"1"
 						}
 					],
-					"code":"light_sensor_error",
+					"code":"light_sensor",
 					"dataType":"ENUM",
 					"name":"光照传感器状态",
 					"id":4,
@@ -571,37 +574,39 @@
 					"specs":[
 						{
 							"dataType":"ENUM",
-							"name":"正常",
+							"name":"异常",
 							"value":"0"
 						},
 						{
 							"dataType":"ENUM",
-							"name":"异常",
+							"name":"正常",
 							"value":"1"
 						}
 					],
-					"code":"move_sensor_error",
+					"code":"move_sensor",
 					"dataType":"ENUM",
 					"name":"三轴加速传感器状态",
-					"id":5
+					"id":5,
+					"desc":""
 				},
 				{
 					"specs":[
 						{
 							"dataType":"ENUM",
-							"name":"正常",
+							"name":"异常",
 							"value":"0"
 						},
 						{
 							"dataType":"ENUM",
-							"name":"异常",
+							"name":"正常",
 							"value":"1"
 						}
 					],
-					"code":"mike_error",
+					"code":"mike",
 					"dataType":"ENUM",
 					"name":"麦克风状态",
-					"id":6
+					"id":6,
+					"desc":""
 				}
 			],
 			"code":"device_module_status",

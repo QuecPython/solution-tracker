@@ -404,68 +404,68 @@
         "type": "struct",
         "specs": [
           {
-            "identifier": "net_error",
+            "identifier": "net",
             "name": "网络状态",
             "dataType": {
               "type": "enum",
               "specs": {
-                "0": "正常",
-                "1": "异常"
+                "0": "异常",
+                "1": "正常"
               }
             }
           },
           {
-            "identifier": "gps_error",
-            "name": "GPS状态",
+            "identifier": "location",
+            "name": "定位状态",
             "dataType": {
               "type": "enum",
               "specs": {
-                "0": "正常",
-                "1": "异常"
+                "0": "异常",
+                "1": "正常"
               }
             }
           },
           {
-            "identifier": "temp_sensor_error",
+            "identifier": "temp_sensor",
             "name": "温湿度传感器状态",
             "dataType": {
               "type": "enum",
               "specs": {
-                "0": "正常",
-                "1": "异常"
+                "0": "异常",
+                "1": "正常"
               }
             }
           },
           {
-            "identifier": "light_sensor_error",
+            "identifier": "light_sensor",
             "name": "光照传感器状态",
             "dataType": {
               "type": "enum",
               "specs": {
-                "0": "正常",
-                "1": "异常"
+                "0": "异常",
+                "1": "正常"
               }
             }
           },
           {
-            "identifier": "move_sensor_error",
+            "identifier": "move_sensor",
             "name": "三轴加速传感器状态",
             "dataType": {
               "type": "enum",
               "specs": {
-                "0": "正常",
-                "1": "异常"
+                "0": "异常",
+                "1": "正常"
               }
             }
           },
           {
-            "identifier": "mike_error",
+            "identifier": "mike",
             "name": "麦克风状态",
             "dataType": {
               "type": "enum",
               "specs": {
-                "0": "正常",
-                "1": "异常"
+                "0": "异常",
+                "1": "正常"
               }
             }
           }
@@ -893,68 +893,68 @@
             "type": "struct",
             "specs": [
               {
-                "identifier": "net_error",
+                "identifier": "net",
                 "name": "网络状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "gps_error",
-                "name": "GPS状态",
+                "identifier": "location",
+                "name": "定位状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "temp_sensor_error",
+                "identifier": "temp_sensor",
                 "name": "温湿度传感器状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "light_sensor_error",
+                "identifier": "light_sensor",
                 "name": "光照传感器状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "move_sensor_error",
+                "identifier": "move_sensor",
                 "name": "三轴加速传感器状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "mike_error",
+                "identifier": "mike",
                 "name": "麦克风状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               }
@@ -1729,68 +1729,68 @@
             "type": "struct",
             "specs": [
               {
-                "identifier": "net_error",
+                "identifier": "net",
                 "name": "网络状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "gps_error",
-                "name": "GPS状态",
+                "identifier": "location",
+                "name": "定位状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "temp_sensor_error",
+                "identifier": "temp_sensor",
                 "name": "温湿度传感器状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "light_sensor_error",
+                "identifier": "light_sensor",
                 "name": "光照传感器状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "move_sensor_error",
+                "identifier": "move_sensor",
                 "name": "三轴加速传感器状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               },
               {
-                "identifier": "mike_error",
+                "identifier": "mike",
                 "name": "麦克风状态",
                 "dataType": {
                   "type": "enum",
                   "specs": {
-                    "0": "正常",
-                    "1": "异常"
+                    "0": "异常",
+                    "1": "正常"
                   }
                 }
               }
