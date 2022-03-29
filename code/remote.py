@@ -107,8 +107,16 @@ class DownLinkOption(object):
 
         for arg in args:
             if hasattr(settings.default_values_app, arg[0]):
-                set_res = settings.settings.set(arg[0], arg[1])
-                log.debug('key: %s, val: %s, set_res: %s', (arg[0], arg[1], set_res))
+                key = arg[0]
+                value = arg[1]
+                if key == 'loc_method':
+                    v = '0b'
+                    v += str(int(value.get(3, 0)))
+                    v += str(int(value.get(2, 0)))
+                    v += str(int(value.get(1, 0)))
+                    value = int(v, 2)
+                set_res = settings.settings.set(key, value)
+                log.debug('key: %s, val: %s, set_res: %s' % (key, value, set_res))
                 if setting_flag == 0:
                     setting_flag = 1
             if hasattr(self.controller, arg[0]):

@@ -119,13 +119,28 @@ class Tracker(Singleton):
         device_data.update({
             'power_switch': power_switch,
             'energy': energy,
+            'voltage': self.battery.voltage(),
             'local_time': self.get_local_time(),
             'ota_status': current_settings['sys']['ota_status'],
             'drive_behavior_code': current_settings['sys']['drive_behavior_code'],
         })
         device_data.update(current_settings['app'])
+        device_data.update({'loc_method': self.format_loc_method(current_settings['app']['loc_method'])})
 
         return device_data
+
+    def format_loc_method(self, data):
+        loc_method = '%04d' % int(bin(data)[2:])
+        gps = bool(int(loc_method[-1]))
+        cell = bool(int(loc_method[-2]))
+        wifi = bool(int(loc_method[-3]))
+
+        loc_method = {
+            'gps': gps,
+            'cell': cell,
+            'wifi': wifi,
+        }
+        return loc_method
 
     def get_device_check(self):
         alert_data = {}

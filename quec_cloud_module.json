@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220328195506205"
+		"version":"20220329105723754"
 	},
 	"properties":[
 		{
@@ -59,48 +59,62 @@
 		{
 			"specs":[
 				{
-					"dataType":"ENUM",
-					"name":"无",
-					"value":"0"
-				},
-				{
-					"dataType":"ENUM",
+					"specs":[
+						{
+							"dataType":"BOOL",
+							"name":"启用",
+							"value":"true"
+						},
+						{
+							"dataType":"BOOL",
+							"name":"禁用",
+							"value":"false"
+						}
+					],
+					"code":"gps",
+					"dataType":"BOOL",
 					"name":"GPS",
-					"value":"1"
+					"id":1
 				},
 				{
-					"dataType":"ENUM",
+					"specs":[
+						{
+							"dataType":"BOOL",
+							"name":"启用",
+							"value":"true"
+						},
+						{
+							"dataType":"BOOL",
+							"name":"禁用",
+							"value":"false"
+						}
+					],
+					"code":"cell",
+					"dataType":"BOOL",
 					"name":"基站",
-					"value":"2"
+					"id":2
 				},
 				{
-					"dataType":"ENUM",
-					"name":"GPS_基站",
-					"value":"3"
-				},
-				{
-					"dataType":"ENUM",
+					"specs":[
+						{
+							"dataType":"BOOL",
+							"name":"启用",
+							"value":"true"
+						},
+						{
+							"dataType":"BOOL",
+							"name":"禁用",
+							"value":"false"
+						}
+					],
+					"code":"wifi",
+					"dataType":"BOOL",
 					"name":"Wifi",
-					"value":"4"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"GPS_Wifi",
-					"value":"5"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"基站_Wifi",
-					"value":"6"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"GPS_基站_Wifi",
-					"value":"7"
+					"id":3
 				}
 			],
 			"code":"loc_method",
-			"dataType":"ENUM",
+			"dataType":"STRUCT",
 			"name":"定位方式",
 			"subType":"RW",
 			"id":24,
@@ -203,7 +217,7 @@
 			],
 			"code":"sw_ota",
 			"dataType":"BOOL",
-			"name":"OTA功能开关",
+			"name":"OTA功能",
 			"subType":"RW",
 			"id":12,
 			"sort":9,
@@ -225,7 +239,7 @@
 			],
 			"code":"sw_ota_auto_upgrade",
 			"dataType":"BOOL",
-			"name":"OTA自动升级开关",
+			"name":"OTA自动升级",
 			"subType":"RW",
 			"id":13,
 			"sort":10,
@@ -247,7 +261,7 @@
 			],
 			"code":"sw_voice_listen",
 			"dataType":"BOOL",
-			"name":"语音监听功能开关",
+			"name":"语音监听",
 			"subType":"RW",
 			"id":10,
 			"sort":11,
@@ -269,7 +283,7 @@
 			],
 			"code":"sw_voice_record",
 			"dataType":"BOOL",
-			"name":"录音上报功能开关",
+			"name":"录音上报",
 			"subType":"RW",
 			"id":11,
 			"sort":12,
@@ -291,7 +305,7 @@
 			],
 			"code":"sw_fault_alert",
 			"dataType":"BOOL",
-			"name":"故障报警功能开关",
+			"name":"故障报警功能",
 			"subType":"RW",
 			"id":27,
 			"sort":13,
@@ -313,7 +327,7 @@
 			],
 			"code":"sw_low_power_alert",
 			"dataType":"BOOL",
-			"name":"低电报警功能开关",
+			"name":"低电报警功能",
 			"subType":"RW",
 			"id":28,
 			"sort":14,
@@ -335,7 +349,7 @@
 			],
 			"code":"sw_over_speed_alert",
 			"dataType":"BOOL",
-			"name":"超速报警功能开关",
+			"name":"超速报警功能",
 			"subType":"RW",
 			"id":29,
 			"sort":15,
@@ -357,7 +371,7 @@
 			],
 			"code":"sw_sim_abnormal_alert",
 			"dataType":"BOOL",
-			"name":"SIM卡异常报警功能开关",
+			"name":"SIM卡异常报警功能",
 			"subType":"RW",
 			"id":30,
 			"sort":16,
@@ -379,7 +393,7 @@
 			],
 			"code":"sw_disassemble_alert",
 			"dataType":"BOOL",
-			"name":"拆卸报警功能开关",
+			"name":"拆卸报警功能",
 			"subType":"RW",
 			"id":31,
 			"sort":17,
@@ -401,7 +415,7 @@
 			],
 			"code":"sw_drive_behavior_alert",
 			"dataType":"BOOL",
-			"name":"驾驶行为报警功能开关",
+			"name":"异常驾驶行为报警功能",
 			"subType":"RW",
 			"id":32,
 			"sort":18,
@@ -682,6 +696,22 @@
 			"subType":"R",
 			"id":39,
 			"sort":32,
+			"type":"PROPERTY",
+			"desc":""
+		},
+		{
+			"specs":{
+				"unit":"mV",
+				"min":"0",
+				"max":"2147483647",
+				"step":"1"
+			},
+			"code":"voltage",
+			"dataType":"INT",
+			"name":"电池电压",
+			"subType":"R",
+			"id":41,
+			"sort":33,
 			"type":"PROPERTY",
 			"desc":""
 		}

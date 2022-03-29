@@ -84,3 +84,6 @@ class Battery(object):
         temp = 20
         self.now_energy = get_soc(temp, volt_arg)
         return self.now_energy
+
+    def voltage(self):
+        return Power.getVbatt()

@@ -2,7 +2,7 @@
   "schema": "https://iotx-tsl.oss-ap-southeast-1.aliyuncs.com/schema.json",
   "profile": {
     "version": "1.0",
-    "productKey": "guqqtu3edVY"
+    "productKey": "a1q1kmZPwU2"
   },
   "properties": [
     {
@@ -116,17 +116,42 @@
       "accessMode": "rw",
       "required": false,
       "dataType": {
-        "type": "enum",
-        "specs": {
-          "0": "无",
-          "1": "GPS",
-          "2": "基站",
-          "3": "GPS_基站",
-          "4": "Wifi",
-          "5": "GPS_Wifi",
-          "6": "基站_Wifi",
-          "7": "GPS_基站_Wifi"
-        }
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "gps",
+            "name": "GPS",
+            "dataType": {
+              "type": "bool",
+              "specs": {
+                "0": "启用",
+                "1": "禁用"
+              }
+            }
+          },
+          {
+            "identifier": "cell",
+            "name": "基站",
+            "dataType": {
+              "type": "bool",
+              "specs": {
+                "0": "启用",
+                "1": "禁用"
+              }
+            }
+          },
+          {
+            "identifier": "wifi",
+            "name": "Wifi",
+            "dataType": {
+              "type": "bool",
+              "specs": {
+                "0": "启用",
+                "1": "禁用"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -198,7 +223,7 @@
     },
     {
       "identifier": "sw_ota",
-      "name": "OTA功能开关",
+      "name": "OTA功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -211,7 +236,7 @@
     },
     {
       "identifier": "sw_ota_auto_upgrade",
-      "name": "OTA自动升级功能开关",
+      "name": "OTA自动升级功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -224,7 +249,7 @@
     },
     {
       "identifier": "sw_voice_listen",
-      "name": "语音监听功能开关",
+      "name": "语音监听功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -237,7 +262,7 @@
     },
     {
       "identifier": "sw_voice_record",
-      "name": "录音上报功能开关",
+      "name": "录音上报功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -250,7 +275,7 @@
     },
     {
       "identifier": "sw_fault_alert",
-      "name": "故障报警功能开关",
+      "name": "故障报警功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -263,7 +288,7 @@
     },
     {
       "identifier": "sw_low_power_alert",
-      "name": "低电报警功能开关",
+      "name": "低电报警功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -276,7 +301,7 @@
     },
     {
       "identifier": "sw_over_speed_alert",
-      "name": "超速报警功能开关",
+      "name": "超速报警功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -289,7 +314,7 @@
     },
     {
       "identifier": "sw_sim_abnormal_alert",
-      "name": "SIM卡异常报警功能开关",
+      "name": "SIM卡异常报警功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -302,7 +327,7 @@
     },
     {
       "identifier": "sw_disassemble_alert",
-      "name": "拆卸报警功能开关",
+      "name": "拆卸报警功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -315,7 +340,7 @@
     },
     {
       "identifier": "sw_drive_behavior_alert",
-      "name": "驾驶行为报警功能开关",
+      "name": "驾驶行为报警功能",
       "accessMode": "rw",
       "required": false,
       "dataType": {
@@ -490,6 +515,22 @@
           "4": "升级失败"
         }
       }
+    },
+    {
+      "identifier": "voltage",
+      "name": "电池电压",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "0",
+          "max": "2147483647",
+          "unit": "mV",
+          "unitName": "毫伏",
+          "step": "1"
+        }
+      }
     }
   ],
   "events": [
@@ -602,17 +643,42 @@
           "identifier": "loc_method",
           "name": "定位方式",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "0": "无",
-              "1": "GPS",
-              "2": "基站",
-              "3": "GPS_基站",
-              "4": "Wifi",
-              "5": "GPS_Wifi",
-              "6": "基站_Wifi",
-              "7": "GPS_基站_Wifi"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "gps",
+                "name": "GPS",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              },
+              {
+                "identifier": "cell",
+                "name": "基站",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              },
+              {
+                "identifier": "wifi",
+                "name": "Wifi",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -674,7 +740,7 @@
         },
         {
           "identifier": "sw_ota",
-          "name": "OTA功能开关",
+          "name": "OTA功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -685,7 +751,7 @@
         },
         {
           "identifier": "sw_ota_auto_upgrade",
-          "name": "OTA自动升级功能开关",
+          "name": "OTA自动升级功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -696,7 +762,7 @@
         },
         {
           "identifier": "sw_voice_listen",
-          "name": "语音监听功能开关",
+          "name": "语音监听功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -707,7 +773,7 @@
         },
         {
           "identifier": "sw_voice_record",
-          "name": "录音上报功能开关",
+          "name": "录音上报功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -718,7 +784,7 @@
         },
         {
           "identifier": "sw_fault_alert",
-          "name": "故障报警功能开关",
+          "name": "故障报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -729,7 +795,7 @@
         },
         {
           "identifier": "sw_low_power_alert",
-          "name": "低电报警功能开关",
+          "name": "低电报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -740,7 +806,7 @@
         },
         {
           "identifier": "sw_over_speed_alert",
-          "name": "超速报警功能开关",
+          "name": "超速报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -751,7 +817,7 @@
         },
         {
           "identifier": "sw_sim_abnormal_alert",
-          "name": "SIM卡异常报警功能开关",
+          "name": "SIM卡异常报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -762,7 +828,7 @@
         },
         {
           "identifier": "sw_disassemble_alert",
-          "name": "拆卸报警功能开关",
+          "name": "拆卸报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -773,7 +839,7 @@
         },
         {
           "identifier": "sw_drive_behavior_alert",
-          "name": "驾驶行为报警功能开关",
+          "name": "驾驶行为报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -931,6 +997,20 @@
               "4": "升级失败"
             }
           }
+        },
+        {
+          "identifier": "voltage",
+          "name": "电池电压",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "mV",
+              "unitName": "毫伏",
+              "step": "1"
+            }
+          }
         }
       ]
     },
@@ -1025,17 +1105,42 @@
           "identifier": "loc_method",
           "name": "定位方式",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "0": "无",
-              "1": "GPS",
-              "2": "基站",
-              "3": "GPS_基站",
-              "4": "Wifi",
-              "5": "GPS_Wifi",
-              "6": "基站_Wifi",
-              "7": "GPS_基站_Wifi"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "gps",
+                "name": "GPS",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              },
+              {
+                "identifier": "cell",
+                "name": "基站",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              },
+              {
+                "identifier": "wifi",
+                "name": "Wifi",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -1089,7 +1194,7 @@
         },
         {
           "identifier": "sw_ota",
-          "name": "OTA功能开关",
+          "name": "OTA功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1100,7 +1205,7 @@
         },
         {
           "identifier": "sw_ota_auto_upgrade",
-          "name": "OTA自动升级功能开关",
+          "name": "OTA自动升级功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1111,7 +1216,7 @@
         },
         {
           "identifier": "sw_voice_listen",
-          "name": "语音监听功能开关",
+          "name": "语音监听功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1122,7 +1227,7 @@
         },
         {
           "identifier": "sw_voice_record",
-          "name": "录音上报功能开关",
+          "name": "录音上报功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1133,7 +1238,7 @@
         },
         {
           "identifier": "sw_fault_alert",
-          "name": "故障报警功能开关",
+          "name": "故障报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1144,7 +1249,7 @@
         },
         {
           "identifier": "sw_low_power_alert",
-          "name": "低电报警功能开关",
+          "name": "低电报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1155,7 +1260,7 @@
         },
         {
           "identifier": "sw_over_speed_alert",
-          "name": "超速报警功能开关",
+          "name": "超速报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1166,7 +1271,7 @@
         },
         {
           "identifier": "sw_sim_abnormal_alert",
-          "name": "SIM卡异常报警功能开关",
+          "name": "SIM卡异常报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1177,7 +1282,7 @@
         },
         {
           "identifier": "sw_disassemble_alert",
-          "name": "拆卸报警功能开关",
+          "name": "拆卸报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1188,7 +1293,7 @@
         },
         {
           "identifier": "sw_drive_behavior_alert",
-          "name": "驾驶行为报警功能开关",
+          "name": "驾驶行为报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1269,7 +1374,8 @@
         "device_module_status",
         "gps_mode",
         "user_ota_action",
-        "ota_status"
+        "ota_status",
+        "voltage"
       ],
       "outputData": [
         {
@@ -1373,17 +1479,42 @@
           "identifier": "loc_method",
           "name": "定位方式",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "0": "无",
-              "1": "GPS",
-              "2": "基站",
-              "3": "GPS_基站",
-              "4": "Wifi",
-              "5": "GPS_Wifi",
-              "6": "基站_Wifi",
-              "7": "GPS_基站_Wifi"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "gps",
+                "name": "GPS",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              },
+              {
+                "identifier": "cell",
+                "name": "基站",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              },
+              {
+                "identifier": "wifi",
+                "name": "Wifi",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "启用",
+                    "1": "禁用"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -1445,7 +1576,7 @@
         },
         {
           "identifier": "sw_ota",
-          "name": "OTA功能开关",
+          "name": "OTA功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1456,7 +1587,7 @@
         },
         {
           "identifier": "sw_ota_auto_upgrade",
-          "name": "OTA自动升级功能开关",
+          "name": "OTA自动升级功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1467,7 +1598,7 @@
         },
         {
           "identifier": "sw_voice_listen",
-          "name": "语音监听功能开关",
+          "name": "语音监听功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1478,7 +1609,7 @@
         },
         {
           "identifier": "sw_voice_record",
-          "name": "录音上报功能开关",
+          "name": "录音上报功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1489,7 +1620,7 @@
         },
         {
           "identifier": "sw_fault_alert",
-          "name": "故障报警功能开关",
+          "name": "故障报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1500,7 +1631,7 @@
         },
         {
           "identifier": "sw_low_power_alert",
-          "name": "低电报警功能开关",
+          "name": "低电报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1511,7 +1642,7 @@
         },
         {
           "identifier": "sw_over_speed_alert",
-          "name": "超速报警功能开关",
+          "name": "超速报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1522,7 +1653,7 @@
         },
         {
           "identifier": "sw_sim_abnormal_alert",
-          "name": "SIM卡异常报警功能开关",
+          "name": "SIM卡异常报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1533,7 +1664,7 @@
         },
         {
           "identifier": "sw_disassemble_alert",
-          "name": "拆卸报警功能开关",
+          "name": "拆卸报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1544,7 +1675,7 @@
         },
         {
           "identifier": "sw_drive_behavior_alert",
-          "name": "驾驶行为报警功能开关",
+          "name": "驾驶行为报警功能",
           "dataType": {
             "type": "bool",
             "specs": {
@@ -1700,6 +1831,20 @@
               "2": "升级中",
               "3": "升级成功",
               "4": "升级失败"
+            }
+          }
+        },
+        {
+          "identifier": "voltage",
+          "name": "电池电压",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "mV",
+              "unitName": "毫伏",
+              "step": "1"
             }
           }
         }

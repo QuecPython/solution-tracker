@@ -52,6 +52,7 @@ object_model = [
     (37, ('gps_mode', 'r')),
     (38, ('user_ota_action', 'w')),
     (39, ('ota_status', 'r')),
+    (41, ('voltage', 'r')),
 
     # event
     (6,  ('sos_alert', 'r')),
@@ -71,6 +72,11 @@ object_model_struct = {
         'light_sensor_error': 4,
         'move_sensor_error': 5,
         'mike_error': 6,
+    },
+    'loc_method': {
+        'gps': 1,
+        'cell': 2,
+        'wifi': 3,
     }
 }
 
@@ -174,7 +180,7 @@ class QuecThing(object):
         return res
 
     def eventCB(self, data):
-        log.info("event:", data)
+        log.info("event: %s" % str(data))
         event = data[0]
         errcode = data[1]
         if len(data) > 2:

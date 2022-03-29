@@ -68,6 +68,7 @@ object_model = {
         'user_ota_action',
         'ota_status',
         'GeoLocation',
+        'voltage',
     ],
 }
 

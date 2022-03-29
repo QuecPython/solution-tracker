@@ -207,7 +207,7 @@ class default_values_sys(object):
 
     drive_behavior_code = 0
 
-    cloud = _cloud.AliYun
+    cloud = _cloud.quecIot
 
     cloud_init_params = {}
 
@@ -238,29 +238,13 @@ class default_values_sys(object):
     #     'DS': '',
     # }
 
-    # TrackerEC600N
+    # tracker_dev_jack
     _AliYun = {
-        'PK': 'guqqtu3edVY',
-        'PS': 'xChL7HREtPyYCtPM',
-        'DK': 'TrackerEC600N',
-        'DS': 'a3153ed0c2f68db6e2f47e0769f966a2',
+        'PK': 'a1q1kmZPwU2',
+        'PS': 'HQraBqtV8WsfCEuy',
+        'DK': 'tracker_dev_jack',
+        'DS': 'bfdfcca5075715e8309eff8597663c4b',
     }
-
-    # # alitrackerdemo0326
-    # _AliYun = {
-    #     'PK': 'guqqtu3edVY',
-    #     'PS': 'xChL7HREtPyYCtPM',
-    #     'DK': 'alitrackerdemo0326',
-    #     'DS': 'b01307100686698bbc71fc4af230baf9',
-    # }
-
-    # # ali_tracker_demo_0306_jun
-    # _AliYun = {
-    #     'PK': 'guqqtu3edVY',
-    #     'PS': 'xChL7HREtPyYCtPM',
-    #     'DK': 'ali_tracker_demo_0306_jun',
-    #     'DS': '38d78764407d08776c74e319a7802d88',
-    # }
 
     _JTT808 = {
         'PK': '',
