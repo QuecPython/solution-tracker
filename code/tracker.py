@@ -31,7 +31,6 @@ from usr.common import numiter
 from usr.common import Singleton
 from usr.mpower import PowerManage
 from usr.logging import getLogger
-# from usr.location import GPS
 from usr.location import Location
 from usr.timer import LEDTimer
 
@@ -64,8 +63,6 @@ class Tracker(Singleton):
         self.power_manage = PowerManage(self)
 
         self.led_timer = LEDTimer(self)
-        # self.energy = 100
-        # self.cenergy = -10
 
         if PowerKey is not None:
             self.power_key = PowerKey()
@@ -102,14 +99,6 @@ class Tracker(Singleton):
 
         current_settings = settings.settings.get()
 
-        # TODO: Test Energy
-        # if self.energy <= 10:
-        #     self.cenergy = 10
-        # if self.energy >= 100:
-        #     self.cenergy = -10
-        # self.energy = self.energy + self.cenergy
-        # energy = self.energy
-
         energy = self.battery.energy()
         if energy <= current_settings['app']['low_power_alert_threshold']:
             alert_data = self.get_alert_data(30002, {'local_time': self.get_local_time()})
@@ -144,35 +133,28 @@ class Tracker(Singleton):
 
     def get_device_check(self):
         alert_data = {}
-        device_module_status = []
+        device_module_status = {}
         alert_code = 20000
 
         net_check_res = self.check.net_check()
-        gps_check_res = self.check.gps_check()
+        loc_check_res = self.check.loc_check()
         sensor_check_res = self.check.sensor_check()
 
-        if net_check_res == (3, 1):
-            self.net_enable = True
-        else:
-            self.net_enable = False
-            device_module_status.append('net_error')
+        self.net_enable = True if net_check_res == (3, 1) else False
+        device_module_status['net'] = 1 if net_check_res == (3, 1) else 0
 
-        if not gps_check_res:
-            device_module_status.append('gps_error')
+        device_module_status['location'] = 1 if loc_check_res else 0
 
+        # TODO: Check Sensor.
         if not sensor_check_res:
-            # TODO: Need To Check What Sensor Error To Report.
             pass
 
-        if device_module_status:
-            self.running_led.period = 0.5
-        else:
-            self.running_led.period = 2
+        self.running_led.period = 0.5 if not (net_check_res == (3, 1) and loc_check_res and sensor_check_res) else 2
 
-        alert_info = {'device_module_status': {i: 1 if i in device_module_status else 0 for i in settings.DEVICE_MODULE_STATUS.keys()}}
-        if device_module_status:
+        if not (net_check_res == (3, 1) and loc_check_res and sensor_check_res):
             alert_data = self.get_alert_data(alert_code, {'local_time': self.get_local_time()})
-        alert_data.update(alert_info)
+
+        alert_data.update({'device_module_status': device_module_status})
 
         return alert_data
 
@@ -296,9 +278,8 @@ class SelfCheck(object):
         check_res = checknet.wait_network_connected(timeout)
         return check_res
 
-    def gps_check(self):
+    def loc_check(self):
         # return True if OK
-        # gps = GPS(settings.default_values_sys._gps_cfg)
         locator = Location()
 
         retry = 0

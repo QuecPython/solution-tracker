@@ -39,12 +39,12 @@ ALERTCODE = {
 }
 
 DEVICE_MODULE_STATUS = {
-    'net_error': 1,
-    'gps_error': 2,
-    'temp_sensor_error': 3,
-    'light_sensor_error': 4,
-    'move_sensor_error': 5,
-    'mike_error': 6,
+    'net': 1,
+    'location': 2,
+    'temp_sensor': 3,
+    'light_sensor': 4,
+    'move_sensor': 5,
+    'mike': 6,
 }
 
 DRIVE_BEHAVIOR_CODE = {
