@@ -81,19 +81,20 @@ class GPS(Singleton):
         self.uart_obj.set_callback(gps_data_retrieve_cb)
         gps_data_retrieve_queue = Queue(maxsize=8)
 
-    def gps_timer_callback(self, args):
-        if self.break_flag == 0:
-            self.break_flag = 1
-        elif self.break_flag == 1:
-            self.break_flag = 2
-            if gps_data_retrieve_queue is not None:
-                gps_data_retrieve_queue.put(0)
+    def first_gps_timer_callback(self, args):
+        self.break_flag = 1
+
+    def second_gps_timer_callback(self, args):
+        global gps_data_retrieve_queue
+        self.break_flag = 2
+        if gps_data_retrieve_queue is not None:
+            gps_data_retrieve_queue.put(0)
 
     def uart_read(self):
         global gps_data_retrieve_queue
 
         while self.break_flag == 0:
-            self.gps_timer.start(50, 1, self.gps_timer_callback)
+            self.gps_timer.start(50, 1, self.first_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             data = self.uart_obj.read(nread).decode()
             self.gps_timer.stop()
@@ -103,7 +104,7 @@ class GPS(Singleton):
         gga_data = ''
         vtg_data = ''
         while self.break_flag == 1:
-            self.gps_timer.start(3000, 1, self.gps_timer_callback)
+            self.gps_timer.start(1500, 1, self.second_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             if nread:
                 udata = self.uart_obj.read(nread).decode()
@@ -127,7 +128,7 @@ class GPS(Singleton):
             quecgnss.gnssEnable(1)
 
         while self.break_flag == 0:
-            self.gps_timer.start(50, 1, self.gps_timer_callback)
+            self.gps_timer.start(50, 1, self.first_gps_timer_callback)
             data = quecgnss.read(4096)
             self.gps_timer.stop()
 
@@ -137,7 +138,7 @@ class GPS(Singleton):
         vtg_data = ''
         count = 0
         while self.break_flag == 1:
-            self.gps_timer.start(3000, 1, self.gps_timer_callback)
+            self.gps_timer.start(1500, 1, self.second_gps_timer_callback)
             gnss_data = quecgnss.read(4096)
             if gnss_data and gnss_data[1]:
                 udata = gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''
@@ -172,7 +173,7 @@ class GPS(Singleton):
 
     def read_location_GxRMC(self, gps_data):
         rmc_re = ure.search(
-            r"\$G[NP]RMC,[0-9]+\.[0-9]+,A,[0-9]+\.[0-9]+,[NS],[0-9]+\.[0-9]+,[EW],[0-9]+\.[0-9]+,[0-9]+\.[0-9]+,[0-9]+,,,[ADE],[SCUV]\*[0-9]+",
+            r"\$G[NP]RMC,\d*\.*\d*,[AV]*,\d*\.*\d*,[NS]*,\d*\.*\d*,[EW]*,\d*\.*\d*,\d*\.*\d*,\d*,\d*\.*\d*,[EW]*,[ADEN]*,[SCUV]*\**\d*",
             gps_data)
         if rmc_re:
             return rmc_re.group(0)
@@ -180,14 +181,14 @@ class GPS(Singleton):
 
     def read_location_GxGGA(self, gps_data):
         gga_re = ure.search(
-            r"\$G[BLPN]GGA,[0-9]+\.[0-9]+,[0-9]+\.[0-9]+,[NS],[0-9]+\.[0-9]+,[EW],[126],[0-9]+,[0-9]+\.[0-9]+,-*[0-9]+\.[0-9]+,M,-*[0-9]+\.[0-9]+,M,,\*[0-9]+",
+            r"\$G[BLPN]GGA,\d*\.*\d*,\d*\.*\d*,[NS]*,\d*\.*\d*,[EW]*,[0126]*,\d*,\d*\.*\d*,-*\d*\.*\d*,M,-*\d*\.*\d*,M,\d*,\**\d*",
             gps_data)
         if gga_re:
             return gga_re.group(0)
         return ""
 
     def read_location_GxVTG(self, gps_data):
-        vtg_re = ure.search(r"\$G[NP]VTG,[0-9]+\.[0-9]+,T,([0-9]+\.[0-9]+)??,M,[0-9]+\.[0-9]+,N,[0-9]+\.[0-9]+,K,[ADEN]\*\w*", gps_data)
+        vtg_re = ure.search(r"\$G[NP]VTG,\d*\.*\d*,T,\d*\.*\d*,M,\d*\.*\d*,N,\d*\.*\d*,K,[ADEN]*\**\d*", gps_data)
         if vtg_re:
             return vtg_re.group(0)
         return ""
@@ -195,7 +196,7 @@ class GPS(Singleton):
     def read_location_GxVTG_speed(self, gps_data):
         vtg_data = self.read_location_GxVTG(gps_data)
         if vtg_data:
-            speed_re = ure.search(r",N,[0-9]+\.[0-9]+,K,", vtg_data)
+            speed_re = ure.search(r",N,\d+\.\d+,K,", vtg_data)
             if speed_re:
                 return speed_re.group(0)[3:-3]
         return ""
@@ -204,7 +205,6 @@ class GPS(Singleton):
         res = {}
         data = []
         gps_data = self.read()
-        log.debug('read_quecIot gps_data: %s' % gps_data)
         r = self.read_location_GxRMC(gps_data)
         if r:
             data.append(r)

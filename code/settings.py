@@ -80,17 +80,8 @@ _settings_lock = _thread.allocate_lock()
 def settings_lock(func_name):
     def settings_lock_fun(func):
         def wrapperd_fun(*args, **kwargs):
-            if not _settings_lock.locked():
-                if _settings_lock.acquire():
-                    source_fun = func(*args, **kwargs)
-                    _settings_lock.release()
-                    return source_fun
-                else:
-                    print('_settings_lock acquire falied. func: %s, args: %s' % (func_name, args))
-                    return False
-            else:
-                print('_settings_lock is locked. func: %s, args: %s' % (func_name, args))
-                return False
+            with _settings_lock:
+                return func(*args, **kwargs)
         return wrapperd_fun
     return settings_lock_fun
 

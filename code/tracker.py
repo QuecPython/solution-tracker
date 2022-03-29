@@ -31,7 +31,7 @@ from usr.common import numiter
 from usr.common import Singleton
 from usr.mpower import PowerManage
 from usr.logging import getLogger
-from usr.location import GPS
+# from usr.location import GPS
 from usr.location import Location
 from usr.timer import LEDTimer
 
@@ -298,14 +298,15 @@ class SelfCheck(object):
 
     def gps_check(self):
         # return True if OK
-        gps = GPS(settings.default_values_sys._gps_cfg)
+        # gps = GPS(settings.default_values_sys._gps_cfg)
+        locator = Location()
 
         retry = 0
         gps_data = None
         sleep_time = 1
 
         while retry < 5:
-            gps_data = gps.read()
+            gps_data = locator.read()
             if gps_data:
                 break
             else:
@@ -313,6 +314,7 @@ class SelfCheck(object):
                 utime.sleep(sleep_time)
                 sleep_time *= 2
 
+        del locator
         if gps_data:
             return True
 

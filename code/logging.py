@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import utime
-import usr.settings as settings
+from usr.settings import settings
 
 
 def asyncLog(name, level, *message, timeout=None, await_connection=True):
@@ -27,7 +27,8 @@ def asyncLog(name, level, *message, timeout=None, await_connection=True):
 
 
 def log(name, level, *message, local_only=False, return_only=False, timeout=None):
-    if not settings.settings.get().get('sys', {}).get('sw_log', True):
+    current_settings = settings.get()
+    if not current_settings.get('sys', {}).get('sw_log', True):
         return
 
     if hasattr(utime, "strftime"):
