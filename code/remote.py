@@ -163,8 +163,6 @@ def downlink_process(argv):
             option_fun(*args)
             if self.remote_read_cb:
                 self.remote_read_cb(*data)
-            else:
-                log.warn('Remote read callback is not defined.')
         else:
             # TODO: Raise Error OR Conntinue
             raise RemoteError('DownLinkOption has no accribute %s.' % option_attr)
@@ -204,7 +202,7 @@ def uplink_process(argv):
                             value.pop(i)         # Pop data from data-list after posting sueecss.
                             need_refresh = True  # Data in hist-dictionary changed, need to refresh history file.
         except Exception as e:
-            log.error('uplink_process error: %s' % e)
+            log.error('uplink_process Error: %s' % e)
             while True:  # Put all data in uplink_queue to hist-dictionary.
                 if self.uplink_queue.size():
                     data = self.uplink_queue.get()
@@ -335,11 +333,12 @@ class Remote(Singleton):
         current_settings = settings.settings.get()
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
             if current_settings['app']['sw_ota'] is True:
+                log.debug('OTA Check To Report Dev Info.')
                 self.cloud.dev_info_report()
             else:
-                raise settings.SettingsError('OTA upgrade is disabled!')
+                raise settings.SettingsError('OTA Upgrade Is Disabled!')
         else:
-            raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
+            raise settings.SettingsError('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
 
     def cloud_ota_action(self, val=1):
         current_settings = settings.settings.get()
@@ -349,4 +348,4 @@ class Remote(Singleton):
                 settings.settings.set('ota_status', 0)
                 settings.settings.save()
         else:
-            raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
+            raise settings.SettingsError('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])

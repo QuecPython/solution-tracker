@@ -16,6 +16,7 @@ import pm
 import ure
 import utime
 import _thread
+import osTimer
 
 from queue import Queue
 from machine import RTC
@@ -118,21 +119,21 @@ def test_tracker():
     device_check_res = tracker.device_check()
     log.info('[.] device_check_res:', device_check_res)
 
-    log.info('[.] sleep 3')
-    utime.sleep(3)
+    log.info('[.] sleep 10')
+    utime.sleep(10)
 
-    log.info('[.] tracker.power_manage.low_energy_init()')
-    tracker.power_manage.low_energy_init()
-    log.info('[.] tracker.power_manage.start_rtc()')
-    tracker.power_manage.start_rtc()
-    log.info('[.] end tracker.power_manage.start_rtc()')
+    # log.info('[.] tracker.power_manage.low_energy_init()')
+    # tracker.power_manage.low_energy_init()
+    # log.info('[.] tracker.power_manage.start_rtc()')
+    # tracker.power_manage.start_rtc()
+    # log.info('[.] end tracker.power_manage.start_rtc()')
 
     # log.info('[.] test tracker.device_check()')
     # device_check_res = tracker.device_check()
     # log.info('[.] device_check_res:', device_check_res)
 
-    # log.info('[.] test tracker.remote.check_ota()')
-    # tracker.remote.check_ota()
+    log.info('[.] test tracker.remote.check_ota()')
+    tracker.remote.check_ota()
 
     # log.info('[.] sleep 3')
     # utime.sleep(3)
@@ -264,6 +265,15 @@ def test_gps_uart():
         log.debug('[test_gps_uart] gps_info size: %s' % len(gps_info))
 
 
+def timer_cb(args):
+    print('[%s] timer callback' % utime.mktime(utime.localtime()))
+
+
+def test_ostimer():
+    timer = osTimer()
+    timer.start(1000, 2, timer_cb)
+
+
 def main():
     # test_quecthing()
     # test_settings()
@@ -276,6 +286,7 @@ def main():
     # test_pm()
     # test_rtc()
     # test_gps_uart()
+    # test_ostimer()
 
 
 if __name__ == '__main__':

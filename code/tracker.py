@@ -182,7 +182,7 @@ class Tracker(Singleton):
         return str(num)
 
     def data_report_cb(self, topic, msg):
-        log.debug('[x] recive res topic [%s]' % topic)
+        log.debug('[x] recive res topic [%s] msg [%s]' % (topic, msg))
         sys_bus.unsubscribe(topic)
 
         if topic.endswith('/wakelock_unlock'):

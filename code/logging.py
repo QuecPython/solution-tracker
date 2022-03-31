@@ -15,6 +15,8 @@
 import utime
 from usr.settings import settings
 
+current_settings = settings.get()
+
 
 def asyncLog(name, level, *message, timeout=None, await_connection=True):
         '''
@@ -27,7 +29,6 @@ def asyncLog(name, level, *message, timeout=None, await_connection=True):
 
 
 def log(name, level, *message, local_only=False, return_only=False, timeout=None):
-    current_settings = settings.get()
     if not current_settings.get('sys', {}).get('sw_log', True):
         return
 

@@ -108,7 +108,7 @@ class GPS(Singleton):
         global gps_data_retrieve_queue
 
         while self.__first_break == 0:
-            self.__gps_timer.start(50, 1, self.first_gps_timer_callback)
+            self.__gps_timer.start(50, 0, self.first_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             data = self.uart_obj.read(nread).decode()
             self.__gps_timer.stop()
@@ -119,7 +119,7 @@ class GPS(Singleton):
         gga_data = ''
         vtg_data = ''
         while self.__second_break == 0:
-            self.__gps_timer.start(1500, 1, self.second_gps_timer_callback)
+            self.__gps_timer.start(1500, 0, self.second_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             if nread:
                 data += self.uart_obj.read(nread).decode()
@@ -141,7 +141,7 @@ class GPS(Singleton):
             quecgnss.gnssEnable(1)
 
         while self.__first_break == 0:
-            self.__gps_timer.start(50, 1, self.first_gps_timer_callback)
+            self.__gps_timer.start(50, 0, self.first_gps_timer_callback)
             data = quecgnss.read(1024)
             self.__gps_timer.stop()
         self.__first_break = 0
@@ -152,7 +152,7 @@ class GPS(Singleton):
         vtg_data = ''
         count = 0
         while self.__second_break == 0:
-            self.__gps_timer.start(1500, 1, self.second_gps_timer_callback)
+            self.__gps_timer.start(1500, 0, self.second_gps_timer_callback)
             gnss_data = quecgnss.read(1024)
             if gnss_data and gnss_data[1]:
                 data += gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ''

@@ -15,13 +15,11 @@
 from usr.tracker import Tracker
 from usr.settings import settings
 from usr.settings import default_values_sys
+from usr.settings import PROJECT_NAME
+from usr.settings import PROJECT_VERSION
 from usr.logging import getLogger
 
 log = getLogger(__name__)
-
-PROJECT_NAME = 'QuecPython_Tracker'
-
-PROJECT_VERSION = '2.0.1'
 
 
 def main():

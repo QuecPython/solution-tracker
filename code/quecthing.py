@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uos
 import utime
 import osTimer
 import quecIot
+import uhashlib
+import ubinascii
+import uzlib
+import ql_fs
+import app_fota_download
 
-# from misc import Power
 from queue import Queue
 
 from usr.logging import getLogger
@@ -85,19 +90,44 @@ object_model_code = {i[1][0]: i[0] for i in object_model}
 
 class QuecThing(object):
     def __init__(self, pk, ps, dk, ds, downlink_queue):
+        self.pk = pk
+        self.ps = ps
+        self.dk = dk
+        self.ds = ds
+        self.init_res = {}
+        self.fileSize = 0
+        self.needDownloadSize = 0
+        self.crcValue = 0
+        self.downloadSize = 0
+        self.fileFp = 0
+        self.startAddr = 0
         self.downlink_queue = downlink_queue
         self.post_result_wait_queue = Queue(maxsize=16)
         self.quec_timer = osTimer()
-        self.queciot_init(pk, ps, dk, ds)
+        self.queciot_init()
 
-    def queciot_init(self, pk, ps, dk, ds):
+        fileClear = OTAFileClear()
+        fileClear.file_clear()
+
+    def queciot_init(self):
+        if quecIot.getWorkState() == 8 and quecIot.getConnmode() == 1:
+            return
+
         quecIot.init()
         quecIot.setEventCB(self.eventCB)
-        quecIot.setProductinfo(pk, ps)
-        quecIot.setDkDs(dk, ds)
+        quecIot.setProductinfo(self.pk, self.ps)
+        quecIot.setDkDs(self.dk, self.ds)
         quecIot.setServer(1, "iot-south.quectel.com:2883")
         quecIot.setConnmode(1)
-        if not ds and dk:
+
+        count = 0
+        while quecIot.getWorkState() != 8 and count < 10:
+            if self.init_res.get('subscription') is not None:
+                self.init_res.pop('subscription')
+                break
+            utime.sleep_ms(200)
+
+        if not self.ds and self.dk:
             count = 0
             while count < 3:
                 ndk, nds = quecIot.getDkDs()
@@ -108,6 +138,8 @@ class QuecThing(object):
             current_settings = settings.get()
             cloud_init_params = current_settings['sys']['cloud_init_params']
             cloud_init_params['DS'] = nds
+            self.dk = ndk
+            self.ds = nds
             settings.set('cloud_init_params', cloud_init_params)
             settings.save()
 
@@ -129,6 +161,7 @@ class QuecThing(object):
                 del data[k]
 
     def post_data(self, data):
+        self.queciot_init()
         res = True
         # log.debug('post_data: %s' % str(data))
         for k, v in data.items():
@@ -192,11 +225,25 @@ class QuecThing(object):
         elif event == 2:
             if errcode == 10200:
                 log.info('Access succeeded.')
+                self.init_res['access'] = True
             if errcode == 10450:
                 log.error('Device internal error (connect failed).')
+                self.init_res['access'] = False
         elif event == 3:
             if errcode == 10200:
                 log.info('Subscription succeeded.')
+                self.init_res['subscription'] = True
+                quecIot.otaRequest(0)
+                if data != (3, 10200):
+                    ota_info = data.decode()
+                    file_info = ota_info.split(',')
+                    log.info(
+                        "OTA File Info: componentNo: %s, sourceVersion: %s, targetVersion: %s, "
+                        "batteryLimit: %s, minSignalIntensity: %s, minSignalIntensity: %s" % tuple(file_info)
+                    )
+            if errcode == 10300:
+                log.info('Subscription failed.')
+                self.init_res['subscription'] = False
         elif event == 4:
             if errcode == 10200:
                 log.info('Data sending succeeded.')
@@ -239,16 +286,31 @@ class QuecThing(object):
         elif event == 7:
             if errcode == 10700:
                 log.info('New OTA plain.')
+                ota_info = data.decode()
+                file_info = ota_info.split(',')
+                log.info(
+                    "OTA File Info: componentNo: %s, sourceVersion: %s, targetVersion: %s, "
+                    "batteryLimit: %s, minSignalIntensity: %s, useSpace: %s" % tuple(file_info)
+                )
                 self.downlink_queue.put(('ota_plain', data))
                 self.downlink_queue.put(('object_model', [('ota_status', 1)]))
             elif errcode == 10701:
                 log.info('The module starts to download.')
                 self.downlink_queue.put(('object_model', [('ota_status', 2)]))
+                if data != (7, 10701):
+                    ota_info = data.decode()
+                    file_info = ota_info.split(',')
+                    self.sota_download_info(int(file_info[1]), file_info[2], int(file_info[3]))
             elif errcode == 10702:
                 log.info('Package download.')
                 self.downlink_queue.put(('object_model', [('ota_status', 2)]))
             elif errcode == 10703:
                 log.info('Package download complete.')
+                if data != (7, 10703):
+                    ota_info = data.decode()
+                    file_info = ota_info.split(',')
+                    log.info("OTA File Info: componentNo: %s, length: %s, md5: %s, crc: %s" % tuple(file_info))
+                    self.sota_download_success(file_info[2], file_info[3])
                 self.downlink_queue.put(('object_model', [('ota_status', 2)]))
             elif errcode == 10704:
                 log.info('Package updating.')
@@ -259,9 +321,156 @@ class QuecThing(object):
             elif errcode == 10706:
                 log.info('Failed to update firmware.')
                 self.downlink_queue.put(('object_model', [('ota_status', 4)]))
+            elif errcode == 10707:
+                log.info('Received confirmation broadcast.')
 
     def dev_info_report(self):
         quecIot.devInfoReport([i for i in range(1, 13)])
 
     def ota_action(self, val=1):
         quecIot.otaAction(val)
+
+    def sota_download_info(self, size, md5_value, crc):
+        self.file_size = size
+        self.crc_value = crc
+        self.download_size = 0
+        self.update_mode = UpdateCtx()
+        self.md5_value = md5_value
+
+    def read_sota_file(self):
+        while self.need_download_size != 0:
+            readsize = 4096
+            if (readsize > self.need_download_size):
+                readsize = self.need_download_size
+            updateFile = quecIot.mcuFWDataRead(self.start_addr, readsize)
+            self.update_mode.write_update_data(updateFile)
+            log.debug("Download File Size: %s" % readsize)
+            self.need_download_size -= readsize
+            self.start_addr += readsize
+            self.download_size += readsize
+            if (self.download_size == self.file_size):
+                log.debug("File Download Success, Update Start.")
+                quecIot.otaAction(3)
+                file_update_res = self.update_mode.file_update(self.md5_value)
+                if file_update_res:
+                    log.debug("File Update Success, Power Restart.")
+                    self.downlink_queue.put(('object_model', [('ota_status', 3)]))
+                    self.downlink_queue.put(('object_model', [('power_restart', 1)]))
+                else:
+                    log.debug("File Update Failed.")
+                    self.downlink_queue.put(('object_model', [('ota_status', 4)]))
+            else:
+                quecIot.otaAction(2)
+
+    def sota_download_success(self, start, down_loaded_size):
+        self.need_download_size = down_loaded_size
+        self.start_addr = start
+        self.read_sota_file()
+
+
+class UpdateCtx(object):
+    def __init__(self, parent_dir="/usr/.updater/usr/"):
+        self.fp = open("/usr/sotaFile.tar.gz", "wb+")
+        self.file_list = []
+        self.parent_dir = parent_dir
+        self.unzipFp = 0
+        self.hash_obj = uhashlib.md5()
+
+    def write_update_data(self, data):
+        self.fp.write(data)
+        self.hash_obj.update(data)
+
+    def __get_file_size(self, data):
+        size = data.decode('ascii')
+        size = size.rstrip('\0')
+        if (len(size) == 0):
+            return 0
+        size = int(size, 8)
+        return size
+
+    def __get_file_name(self, name):
+        fileName = name.decode('ascii')
+        fileName = fileName.rstrip('\0')
+        return fileName
+
+    def file_update(self, md5_value):
+        md5Data = ubinascii.hexlify(self.hash_obj.digest())
+        md5Data = md5Data.decode('ascii')
+        md5Value = eval(md5_value)
+        log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (md5Value, md5Data))
+        if (md5Value != md5Data):
+            log.error("MD5 Verification Failed")
+            return
+
+        log.debug("MD5 Verification Success.")
+        self.fp.seek(10)
+        self.unzipFp = uzlib.DecompIO(self.fp, -15)
+        log.debug('Unzip File Success.')
+        ql_fs.mkdirs(self.parent_dir)
+        try:
+            while True:
+                data = self.unzipFp.read(0x200)
+                if not data:
+                    log.debug("Read File Size Zore.")
+                    break
+                size = self.__get_file_size(data[124:135])
+                fileName = self.__get_file_name(data[:100])
+                log.debug("File Name: %s, File Size: %s" % (fileName, size))
+                if not size:
+                    if len(fileName):
+                        log.debug("Create File Dir: %s" % self.parent_dir + fileName)
+                        ql_fs.mkdirs(self.parent_dir + fileName)
+                    else:
+                        log.debug("Have No File Unzip.")
+                        break
+                else:
+                    log.debug("File %s Write Size %s" % (self.parent_dir + fileName, size))
+                    fp = open(self.parent_dir + fileName, "wb+")
+                    fileSize = size
+                    while fileSize:
+                        data = self.unzipFp.read(0x200)
+                        if (fileSize < 0x200):
+                            fp.write(data[:fileSize])
+                            fileSize = 0
+                            fp.close()
+                            self.file_list.append({"fileName": "/usr/" + fileName, "size": size})
+                            break
+                        else:
+                            fileSize -= 0x200
+                            fp.write(data)
+
+            for fileName in self.file_list:
+                app_fota_download.update_download_stat("/usr/.updater" + fileName["fileName"], fileName["fileName"], fileName["size"])
+            app_fota_download.set_update_flag()
+            self.fp.close()
+            log.debug("Remove /usr/sotaFile.tar.gz")
+            uos.remove("/usr/sotaFile.tar.gz")
+        except Exception as e:
+            log.error("Unpack Error: %s" % e)
+            return False
+        return True
+
+
+class OTAFileClear(object):
+    def __init__(self):
+        self.usrList = uos.ilistdir("/usr/")
+
+    def __remove_updater_dir(self, path):
+        dirList = uos.ilistdir(path)
+        for fileInfo in dirList:
+            if fileInfo[1] == 0x4000:
+                self.__remove_updater_dir("%s/%s" % (path, fileInfo[0]))
+            else:
+                log.debug("remove file name: %s/%s" % (path, fileInfo[0]))
+                uos.remove("%s/%s" % (path, fileInfo[0]))
+
+        log.debug("remove dir name: %s" % path)
+        uos.remove(path)
+
+    def file_clear(self):
+        for fileInfo in self.usrList:
+            if fileInfo[0] == ".updater":
+                self.__remove_updater_dir("/usr/.updater")
+            elif fileInfo[0] == "sotaFile.tar.gz":
+                log.debug("remove update file sotaFile.tar.gz")
+                uos.remove("/usr/sotaFile.tar.gz")
