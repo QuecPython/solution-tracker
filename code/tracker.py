@@ -222,14 +222,7 @@ class Tracker(Singleton):
         current_settings = settings.settings.get()
         ota_status_info = current_settings['sys']['ota_status']
         if ota_status_info['upgrade_status'] in (3, 4):
-            ota_info = {}
-            ota_info['sys_target_version'] = '--'
-            ota_info['app_target_version'] = '--'
-            ota_info['upgrade_module'] = 0
-            ota_info['upgrade_status'] = 0
-            ota_status_info.update(ota_info)
-            settings.settings.set('ota_status', ota_status_info)
-            settings.settings.save()
+            self.ota_params_reset()
 
     def device_check(self):
         device_check_res = self.get_device_check()
@@ -277,6 +270,18 @@ class Tracker(Singleton):
         else:
             if net_check_res == (3, 1):
                 pass
+
+    def ota_params_reset(self):
+        current_settings = settings.settings.get()
+        ota_status_info = current_settings['sys']['ota_status']
+        ota_info = {}
+        ota_info['sys_target_version'] = '--'
+        ota_info['app_target_version'] = '--'
+        ota_info['upgrade_module'] = 0
+        ota_info['upgrade_status'] = 0
+        ota_status_info.update(ota_info)
+        settings.settings.set('ota_status', ota_status_info)
+        settings.settings.save()
 
 
 class SelfCheck(object):

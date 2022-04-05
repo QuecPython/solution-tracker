@@ -22,11 +22,14 @@ from queue import Queue
 
 import usr.settings as settings
 
+from usr.ota import OTA
 from usr.common import Singleton
 from usr.logging import getLogger
 from usr.settings import DATA_NON_LOCA
-from usr.settings import DATA_LOCA_NON_GPS
 from usr.settings import DATA_LOCA_GPS
+from usr.settings import DATA_LOCA_NON_GPS
+from usr.settings import SYSNAME
+from usr.settings import PROJECT_NAME
 
 if settings.settings.get()['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
     from usr.quecthing import QuecThing
@@ -87,17 +90,18 @@ class Controller(Singleton):
             if upgrade_info:
                 current_settings = settings.settings.get()
                 ota_status_info = current_settings['sys']['ota_status']
-                ota_info = {}
-                if upgrade_info[0] == settings.SYSNAME:
-                    ota_info['upgrade_module'] = 1
-                    ota_info['sys_target_version'] = upgrade_info[2]
-                elif upgrade_info[0] == settings.PROJECT_NAME:
-                    ota_info['upgrade_module'] = 2
-                    ota_info['app_target_version'] = upgrade_info[2]
-                ota_info['upgrade_status'] = upgrade_info[1]
-                ota_status_info.update(ota_info)
-                settings.settings.set('ota_status', ota_status_info)
-                settings.settings.save()
+                if ota_status_info['sys_target_version'] == '--' and ota_status_info['app_target_version'] == '--':
+                    ota_info = {}
+                    if upgrade_info[0] == settings.SYSNAME:
+                        ota_info['upgrade_module'] = 1
+                        ota_info['sys_target_version'] = upgrade_info[2]
+                    elif upgrade_info[0] == settings.PROJECT_NAME:
+                        ota_info['upgrade_module'] = 2
+                        ota_info['app_target_version'] = upgrade_info[2]
+                    ota_info['upgrade_status'] = upgrade_info[1]
+                    ota_status_info.update(ota_info)
+                    settings.settings.set('ota_status', ota_status_info)
+                    settings.settings.save()
 
     def power_restart(self, perm, flag):
         if perm == 'w':
@@ -155,10 +159,11 @@ class DownLinkOption(object):
         current_settings = settings.settings.get()
         if current_settings['app']['sw_ota'] and current_settings['app']['sw_ota_auto_upgrade']:
             if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-                self.tracker.remote.cloud_ota_action()
+                self.tracker.remote.cloud_ota_action(val=1)
             elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
                 log.debug('ota_plain args: %s' % str(args))
                 log.debug('ota_plain kwargs: %s' % str(kwargs))
+                self.tracker.remote.cloud_ota_action(val=1, kwargs=kwargs)
 
     def ota_file_download(self, *args, **kwargs):
         log.debug('ota_file_download: %s' % str(args))
@@ -387,20 +392,24 @@ class Remote(Singleton):
         else:
             log.error('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
 
-    def cloud_ota_action(self, val=1):
+    def cloud_ota_action(self, val=1, kwargs=None):
         current_settings = settings.settings.get()
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
             self.cloud.ota_action(val)
             if val == 0:
+                self.tracker.ota_params_reset()
+        else:
+            if val == 0:
                 current_settings = settings.settings.get()
                 ota_status_info = current_settings['sys']['ota_status']
-                ota_info = {}
-                ota_info['sys_target_version'] = '--'
-                ota_info['app_target_version'] = '--'
-                ota_info['upgrade_module'] = 0
-                ota_info['upgrade_status'] = 0
-                ota_status_info.update(ota_info)
-                settings.settings.set('ota_status', ota_status_info)
-                settings.settings.save()
-        else:
-            log.warn('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
+                upgrade_module = SYSNAME if ota_status_info['upgrade_module'] == 1 else PROJECT_NAME
+                self.cloud.ota_device_progress(step=-1, desc='User cancels upgrade.', module=upgrade_module)
+                self.tracker.ota_params_reset()
+            else:
+                upgrade_module = kwargs.get('module', '')
+                file_info = [{'size': i['fileSize'], 'url': i['fileUrl'], 'md5': i['fileMd5']} for i in kwargs.get('files', [])]
+                if not file_info:
+                    file_info = [{'size': kwargs['size'], 'url': kwargs['url'], 'md5': kwargs['md5']}]
+                ota_obj = OTA(upgrade_module, file_info)
+                ota_obj.start()
+                self.downlink_queue.put(('object_model', [('power_restart', 1)]))

@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uos
+
 import utime
 import osTimer
 import quecIot
-import uhashlib
-import ubinascii
-import uzlib
-import ql_fs
-import app_fota_download
 
 from queue import Queue
 
@@ -28,6 +23,8 @@ from usr.logging import getLogger
 from usr.settings import settings
 from usr.settings import PROJECT_NAME
 from usr.settings import PROJECT_VERSION
+from usr.ota import SotaDownloadUpgrade
+from usr.ota import OTAFileClear
 
 log = getLogger(__name__)
 
@@ -309,8 +306,8 @@ class QuecThing(object):
                     "OTA File Info: componentNo: %s, sourceVersion: %s, targetVersion: %s, "
                     "batteryLimit: %s, minSignalIntensity: %s, useSpace: %s" % tuple(file_info)
                 )
-                self.downlink_queue.put(('ota_plain', data))
                 self.downlink_queue.put(('object_model', [('ota_status', (data[0], 1, data[2]))]))
+                self.downlink_queue.put(('ota_plain', data))
             elif errcode == 10701:
                 log.info('The module starts to download.')
                 if data != (7, 10701):
@@ -351,7 +348,7 @@ class QuecThing(object):
         self.file_size = size
         self.crc_value = crc
         self.download_size = 0
-        self.update_mode = UpdateCtx()
+        self.update_mode = SotaDownloadUpgrade()
         self.md5_value = md5_value
 
     def sota_download_success(self, start, down_loaded_size):
@@ -375,117 +372,10 @@ class QuecThing(object):
                 quecIot.otaAction(3)
                 file_update_res = self.update_mode.file_update(self.md5_value)
                 if file_update_res:
+                    self.update_mode.sota_set_flag()
                     log.debug("File Update Success, Power Restart.")
                 else:
                     log.debug("File Update Failed.")
                 self.downlink_queue.put(('object_model', [('power_restart', 1)]))
             else:
                 quecIot.otaAction(2)
-
-
-class UpdateCtx(object):
-    def __init__(self, parent_dir="/usr/.updater/usr/"):
-        self.fp = open("/usr/sotaFile.tar.gz", "wb+")
-        self.file_list = []
-        self.parent_dir = parent_dir
-        self.unzipFp = 0
-        self.hash_obj = uhashlib.md5()
-
-    def write_update_data(self, data):
-        self.fp.write(data)
-        self.hash_obj.update(data)
-
-    def __get_file_size(self, data):
-        size = data.decode('ascii')
-        size = size.rstrip('\0')
-        if (len(size) == 0):
-            return 0
-        size = int(size, 8)
-        return size
-
-    def __get_file_name(self, name):
-        fileName = name.decode('ascii')
-        fileName = fileName.rstrip('\0')
-        return fileName
-
-    def file_update(self, md5_value):
-        md5Data = ubinascii.hexlify(self.hash_obj.digest())
-        md5Data = md5Data.decode('ascii')
-        md5Value = eval(md5_value)
-        log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (md5Value, md5Data))
-        if (md5Value != md5Data):
-            log.error("MD5 Verification Failed")
-            return
-
-        log.debug("MD5 Verification Success.")
-        self.fp.seek(10)
-        self.unzipFp = uzlib.DecompIO(self.fp, -15)
-        log.debug('Unzip File Success.')
-        ql_fs.mkdirs(self.parent_dir)
-        try:
-            while True:
-                data = self.unzipFp.read(0x200)
-                if not data:
-                    log.debug("Read File Size Zore.")
-                    break
-                size = self.__get_file_size(data[124:135])
-                fileName = self.__get_file_name(data[:100])
-                log.debug("File Name: %s, File Size: %s" % (fileName, size))
-                if not size:
-                    if len(fileName):
-                        log.debug("Create File Dir: %s" % self.parent_dir + fileName)
-                        ql_fs.mkdirs(self.parent_dir + fileName)
-                    else:
-                        log.debug("Have No File Unzip.")
-                        break
-                else:
-                    log.debug("File %s Write Size %s" % (self.parent_dir + fileName, size))
-                    fp = open(self.parent_dir + fileName, "wb+")
-                    fileSize = size
-                    while fileSize:
-                        data = self.unzipFp.read(0x200)
-                        if (fileSize < 0x200):
-                            fp.write(data[:fileSize])
-                            fileSize = 0
-                            fp.close()
-                            self.file_list.append({"fileName": "/usr/" + fileName, "size": size})
-                            break
-                        else:
-                            fileSize -= 0x200
-                            fp.write(data)
-
-            for fileName in self.file_list:
-                app_fota_download.update_download_stat("/usr/.updater" + fileName["fileName"], fileName["fileName"], fileName["size"])
-            app_fota_download.set_update_flag()
-            self.fp.close()
-            log.debug("Remove /usr/sotaFile.tar.gz")
-            uos.remove("/usr/sotaFile.tar.gz")
-        except Exception as e:
-            log.error("Unpack Error: %s" % e)
-            return False
-        return True
-
-
-class OTAFileClear(object):
-    def __init__(self):
-        self.usrList = uos.ilistdir("/usr/")
-
-    def __remove_updater_dir(self, path):
-        dirList = uos.ilistdir(path)
-        for fileInfo in dirList:
-            if fileInfo[1] == 0x4000:
-                self.__remove_updater_dir("%s/%s" % (path, fileInfo[0]))
-            else:
-                log.debug("remove file name: %s/%s" % (path, fileInfo[0]))
-                uos.remove("%s/%s" % (path, fileInfo[0]))
-
-        log.debug("remove dir name: %s" % path)
-        uos.remove(path)
-
-    def file_clear(self):
-        for fileInfo in self.usrList:
-            if fileInfo[0] == ".updater":
-                self.__remove_updater_dir("/usr/.updater")
-            elif fileInfo[0] == "sotaFile.tar.gz":
-                log.debug("remove update file sotaFile.tar.gz")
-                uos.remove("/usr/sotaFile.tar.gz")
