@@ -22,6 +22,10 @@ from aLiYun import aLiYun
 from usr.logging import getLogger
 from usr.settings import settings
 from usr.settings import default_values_sys
+from usr.settings import PROJECT_VERSION
+from usr.settings import PROJECT_NAME
+from usr.settings import SYSNAME
+from usr.settings import DEVICE_FIRMWARE_VERSION
 from usr.common import numiter
 
 log = getLogger(__name__)
@@ -72,6 +76,15 @@ object_model = {
     ],
 }
 
+_gps_read_lock = _thread.allocate_lock()
+
+
+def get_post_res_lock(func):
+    def wrapperd_fun(*args, **kwargs):
+        with _gps_read_lock:
+            return func(*args, **kwargs)
+    return wrapperd_fun
+
 
 class AliYunIotError(Exception):
     def __init__(self, value):
@@ -83,11 +96,18 @@ class AliYunIotError(Exception):
 
 class AliYunIot(object):
 
-    def __init__(self, pk, ps, dk, ds, downlink_queue):
+    def __init__(self, pk, ps, dk, ds, server, downlink_queue):
+        self.pk = pk
+        self.ps = ps
+        self.dk = dk
+        self.ds = ds
+        self.server = server
+        self.ali = None
+        self.downlink_queue = downlink_queue
+
         self.post_res = {}
         self.breack_flag = 0
         self.ali_timer = osTimer()
-        self.downlink_queue = downlink_queue
 
         self.id_iter = numiter()
         self.id_lock = _thread.allocate_lock()
@@ -99,20 +119,47 @@ class AliYunIot(object):
         self.ica_topic_property_query = '/sys/%s/%s/thing/service/property/query' % (pk, dk)
         self.ica_topic_event_post = '/sys/%s/%s/thing/event/{}/post' % (pk, dk)
         self.ica_topic_event_post_reply = '/sys/%s/%s/thing/event/{}/post_reply' % (pk, dk)
+        self.ota_topic_device_inform = '/ota/device/inform/%s/%s' % (pk, dk)
+        self.ota_topic_device_upgrade = '/ota/device/upgrade/%s/%s' % (pk, dk)
+        self.ota_topic_device_progress = '/ota/device/progress/%s/%s' % (pk, dk)
+        self.ota_topic_firmware_get = '/sys/%s/%s/thing/ota/firmware/get' % (pk, dk)
+        self.ota_topic_firmware_get_reply = '/sys/%s/%s/thing/ota/firmware/get_reply' % (pk, dk)
+
+        # TODO: To Download OTA File For MQTT Association (Not Support Now.)
+        self.ota_topic_file_download = '/sys/%s/%s/thing/file/download' % (pk, dk)
+        self.ota_topic_file_download_reply = '/sys/%s/%s/thing/file/download_reply' % (pk, dk)
+
+        self.cloud_init()
+
+    def cloud_init(self, enforce=False):
+        if enforce is False and self.ali is not None:
+            if self.ali.getAliyunSta() == 0:
+                return True
+            else:
+                self.ali.disconnect()
 
         current_settings = settings.get()
         if current_settings['sys']['ali_burning_method'] == default_values_sys._ali_burning_method.one_type_one_density:
-            dk = None
+            self.dk = None
         elif current_settings['sys']['ali_burning_method'] == default_values_sys._ali_burning_method.one_machine_one_density:
-            ps = None
-        self.ali = aLiYun(pk, ps, dk, ds)
-        self.clientID = dk
-        setMqttres = self.ali.setMqtt(self.clientID, clean_session=False, keepAlive=60, reconn=True)
-        if setMqttres == -1:
-            raise AliYunIotError('setMqtt Falied!')
-        self.ali.setCallback(self.ali_sub_cb)
-        self.ali_subcribe_topic()
-        self.ali.start()
+            self.ps = None
+
+        self.ali = aLiYun(self.pk, self.ps, self.dk, self.ds)
+        setMqttres = self.ali.setMqtt(self.dk, clean_session=False, keepAlive=current_settings['sys']['cloud_life_time'], reconn=True)
+        if setMqttres != -1:
+            self.ali.setCallback(self.ali_sub_cb)
+            self.ali_subcribe_topic()
+            self.ali.start()
+        else:
+            log.error('setMqtt Falied!')
+            return False
+
+        if self.ali.getAliyunSta() == 0:
+            self.device_report()
+            self.ota_request()
+            return True
+        else:
+            return False
 
     def ali_subcribe_topic(self):
         if self.ali.subscribe(self.ica_topic_property_post, qos=0) == -1:
@@ -134,6 +181,15 @@ class AliYunIot(object):
             if self.ali.subscribe(post_reply_topic, qos=0) == -1:
                 log.error('Topic [%s] Subscribe Falied.' % post_reply_topic)
 
+        if self.ali.subscribe(self.ota_topic_device_upgrade, qos=0) == -1:
+            log.error('Topic [%s] Subscribe Falied.' % self.ota_topic_device_upgrade)
+        if self.ali.subscribe(self.ota_topic_firmware_get_reply, qos=0) == -1:
+            log.error('Topic [%s] Subscribe Falied.' % self.ota_topic_firmware_get_reply)
+
+        # TODO: To Download OTA File For MQTT Association (Not Support Now.)
+        if self.ali.subscribe(self.ota_topic_file_download_reply, qos=0) == -1:
+            log.error('Topic [%s] Subscribe Falied.' % self.ota_topic_file_download_reply)
+
     def get_id(self):
         with self.id_lock:
             try:
@@ -147,14 +203,15 @@ class AliYunIot(object):
     def put_post_res(self, msg_id, res):
         self.post_res[msg_id] = res
 
+    @get_post_res_lock
     def get_post_res(self, msg_id):
         current_settings = settings.get()
-        self.ali_timer.start(current_settings['sys']['checknet_timeout'] * 1000, 2, self.ali_timer_cb)
+        self.ali_timer.start(current_settings['sys']['checknet_timeout'] * 1000, 0, self.ali_timer_cb)
         while self.post_res.get(msg_id) is None:
-            utime.sleep_ms(200)
             if self.breack_flag:
                 self.post_res[msg_id] = False
                 break
+            utime.sleep_ms(50)
         self.ali_timer.stop()
         self.breack_flag = 0
         res = self.post_res.pop(msg_id)
@@ -221,17 +278,104 @@ class AliYunIot(object):
 
         return False
 
+    def device_report(self):
+        self.ota_device_inform(PROJECT_VERSION, module=PROJECT_NAME)
+        self.ota_device_inform(DEVICE_FIRMWARE_VERSION, module=SYSNAME)
+
+    def ota_request(self):
+        self.ota_firmware_get(PROJECT_NAME)
+        self.ota_firmware_get(SYSNAME)
+
+    def ota_device_inform(self, version, module='default'):
+        msg_id = self.get_id()
+        publish_data = {
+            'id': msg_id,
+            'params': {
+                'version': version,
+                'module': module,
+            },
+        }
+        publish_res = self.ali.publish(self.ota_topic_device_inform, ujson.dumps(publish_data), qos=0)
+        log.debug('version: %s, module: %s, publish_res: %s' % (version, module, publish_res))
+        return publish_res
+
+    def ota_device_progress(self, step, desc, module='default'):
+        msg_id = self.get_id()
+        publish_data = {
+            'id': msg_id,
+            'params': {
+                'step': step,
+                'desc': desc,
+                'module': module,
+            }
+        }
+        publish_res = self.ali.publish(self.ota_topic_device_progress, ujson.dumps(publish_data), qos=0)
+        if publish_res:
+            return self.get_post_res(msg_id)
+        else:
+            log.error('ota_device_progress publish_res: %s' % publish_res)
+            return False
+
+    def ota_firmware_get(self, module):
+        msg_id = self.get_id()
+        publish_data = {
+            'id': msg_id,
+            'version': '1.0',
+            'params': {
+                'module': module,
+            },
+            "method": "thing.ota.firmware.get"
+        }
+        publish_res = self.ali.publish(self.ota_topic_firmware_get, ujson.dumps(publish_data), qos=0)
+        log.debug('module: %s, publish_res: %s' % (module, publish_res))
+        if publish_res:
+            return self.get_post_res(msg_id)
+        else:
+            log.error('ota_firmware_get publish_res: %s' % publish_res)
+            return False
+
+    def ota_file_download(self, params):
+        msg_id = self.get_id()
+        publish_data = {
+            'id': msg_id,
+            'version': '1.0',
+            'params': params
+        }
+        publish_res = self.ali.publish(self.ota_topic_file_download, ujson.dumps(publish_data), qos=0)
+        if publish_res:
+            return self.get_post_res(msg_id)
+        else:
+            log.error('ota_file_download publish_res: %s' % publish_res)
+            return False
+
     def ali_sub_cb(self, topic, data):
-        # log.info('topic: %s, data: %s' % (topic.decode(), data.decode()))
         topic = topic.decode()
         data = ujson.loads(data)
+        log.info('topic: %s, data: %s' % (topic, data))
         if topic.endswith('/post_reply'):
-            log.info('topic: %s, data: %s' % (topic, data))
             self.put_post_res(data['id'], True if data['code'] == 200 else False)
         elif topic.endswith('/property/set'):
-            log.info('topic: %s, data: %s' % (topic, data))
             if data['method'] == 'thing.service.property.set':
                 dl_data = list(zip(data.get("params", {}).keys(), data.get("params", {}).values()))
                 self.downlink_queue.put(('object_model', dl_data))
+        elif topic.startswith('/ota/device/upgrade/'):
+            self.put_post_res(data['id'], True if int(data['code']) == 1000 else False)
+            if int(data['code']) == 1000:
+                if data.get('data'):
+                    self.downlink_queue.put(('object_model', [('ota_status', (data['data']['module'], 1, data['data']['version']))]))
+                    self.downlink_queue.put(('ota_plain', data['data']))
+        elif topic.endswith('/thing/ota/firmware/get_reply'):
+            self.put_post_res(data['id'], True if int(data['code']) == 200 else False)
+            if data['code'] == 200:
+                if data.get('data'):
+                    self.downlink_queue.put(('object_model', [('ota_status', (data['data']['module'], 1, data['data']['version']))]))
+                    self.downlink_queue.put(('ota_plain', data['data']))
+
+        # TODO: To Download OTA File For MQTT Association (Not Support Now.)
+        elif topic.endswith('/thing/file/download_reply'):
+            self.put_post_res(data['id'], True if int(data['code']) == 200 else False)
+            if data['code'] == 200:
+                # self.downlink_queue.put(('ota_file_download', data['data']))
+                pass
         else:
             pass

@@ -16,13 +16,18 @@ import uos
 import ure
 import ql_fs
 import ujson
+import modem
 import _thread
 from machine import UART
 from usr.common import Singleton
 
-PROJECT_NAME = 'QuecPython_Tracker'
+PROJECT_NAME = 'QuecPython-Tracker'
 
 PROJECT_VERSION = '2.0.1'
+
+SYSNAME = uos.uname()[0].split('=')[1]
+
+DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
 
 DATA_NON_LOCA = 0x0
 DATA_LOCA_NON_GPS = 0x1
@@ -45,6 +50,15 @@ DEVICE_MODULE_STATUS = {
     'light_sensor': 4,
     'move_sensor': 5,
     'mike': 6,
+}
+
+OTA_STATUS = {
+    'sys_current_version': 1,
+    'sys_target_version': 2,
+    'app_current_version': 3,
+    'app_target_version': 4,
+    'upgrade_module': 5,
+    'upgrade_status': 6,
 }
 
 DRIVE_BEHAVIOR_CODE = {
@@ -128,11 +142,11 @@ class default_values_app(object):
 
     work_cycle_period = 30
 
-    low_power_alert_threshold = 30
+    low_power_alert_threshold = 20
 
     low_power_shutdown_threshold = 5
 
-    over_speed_threshold = 60
+    over_speed_threshold = 50
 
     sw_ota = True
 
@@ -172,12 +186,17 @@ class default_values_sys(object):
         internal = 0x1
         external = 0x2
 
-    class _ota_status(object):
+    class _ota_upgrade_status(object):
         none = 0
         to_be_updated = 1
         updating = 2
         update_successed = 3
         update_failed = 4
+
+    class _ota_upgrade_module(object):
+        none = 0
+        sys = 1
+        app = 2
 
     class _ali_burning_method(object):
         one_type_one_density = 0
@@ -194,11 +213,13 @@ class default_values_sys(object):
 
     gps_mode = _gps_mode.external
 
-    ota_status = _ota_status.none
+    ota_status = {}
 
     drive_behavior_code = 0
 
     cloud = _cloud.quecIot
+
+    cloud_life_time = 120
 
     cloud_init_params = {}
 
@@ -206,27 +227,49 @@ class default_values_sys(object):
 
     ali_burning_method = _ali_burning_method.one_machine_one_density
 
-    # trackdev0304
+    # trackdev0304 (PROENV)
     _quecIot = {
         'PK': 'p11275',
         'PS': 'Q0ZQQndaN3pCUFd6',
         'DK': 'trackdev0304',
         'DS': '8eba9389af434974c3c846d1922d949f',
+        'SERVER': 'iot-south.quectel.com:2883',
     }
 
-    # # trackerdemo0326
+    # # trackerdemo0326 (PROENV)
     # _quecIot = {
     #     'PK': 'p11275',
     #     'PS': 'Q0ZQQndaN3pCUFd6',
     #     'DK': 'trackerdemo0326',
     #     'DS': '32d540996e32f95c58dd98f18d473d52',
+    #     'SERVER': 'iot-south.quectel.com:2883',
     # }
 
+    # # IMEI (PROENV)
     # _quecIot = {
     #     'PK': 'p11275',
     #     'PS': 'Q0ZQQndaN3pCUFd6',
     #     'DK': '',
     #     'DS': '',
+    #     'SERVER': 'iot-south.quectel.com:2883',
+    # }
+
+    # # TrackerDevEC600NCNLC (TESTENV)
+    # _quecIot = {
+    #     'PK': 'p119v2',
+    #     'PS': 'TXRPdVVhdkY3bU5s',
+    #     'DK': 'TrackerDevEC600NCNLC',
+    #     'DS': '',
+    #     'SERVER': 'mqtt://220.180.239.212:8382',
+    # }
+
+    # # IMEI (TESTENV)
+    # _quecIot = {
+    #     'PK': 'p119v2',
+    #     'PS': 'TXRPdVVhdkY3bU5s',
+    #     'DK': '',
+    #     'DS': '',
+    #     'SERVER': 'mqtt://220.180.239.212:8382',
     # }
 
     # tracker_dev_jack
@@ -235,6 +278,7 @@ class default_values_sys(object):
         'PS': 'HQraBqtV8WsfCEuy',
         'DK': 'tracker_dev_jack',
         'DS': 'bfdfcca5075715e8309eff8597663c4b',
+        "SERVER": '',
     }
 
     _JTT808 = {
@@ -242,6 +286,7 @@ class default_values_sys(object):
         'PS': '',
         'DK': '',
         'DS': '',
+        "SERVER": '',
     }
 
     locator_init_params = {}
@@ -293,6 +338,19 @@ class default_values_sys(object):
 
         return cloud_init_params
 
+    @staticmethod
+    def _ota_status_init_params():
+        ota_status = {
+            'sys_current_version': SYSNAME,
+            'sys_target_version': '--',
+            'app_current_version': PROJECT_VERSION,
+            'app_target_version': '--',
+            'upgrade_module': default_values_sys._ota_upgrade_module.none,
+            'upgrade_status': default_values_sys._ota_upgrade_status.none,
+        }
+
+        return ota_status
+
 
 class Settings(Singleton):
 
@@ -307,6 +365,7 @@ class Settings(Singleton):
         try:
             default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
             default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
+            default_values_sys.ota_status = default_values_sys._ota_status_init_params()
 
             default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
             default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
@@ -380,7 +439,13 @@ class Settings(Singleton):
                     return False
                 self.current_settings['app'][opt] = val
                 return True
-
+            elif opt == 'over_speed_threshold':
+                if not isinstance(val, int):
+                    return False
+                if val < 1:
+                    return False
+                self.current_settings['app'][opt] = val
+                return True
             else:
                 return False
         if opt in self.current_settings['sys']:
@@ -390,7 +455,7 @@ class Settings(Singleton):
                 self.current_settings['sys'][opt] = val
                 return True
             elif opt == 'ota_status':
-                if not isinstance(val, int):
+                if not isinstance(val, dict):
                     return False
                 self.current_settings['sys'][opt] = val
                 return True

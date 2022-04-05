@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import uos
-import utime
 import ql_fs
 import ujson
 import _thread
@@ -81,17 +80,33 @@ class Controller(Singleton):
             elif action == 1:
                 self.tracker.remote.cloud_ota_action(1)
 
-    def ota_status(self, perm, status=None):
+    def ota_status(self, perm, upgrade_info=None):
         if perm == 'r':
             self.tracker.device_data_report()
         elif perm == 'w':
-            if status is not None:
-                settings.settings.set('ota_status', status)
+            if upgrade_info:
+                current_settings = settings.settings.get()
+                ota_status_info = current_settings['sys']['ota_status']
+                ota_info = {}
+                if upgrade_info[0] == settings.SYSNAME:
+                    ota_info['upgrade_module'] = 1
+                    ota_info['sys_target_version'] = upgrade_info[2]
+                elif upgrade_info[0] == settings.PROJECT_NAME:
+                    ota_info['upgrade_module'] = 2
+                    ota_info['app_target_version'] = upgrade_info[2]
+                ota_info['upgrade_status'] = upgrade_info[1]
+                ota_status_info.update(ota_info)
+                settings.settings.set('ota_status', ota_status_info)
                 settings.settings.save()
 
     def power_restart(self, perm, flag):
         if perm == 'w':
             self.tracker.device_data_report(power_switch=False, msg='power_restart')
+
+    def work_cycle_period(self, perm, period):
+        if perm == 'w':
+            self.tracker.power_manage.rtc.enable_alarm(0)
+            self.tracker.power_manage.start_rtc()
 
 
 class DownLinkOption(object):
@@ -139,7 +154,14 @@ class DownLinkOption(object):
     def ota_plain(self, *args, **kwargs):
         current_settings = settings.settings.get()
         if current_settings['app']['sw_ota'] and current_settings['app']['sw_ota_auto_upgrade']:
-            self.tracker.remote.cloud_ota_action()
+            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+                self.tracker.remote.cloud_ota_action()
+            elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+                log.debug('ota_plain args: %s' % str(args))
+                log.debug('ota_plain kwargs: %s' % str(kwargs))
+
+    def ota_file_download(self, *args, **kwargs):
+        log.debug('ota_file_download: %s' % str(args))
 
 
 def downlink_process(argv):
@@ -157,10 +179,11 @@ def downlink_process(argv):
 
         DownLinkOptionObj = DownLinkOption(tracker=self.tracker)
         option_attr = data[0]
-        args = data[1]
+        args = data[1] if not isinstance(data[1], dict) else ()
+        kwargs = data[1] if isinstance(data[1], dict) else {}
         if hasattr(DownLinkOptionObj, option_attr):
             option_fun = getattr(DownLinkOptionObj, option_attr)
-            option_fun(*args)
+            option_fun(*args, **kwargs)
             if self.remote_read_cb:
                 self.remote_read_cb(*data)
         else:
@@ -185,22 +208,19 @@ def uplink_process(argv):
         # Read history data that didn't send to server intime to hist-dictionary.
         hist = self.read_history()
         try:
-            if self.tracker.net_enable is False:
+            if self.cloud_connect() is False:
                 raise RemoteError('Net Is Disconnected.')
             for key, value in hist.items():
                 # Check if non_loca data (sensor or device info data) or location gps data or location non-gps data (cell/wifi-locator data)
                 if key == 'hist_data':
                     for i, data in enumerate(value):
-                        ntry = 0
-                        # Try at most 3 times to post data to server.
-                        while not self.cloud.post_data(data):
-                            ntry += 1
-                            if ntry >= 3:  # Data post failed after 3 times, maybe network error?
+                        if not self.cloud.post_data(data):
+                            self.cloud.cloud_init(enforce=True)
+                            if not self.cloud.post_data(data):
                                 raise RemoteError('Data post failed.')  # Stop posting more data, go to exception handler.
-                            utime.sleep(1)
-                        else:
-                            value.pop(i)         # Pop data from data-list after posting sueecss.
-                            need_refresh = True  # Data in hist-dictionary changed, need to refresh history file.
+                                break
+                        value.pop(i)
+                        need_refresh = True  # Data in hist-dictionary changed, need to refresh history file.
         except Exception as e:
             log.error('uplink_process Error: %s' % e)
             while True:  # Put all data in uplink_queue to hist-dictionary.
@@ -224,10 +244,15 @@ def uplink_process(argv):
         data = self.uplink_queue.get()
         if data:
             if data[1]:
-                if self.tracker.net_enable is True:
+                if self.cloud_connect() is True:
                     if self.cloud.post_data(data[1]):
                         sys_bus.publish(data[0], 'true')
                         continue
+                    else:
+                        self.cloud.cloud_init(enforce=True)
+                        if self.cloud.post_data(data[1]):
+                            sys_bus.publish(data[0], 'true')
+                            continue
                 else:
                     log.warn('Net Is Disconnected.')
                 self.add_history(data[1])
@@ -250,9 +275,23 @@ class Remote(Singleton):
         current_settings = settings.settings.get()
         cloud_init_params = current_settings['sys']['cloud_init_params']
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-            self.cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], self.downlink_queue)
+            self.cloud = QuecThing(
+                cloud_init_params['PK'],
+                cloud_init_params['PS'],
+                cloud_init_params['DK'],
+                cloud_init_params['DS'],
+                cloud_init_params['SERVER'],
+                self.downlink_queue
+            )
         elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
-            self.cloud = AliYunIot(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], self.downlink_queue)
+            self.cloud = AliYunIot(
+                cloud_init_params['PK'],
+                cloud_init_params['PS'],
+                cloud_init_params['DK'],
+                cloud_init_params['DS'],
+                cloud_init_params['SERVER'],
+                self.downlink_queue
+            )
         else:
             raise settings.SettingsError('Current cloud (0x%X) not supported!' % current_settings['sys']['cloud'])
 
@@ -316,6 +355,13 @@ class Remote(Singleton):
     def clean_history(self):
         uos.remove(self._history)
 
+    def cloud_connect(self):
+        net_check_res = self.tracker.check.net_check()
+        if net_check_res == (3, 1):
+            return self.cloud.cloud_init()
+        else:
+            return False
+
     def post_data(self, topic, data):
         '''
         Data format to post:
@@ -331,21 +377,30 @@ class Remote(Singleton):
 
     def check_ota(self):
         current_settings = settings.settings.get()
-        if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
+        if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot or \
+                current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
             if current_settings['app']['sw_ota'] is True:
                 log.debug('OTA Check To Report Dev Info.')
-                self.cloud.dev_info_report()
+                self.cloud.ota_request()
             else:
-                raise settings.SettingsError('OTA Upgrade Is Disabled!')
+                log.warn('OTA Upgrade Is Disabled!')
         else:
-            raise settings.SettingsError('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
+            log.error('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
 
     def cloud_ota_action(self, val=1):
         current_settings = settings.settings.get()
         if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
             self.cloud.ota_action(val)
             if val == 0:
-                settings.settings.set('ota_status', 0)
+                current_settings = settings.settings.get()
+                ota_status_info = current_settings['sys']['ota_status']
+                ota_info = {}
+                ota_info['sys_target_version'] = '--'
+                ota_info['app_target_version'] = '--'
+                ota_info['upgrade_module'] = 0
+                ota_info['upgrade_status'] = 0
+                ota_status_info.update(ota_info)
+                settings.settings.set('ota_status', ota_status_info)
                 settings.settings.save()
         else:
-            raise settings.SettingsError('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
+            log.warn('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])

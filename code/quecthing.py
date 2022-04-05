@@ -26,6 +26,8 @@ from queue import Queue
 
 from usr.logging import getLogger
 from usr.settings import settings
+from usr.settings import PROJECT_NAME
+from usr.settings import PROJECT_VERSION
 
 log = getLogger(__name__)
 
@@ -56,8 +58,9 @@ object_model = [
     (36, ('device_module_status', 'r')),
     (37, ('gps_mode', 'r')),
     (38, ('user_ota_action', 'w')),
-    (39, ('ota_status', 'r')),
     (41, ('voltage', 'r')),
+    (42, ('ota_status', 'r')),
+    (43, ('current_speed', 'r')),
 
     # event
     (6,  ('sos_alert', 'r')),
@@ -82,19 +85,27 @@ object_model_struct = {
         'gps': 1,
         'cell': 2,
         'wifi': 3,
-    }
+    },
+    'ota_status': {
+        'sys_current_version': 1,
+        'sys_target_version': 2,
+        'app_current_version': 3,
+        'app_target_version': 4,
+        'upgrade_module': 5,
+        'upgrade_status': 6,
+    },
 }
 
 object_model_code = {i[1][0]: i[0] for i in object_model}
 
 
 class QuecThing(object):
-    def __init__(self, pk, ps, dk, ds, downlink_queue):
+    def __init__(self, pk, ps, dk, ds, server, downlink_queue):
         self.pk = pk
         self.ps = ps
         self.dk = dk
         self.ds = ds
-        self.init_res = {}
+        self.server = server
         self.fileSize = 0
         self.needDownloadSize = 0
         self.crcValue = 0
@@ -104,48 +115,58 @@ class QuecThing(object):
         self.downlink_queue = downlink_queue
         self.post_result_wait_queue = Queue(maxsize=16)
         self.quec_timer = osTimer()
-        self.queciot_init()
+        self.cloud_init()
 
         fileClear = OTAFileClear()
         fileClear.file_clear()
 
-    def queciot_init(self):
-        if quecIot.getWorkState() == 8 and quecIot.getConnmode() == 1:
-            return
+    def cloud_init(self, enforce=False):
+        current_settings = settings.get()
+        log.debug(
+            '[cloud_init start] enforce: %s QuecThing Work State: %s, quecIot.getConnmode(): %s'
+            % (enforce, quecIot.getWorkState(), quecIot.getConnmode())
+        )
+        if enforce is False:
+            if quecIot.getWorkState() == 8 and quecIot.getConnmode() == 1:
+                return True
 
         quecIot.init()
         quecIot.setEventCB(self.eventCB)
         quecIot.setProductinfo(self.pk, self.ps)
-        quecIot.setDkDs(self.dk, self.ds)
-        quecIot.setServer(1, "iot-south.quectel.com:2883")
+        if self.dk or self.ds:
+            quecIot.setDkDs(self.dk, self.ds)
+        quecIot.setServer(1, self.server)
+        quecIot.setLifetime(current_settings['sys']['cloud_life_time'])
+        quecIot.setMcuVersion(PROJECT_NAME, PROJECT_VERSION)
         quecIot.setConnmode(1)
 
         count = 0
         while quecIot.getWorkState() != 8 and count < 10:
-            if self.init_res.get('subscription') is not None:
-                self.init_res.pop('subscription')
-                break
             utime.sleep_ms(200)
+            count += 1
 
         if not self.ds and self.dk:
             count = 0
             while count < 3:
-                ndk, nds = quecIot.getDkDs()
-                if nds:
+                dkds = quecIot.getDkDs()
+                if dkds:
+                    self.dk, self.ds = dkds
                     break
                 count += 1
                 utime.sleep(count)
-            current_settings = settings.get()
             cloud_init_params = current_settings['sys']['cloud_init_params']
-            cloud_init_params['DS'] = nds
-            self.dk = ndk
-            self.ds = nds
+            cloud_init_params['DS'] = self.ds
             settings.set('cloud_init_params', cloud_init_params)
             settings.save()
 
+        log.debug('[cloud_init over] QuecThing Work State: %s, quecIot.getConnmode(): %s' % (quecIot.getWorkState(), quecIot.getConnmode()))
+        if quecIot.getWorkState() == 8 and quecIot.getConnmode() == 1:
+            return True
+        else:
+            return False
+
     def get_post_res(self):
-        current_settings = settings.get()
-        self.quec_timer.start(current_settings['sys']['checknet_timeout'] * 1000, 1, self.quec_timer_cb)
+        self.quec_timer.start(5000, 0, self.quec_timer_cb)
         res = self.post_result_wait_queue.get()
         self.quec_timer.stop()
         return res
@@ -153,6 +174,7 @@ class QuecThing(object):
     def quec_timer_cb(self, args):
         # Power.powerRestart()
         self.post_result_wait_queue.put(False)
+        self.quec_timer.stop()
 
     @staticmethod
     def rm_empty_data(data):
@@ -161,7 +183,6 @@ class QuecThing(object):
                 del data[k]
 
     def post_data(self, data):
-        self.queciot_init()
         res = True
         # log.debug('post_data: %s' % str(data))
         for k, v in data.items():
@@ -225,15 +246,12 @@ class QuecThing(object):
         elif event == 2:
             if errcode == 10200:
                 log.info('Access succeeded.')
-                self.init_res['access'] = True
             if errcode == 10450:
                 log.error('Device internal error (connect failed).')
-                self.init_res['access'] = False
         elif event == 3:
             if errcode == 10200:
                 log.info('Subscription succeeded.')
-                self.init_res['subscription'] = True
-                quecIot.otaRequest(0)
+                self.ota_request()
                 if data != (3, 10200):
                     ota_info = data.decode()
                     file_info = ota_info.split(',')
@@ -243,7 +261,6 @@ class QuecThing(object):
                     )
             if errcode == 10300:
                 log.info('Subscription failed.')
-                self.init_res['subscription'] = False
         elif event == 4:
             if errcode == 10200:
                 log.info('Data sending succeeded.')
@@ -293,39 +310,39 @@ class QuecThing(object):
                     "batteryLimit: %s, minSignalIntensity: %s, useSpace: %s" % tuple(file_info)
                 )
                 self.downlink_queue.put(('ota_plain', data))
-                self.downlink_queue.put(('object_model', [('ota_status', 1)]))
+                self.downlink_queue.put(('object_model', [('ota_status', (data[0], 1, data[2]))]))
             elif errcode == 10701:
                 log.info('The module starts to download.')
-                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
                 if data != (7, 10701):
                     ota_info = data.decode()
                     file_info = ota_info.split(',')
                     self.sota_download_info(int(file_info[1]), file_info[2], int(file_info[3]))
+                self.downlink_queue.put(('object_model', [('ota_status', (None, 2, None))]))
             elif errcode == 10702:
                 log.info('Package download.')
-                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
+                self.downlink_queue.put(('object_model', [('ota_status', (None, 2, None))]))
             elif errcode == 10703:
                 log.info('Package download complete.')
                 if data != (7, 10703):
                     ota_info = data.decode()
                     file_info = ota_info.split(',')
                     log.info("OTA File Info: componentNo: %s, length: %s, md5: %s, crc: %s" % tuple(file_info))
-                    self.sota_download_success(file_info[2], file_info[3])
-                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
+                    self.sota_download_success(int(file_info[2]), int(file_info[3]))
+                self.downlink_queue.put(('object_model', [('ota_status', (None, 2, None))]))
             elif errcode == 10704:
                 log.info('Package updating.')
-                self.downlink_queue.put(('object_model', [('ota_status', 2)]))
+                self.downlink_queue.put(('object_model', [('ota_status', (None, 2, None))]))
             elif errcode == 10705:
                 log.info('Firmware update complete.')
-                self.downlink_queue.put(('object_model', [('ota_status', 3)]))
+                self.downlink_queue.put(('object_model', [('ota_status', (None, 3, None))]))
             elif errcode == 10706:
                 log.info('Failed to update firmware.')
-                self.downlink_queue.put(('object_model', [('ota_status', 4)]))
+                self.downlink_queue.put(('object_model', [('ota_status', (None, 4, None))]))
             elif errcode == 10707:
                 log.info('Received confirmation broadcast.')
 
-    def dev_info_report(self):
-        quecIot.devInfoReport([i for i in range(1, 13)])
+    def ota_request(self):
+        quecIot.otaRequest(0)
 
     def ota_action(self, val=1):
         quecIot.otaAction(val)
@@ -336,6 +353,11 @@ class QuecThing(object):
         self.download_size = 0
         self.update_mode = UpdateCtx()
         self.md5_value = md5_value
+
+    def sota_download_success(self, start, down_loaded_size):
+        self.need_download_size = down_loaded_size
+        self.start_addr = start
+        self.read_sota_file()
 
     def read_sota_file(self):
         while self.need_download_size != 0:
@@ -354,18 +376,11 @@ class QuecThing(object):
                 file_update_res = self.update_mode.file_update(self.md5_value)
                 if file_update_res:
                     log.debug("File Update Success, Power Restart.")
-                    self.downlink_queue.put(('object_model', [('ota_status', 3)]))
-                    self.downlink_queue.put(('object_model', [('power_restart', 1)]))
                 else:
                     log.debug("File Update Failed.")
-                    self.downlink_queue.put(('object_model', [('ota_status', 4)]))
+                self.downlink_queue.put(('object_model', [('power_restart', 1)]))
             else:
                 quecIot.otaAction(2)
-
-    def sota_download_success(self, start, down_loaded_size):
-        self.need_download_size = down_loaded_size
-        self.start_addr = start
-        self.read_sota_file()
 
 
 class UpdateCtx(object):

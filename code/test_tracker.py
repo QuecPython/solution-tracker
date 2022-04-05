@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pm
+import sim
 import ure
 import utime
 import _thread
@@ -122,25 +123,18 @@ def test_tracker():
     log.info('[.] sleep 10')
     utime.sleep(10)
 
-    # log.info('[.] tracker.power_manage.low_energy_init()')
-    # tracker.power_manage.low_energy_init()
-    # log.info('[.] tracker.power_manage.start_rtc()')
-    # tracker.power_manage.start_rtc()
-    # log.info('[.] end tracker.power_manage.start_rtc()')
-
-    # log.info('[.] test tracker.device_check()')
-    # device_check_res = tracker.device_check()
-    # log.info('[.] device_check_res:', device_check_res)
-
-    log.info('[.] test tracker.remote.check_ota()')
-    tracker.remote.check_ota()
+    log.info('[.] tracker.power_manage.low_energy_init()')
+    tracker.power_manage.low_energy_init()
+    log.info('[.] tracker.power_manage.start_rtc()')
+    tracker.power_manage.start_rtc()
+    log.info('[.] end tracker.power_manage.start_rtc()')
 
     # log.info('[.] sleep 3')
     # utime.sleep(3)
 
-    # log.info('[.] test tracker.machine_check()')
-    # machine_check_res = tracker.machine_check()
-    # log.info('[.] machine_check_res:', machine_check_res)
+    # log.info('[.] test tracker.remote.check_ota()')
+    # check_ota_res = tracker.remote.check_ota()
+    # log.info('[.] check_ota_res:', check_ota_res)
 
     log.info('[x] end test_tracker')
 
@@ -274,6 +268,24 @@ def test_ostimer():
     timer.start(1000, 2, timer_cb)
 
 
+sim_queue = Queue(maxsize=8)
+
+
+def sim_cb(args):
+    log.debug('sim_cb args: %s' % str(args))
+    sim_queue.put(args)
+
+
+def test_sim():
+    sim_status = sim.getStatus()
+    log.debug('sim_status: %s' % sim_status)
+    sim.setCallback(sim_cb)
+    sim.setSimDet(1, 1)
+    while True:
+        data = sim_queue.get()
+        log.debug('sim_queue data: %s' % data)
+
+
 def main():
     # test_quecthing()
     # test_settings()
@@ -287,6 +299,7 @@ def main():
     # test_rtc()
     # test_gps_uart()
     # test_ostimer()
+    # test_sim()
 
 
 if __name__ == '__main__':

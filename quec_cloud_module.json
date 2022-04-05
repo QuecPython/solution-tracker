@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220329170419124"
+		"version":"20220402191608542"
 	},
 	"properties":[
 		{
@@ -660,49 +660,12 @@
 			],
 			"code":"user_ota_action",
 			"dataType":"ENUM",
-			"name":"是否OTA升级",
+			"name":"确认OTA升级",
 			"subType":"RW",
 			"id":38,
 			"sort":31,
 			"type":"PROPERTY",
 			"desc":"当OTA自动升级关闭时, 用户通过查看设备当前是否有OTA升级来进行自主选择升级或不升级"
-		},
-		{
-			"specs":[
-				{
-					"dataType":"ENUM",
-					"name":"无升级",
-					"value":"0"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"待升级",
-					"value":"1"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"升级中",
-					"value":"2"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"升级成功",
-					"value":"3"
-				},
-				{
-					"dataType":"ENUM",
-					"name":"升级失败",
-					"value":"4"
-				}
-			],
-			"code":"ota_status",
-			"dataType":"ENUM",
-			"name":"OTA升级状态",
-			"subType":"R",
-			"id":39,
-			"sort":32,
-			"type":"PROPERTY",
-			"desc":""
 		},
 		{
 			"specs":{
@@ -717,6 +680,127 @@
 			"subType":"R",
 			"id":41,
 			"sort":33,
+			"type":"PROPERTY",
+			"desc":""
+		},
+		{
+			"specs":[
+				{
+					"specs":{
+						"length":"1024"
+					},
+					"code":"sys_current_version",
+					"dataType":"TEXT",
+					"name":"系统当前版本",
+					"id":1
+				},
+				{
+					"specs":{
+						"length":"1024"
+					},
+					"code":"sys_tartget_version",
+					"dataType":"TEXT",
+					"name":"系统目标版本",
+					"id":2
+				},
+				{
+					"specs":{
+						"length":"1024"
+					},
+					"code":"app_current_version",
+					"dataType":"TEXT",
+					"name":"应用当前版本",
+					"id":3
+				},
+				{
+					"specs":{
+						"length":"1024"
+					},
+					"code":"app_target_version",
+					"dataType":"TEXT",
+					"name":"应用目标版本",
+					"id":4
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"无",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"系统",
+							"value":"1"
+						},
+						{
+							"name":"应用",
+							"value":"2"
+						}
+					],
+					"code":"upgrade_module",
+					"dataType":"ENUM",
+					"name":"当前升级模块",
+					"id":5,
+					"desc":""
+				},
+				{
+					"specs":[
+						{
+							"dataType":"ENUM",
+							"name":"无",
+							"value":"0"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"待升级",
+							"value":"1"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"升级中",
+							"value":"2"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"升级成功",
+							"value":"3"
+						},
+						{
+							"dataType":"ENUM",
+							"name":"升级失败",
+							"value":"4"
+						}
+					],
+					"code":"upgrade_status",
+					"dataType":"ENUM",
+					"name":"当前升级状态",
+					"id":6,
+					"desc":""
+				}
+			],
+			"code":"ota_status",
+			"dataType":"STRUCT",
+			"name":"OTA升级",
+			"subType":"R",
+			"id":42,
+			"sort":34,
+			"type":"PROPERTY",
+			"desc":""
+		},
+		{
+			"specs":{
+				"unit":"km/h",
+				"min":"0",
+				"max":"200.00",
+				"step":"0.01"
+			},
+			"code":"current_speed",
+			"dataType":"FLOAT",
+			"name":"当前时速",
+			"subType":"R",
+			"id":43,
+			"sort":35,
 			"type":"PROPERTY",
 			"desc":""
 		}

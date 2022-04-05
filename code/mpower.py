@@ -121,4 +121,6 @@ class PowerManage(Singleton):
                     pm.wakelock_lock(self.lpm_fd)
 
                 over_speed_check_res = self.tracker.get_over_speed_check()
+                log.debug('over_speed_check_res: %s' % str(over_speed_check_res))
                 self.tracker.device_data_report(event_data=over_speed_check_res, msg=data)
+                self.tracker.remote.check_ota()

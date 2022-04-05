@@ -488,7 +488,7 @@
     },
     {
       "identifier": "user_ota_action",
-      "name": "是否OTA升级",
+      "name": "确认OTA升级",
       "accessMode": "rw",
       "desc": "用户操作，只写功能",
       "required": false,
@@ -506,14 +506,75 @@
       "accessMode": "r",
       "required": false,
       "dataType": {
-        "type": "enum",
-        "specs": {
-          "0": "无升级",
-          "1": "待升级",
-          "2": "升级中",
-          "3": "升级成功",
-          "4": "升级失败"
-        }
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "sys_current_version",
+            "name": "系统当前版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "sys_target_version",
+            "name": "系统目标版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "app_current_version",
+            "name": "应用当前版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "app_target_version",
+            "name": "应用目标版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "upgrade_module",
+            "name": "当前升级模块",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "无",
+                "1": "系统",
+                "2": "应用"
+              }
+            }
+          },
+          {
+            "identifier": "upgrade_status",
+            "name": "当前升级状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "无",
+                "1": "待升级",
+                "2": "升级中",
+                "3": "升级成功",
+                "4": "升级失败"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -529,6 +590,22 @@
           "unit": "mV",
           "unitName": "毫伏",
           "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "current_speed",
+      "name": "当前时速",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "float",
+        "specs": {
+          "min": "0",
+          "max": "200.00",
+          "unit": "km/h",
+          "unitName": "千米每小时",
+          "step": "0.01"
         }
       }
     }
@@ -975,7 +1052,7 @@
         },
         {
           "identifier": "user_ota_action",
-          "name": "是否OTA升级",
+          "name": "确认OTA升级",
           "dataType": {
             "type": "enum",
             "specs": {
@@ -988,14 +1065,75 @@
           "identifier": "ota_status",
           "name": "OTA升级状态",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "0": "无升级",
-              "1": "待升级",
-              "2": "升级中",
-              "3": "升级成功",
-              "4": "升级失败"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "sys_current_version",
+                "name": "系统当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "sys_target_version",
+                "name": "系统目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_current_version",
+                "name": "应用当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_target_version",
+                "name": "应用目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_module",
+                "name": "当前升级模块",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "系统",
+                    "2": "应用"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_status",
+                "name": "当前升级状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "待升级",
+                    "2": "升级中",
+                    "3": "升级成功",
+                    "4": "升级失败"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -1009,6 +1147,20 @@
               "unit": "mV",
               "unitName": "毫伏",
               "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "current_speed",
+          "name": "当前时速",
+          "dataType": {
+            "type": "float",
+            "specs": {
+              "min": "0",
+              "max": "200.00",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "0.01"
             }
           }
         }
@@ -1328,7 +1480,7 @@
         },
         {
           "identifier": "user_ota_action",
-          "name": "是否OTA升级",
+          "name": "确认OTA升级",
           "dataType": {
             "type": "enum",
             "specs": {
@@ -1375,7 +1527,8 @@
         "gps_mode",
         "user_ota_action",
         "ota_status",
-        "voltage"
+        "voltage",
+        "current_speed"
       ],
       "outputData": [
         {
@@ -1811,7 +1964,7 @@
         },
         {
           "identifier": "user_ota_action",
-          "name": "是否OTA升级",
+          "name": "确认OTA升级",
           "dataType": {
             "type": "enum",
             "specs": {
@@ -1824,14 +1977,75 @@
           "identifier": "ota_status",
           "name": "OTA升级状态",
           "dataType": {
-            "type": "enum",
-            "specs": {
-              "0": "无升级",
-              "1": "待升级",
-              "2": "升级中",
-              "3": "升级成功",
-              "4": "升级失败"
-            }
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "sys_current_version",
+                "name": "系统当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "sys_target_version",
+                "name": "系统目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_current_version",
+                "name": "应用当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_target_version",
+                "name": "应用目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_module",
+                "name": "当前升级模块",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "系统",
+                    "2": "应用"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_status",
+                "name": "当前升级状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "待升级",
+                    "2": "升级中",
+                    "3": "升级成功",
+                    "4": "升级失败"
+                  }
+                }
+              }
+            ]
           }
         },
         {
@@ -1845,6 +2059,20 @@
               "unit": "mV",
               "unitName": "毫伏",
               "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "current_speed",
+          "name": "当前时速",
+          "dataType": {
+            "type": "float",
+            "specs": {
+              "min": "0",
+              "max": "200.00",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "0.01"
             }
           }
         }

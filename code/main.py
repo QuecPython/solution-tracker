@@ -13,28 +13,22 @@
 # limitations under the License.
 
 from usr.tracker import Tracker
-from usr.settings import settings
-from usr.settings import default_values_sys
 from usr.settings import PROJECT_NAME
 from usr.settings import PROJECT_VERSION
+from usr.settings import SYSNAME
+from usr.settings import DEVICE_FIRMWARE_VERSION
 from usr.logging import getLogger
 
 log = getLogger(__name__)
 
 
 def main():
-    log.info('PROJECT_NAME: %s' % PROJECT_NAME)
-    log.info('PROJECT_VERSION: %s' % PROJECT_VERSION)
-    current_settings = settings.get()
+    log.info('PROJECT_NAME: %s, PROJECT_VERSION: %s' % (PROJECT_NAME, PROJECT_VERSION))
+    log.info('SYSNAME: %s, DEVICE_FIRMWARE_VERSION: %s' % (SYSNAME, DEVICE_FIRMWARE_VERSION))
 
     tracker = Tracker()
     # Start Device Check
     tracker.device_check()
-
-    # Start OTA Check
-    if current_settings['sys']['cloud'] == default_values_sys._cloud.quecIot and \
-            current_settings['app']['sw_ota'] is True:
-        tracker.remote.check_ota()
 
     # Start PowerManage
     # Init Low Energy Work Mode

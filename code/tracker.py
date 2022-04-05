@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pm
+import sim
 import utime
 import _thread
 import sys_bus
@@ -49,7 +50,7 @@ log = getLogger(__name__)
 
 class Tracker(Singleton):
     def __init__(self, *args, **kwargs):
-        self.net_enable = True
+        sim.setSimDet(1, 0)
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
 
@@ -140,7 +141,6 @@ class Tracker(Singleton):
         loc_check_res = self.check.loc_check()
         sensor_check_res = self.check.sensor_check()
 
-        self.net_enable = True if net_check_res == (3, 1) else False
         device_module_status['net'] = 1 if net_check_res == (3, 1) else 0
 
         device_module_status['location'] = 1 if loc_check_res else 0
@@ -159,15 +159,20 @@ class Tracker(Singleton):
         return alert_data
 
     def get_over_speed_check(self):
-        alert_data = {}
+        alert_data = {
+            'current_speed': 0.00
+        }
         current_settings = settings.settings.get()
-        if current_settings['app']['work_mode'] == settings.default_values_app._work_mode.intelligent:
+        if current_settings['app']['sw_over_speed_alert'] is True:
             if self.locator.gps:
-                speed = self.locator.gps.read_location_GxVTG_speed()
+                gps_data = self.locator.gps.read()
+                speed = self.locator.gps.read_location_GxVTG_speed(gps_data)
                 if speed and float(speed) >= current_settings['app']['over_speed_threshold']:
                     alert_code = 30003
                     alert_info = {'local_time': self.get_local_time()}
                     alert_data = self.get_alert_data(alert_code, alert_info)
+                if speed:
+                    alert_data['current_speed'] = float(speed)
 
         return alert_data
 
@@ -215,8 +220,15 @@ class Tracker(Singleton):
 
         # OTA Status RST
         current_settings = settings.settings.get()
-        if current_settings['sys']['ota_status'] in (3, 4):
-            settings.settings.set('ota_status', 0)
+        ota_status_info = current_settings['sys']['ota_status']
+        if ota_status_info['upgrade_status'] in (3, 4):
+            ota_info = {}
+            ota_info['sys_target_version'] = '--'
+            ota_info['app_target_version'] = '--'
+            ota_info['upgrade_module'] = 0
+            ota_info['upgrade_status'] = 0
+            ota_status_info.update(ota_info)
+            settings.settings.set('ota_status', ota_status_info)
             settings.settings.save()
 
     def device_check(self):
@@ -256,7 +268,6 @@ class Tracker(Singleton):
     def nw_callback(self, args):
         net_check_res = self.check.net_check()
         if args[1] != 1:
-            self.net_enable = False
             if net_check_res[0] == 1 and net_check_res[1] != 1:
                 log.warn('SIM abnormal!')
                 alert_code = 30004
@@ -265,7 +276,7 @@ class Tracker(Singleton):
                 self.device_data_report(event_data=alert_data, msg='sim_abnormal')
         else:
             if net_check_res == (3, 1):
-                self.net_enable = True
+                pass
 
 
 class SelfCheck(object):
@@ -276,6 +287,7 @@ class SelfCheck(object):
         checknet = checkNet.CheckNetwork(settings.PROJECT_NAME, settings.PROJECT_VERSION)
         timeout = current_settings.get('sys', {}).get('checknet_timeout', 60)
         check_res = checknet.wait_network_connected(timeout)
+        log.debug('net_check res: %s' % str(check_res))
         return check_res
 
     def loc_check(self):
