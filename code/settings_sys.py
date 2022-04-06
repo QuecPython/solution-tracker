@@ -68,8 +68,8 @@ class default_values_sys(object):
         none = 0x0
         quecIot = 0x1
         AliYun = 0x2
-        JTT808 = 0x4
-        customization = 0x8
+        JTT808 = 0x3
+        customization = 0x4
 
     class _gps_mode(object):
         none = 0x0

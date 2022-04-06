@@ -22,16 +22,19 @@ from usr.common import Singleton
 from usr.settings_app import default_values_app
 from usr.settings_sys import default_values_sys
 
-# For Other Module Import
-from usr.settings_sys import SYSNAME
-from usr.settings_sys import PROJECT_NAME
-from usr.settings_sys import PROJECT_VERSION
-from usr.settings_sys import DEVICE_FIRMWARE_VERSION
-from usr.settings_sys import DATA_NON_LOCA
-from usr.settings_sys import DATA_LOCA_NON_GPS
-from usr.settings_sys import DATA_LOCA_GPS
-from usr.settings_sys import ALERTCODE
-from usr.settings_sys import LOWENERGYMAP
+# For Other Module To Import
+from usr.settings_sys import SYSNAME, PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_VERSION, \
+    DATA_NON_LOCA, DATA_LOCA_NON_GPS, DATA_LOCA_GPS, ALERTCODE, LOWENERGYMAP
+
+SYSNAME
+PROJECT_NAME
+PROJECT_VERSION
+DEVICE_FIRMWARE_VERSION
+DATA_NON_LOCA
+DATA_LOCA_NON_GPS
+DATA_LOCA_GPS
+ALERTCODE
+LOWENERGYMAP
 
 tracker_settings_file = '/usr/tracker_settings.json'
 
