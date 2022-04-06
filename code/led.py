@@ -30,23 +30,23 @@ class LED(object):
         # 3. flag is 0 LED OFF.
         if flag is None:
             if self.led_status == 1:
+                # TODO: LED SET OFF
                 self.led_status = 0
-                # log.debug('LED SET OFF')
             else:
+                # TODO: LED SET ON
                 self.led_status = 1
-                # log.debug('LED SET ON')
         elif flag == 0:
             if self.led_status == 0:
-                # log.debug('LED ALREADY OFF')
+                # TODO: LED ALREADY OFF
                 pass
             else:
+                # TODO: LED SET OFF
                 self.led_status = 0
-                # log.debug('LED SET OFF')
         elif flag == 1:
             if self.led_status == 1:
-                # log.debug('LED ALREADY ON')
+                # TODO: LED ALREADY ON
                 pass
             else:
+                # TODO: LED SET ON
                 self.led_status = 1
-                # log.debug('LED SET ON')
         pass

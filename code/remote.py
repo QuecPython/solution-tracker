@@ -146,14 +146,6 @@ class DownLinkOption(object):
 
     def query(self, *args, **kwargs):
         self.tracker.device_data_report()
-        # for arg in args:
-        #     if hasattr(settings.default_values_app, arg):
-        #         current_settings = settings.settings.get()
-        #         self.tracker.remote.post_data({arg: current_settings.get('app', {}).get(arg)})
-        #     elif hasattr(self.controller, arg):
-        #         getattr(self.controller, arg)(*('r'))
-        #     else:
-        #         pass
 
     def ota_plain(self, *args, **kwargs):
         current_settings = settings.settings.get()
@@ -166,6 +158,7 @@ class DownLinkOption(object):
                 self.tracker.remote.cloud_ota_action(val=1, kwargs=kwargs)
 
     def ota_file_download(self, *args, **kwargs):
+        # TODO: To Download OTA File For MQTT Association (Not Support Now.)
         log.debug('ota_file_download: %s' % str(args))
 
 

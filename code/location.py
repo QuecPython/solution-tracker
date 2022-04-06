@@ -122,8 +122,6 @@ class GPS(Singleton):
             timer_start_res = self.__gps_timer.start(50, 0, self.first_gps_timer_callback)
             log.debug('timer_start_res: %s' % timer_start_res)
             nread = gps_data_retrieve_queue.get()
-            # nread = 0
-            # self.__first_break = 1
             log.debug('__first_break nread: %s' % nread)
             data = self.uart_obj.read(nread).decode()
             log.debug('__first_break data: %s' % data)
@@ -139,8 +137,6 @@ class GPS(Singleton):
             log.debug('self.__second_break: %s' % self.__second_break)
             self.__gps_timer.start(1500, 0, self.second_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
-            # nread = 0
-            # self.__second_break = 1
             log.debug('__second_break nread: %s' % nread)
             if nread:
                 data += self.uart_obj.read(nread).decode()

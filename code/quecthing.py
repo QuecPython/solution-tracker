@@ -169,7 +169,6 @@ class QuecThing(object):
         return res
 
     def quec_timer_cb(self, args):
-        # Power.powerRestart()
         self.post_result_wait_queue.put(False)
         self.quec_timer.stop()
 

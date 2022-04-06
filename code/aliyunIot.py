@@ -375,7 +375,6 @@ class AliYunIot(object):
         elif topic.endswith('/thing/file/download_reply'):
             self.put_post_res(data['id'], True if int(data['code']) == 200 else False)
             if data['code'] == 200:
-                # self.downlink_queue.put(('ota_file_download', data['data']))
-                pass
+                self.downlink_queue.put(('ota_file_download', data['data']))
         else:
             pass
