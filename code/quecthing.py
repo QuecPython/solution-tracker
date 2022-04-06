@@ -162,6 +162,9 @@ class QuecThing(object):
         else:
             return False
 
+    def cloud_close(self):
+        quecIot.setConnmode(0)
+
     def get_post_res(self):
         self.quec_timer.start(5000, 0, self.quec_timer_cb)
         res = self.post_result_wait_queue.get()

@@ -118,9 +118,8 @@ class PowerManage(Singleton):
                     if self.lpm_fd is None:
                         self.lpm_fd = pm.create_wakelock("lowenergy_lock", len("lowenergy_lock"))
                         pm.autosleep(1)
-                    pm.wakelock_lock(self.lpm_fd)
+                    wlk_res = pm.wakelock_lock(self.lpm_fd)
+                    log.debug('pm.wakelock_lock %s.' % ('Success' if wlk_res == 0 else 'Falied'))
 
-                over_speed_check_res = self.tracker.get_over_speed_check()
-                log.debug('over_speed_check_res: %s' % str(over_speed_check_res))
-                self.tracker.device_data_report(event_data=over_speed_check_res, msg=data)
+                self.tracker.device_data_report(msg=data)
                 self.tracker.remote.check_ota()

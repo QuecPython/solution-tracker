@@ -101,7 +101,6 @@ class GPS(Singleton):
     def first_gps_timer_callback(self, args):
         global gps_data_retrieve_queue
         self.__first_break = 1
-        log.debug('self.__first_break: %s' % self.__first_break)
         if gps_data_retrieve_queue is not None:
             gps_data_retrieve_queue.put(0)
             log.debug('gps_data_retrieve_queue.put(0)')
@@ -118,15 +117,12 @@ class GPS(Singleton):
         global gps_data_retrieve_queue
 
         while self.__first_break == 0:
-            log.debug('self.__first_break: %s' % self.__first_break)
-            timer_start_res = self.__gps_timer.start(50, 0, self.first_gps_timer_callback)
-            log.debug('timer_start_res: %s' % timer_start_res)
+            self.__gps_timer.start(50, 0, self.first_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             log.debug('__first_break nread: %s' % nread)
             data = self.uart_obj.read(nread).decode()
             log.debug('__first_break data: %s' % data)
             self.__gps_timer.stop()
-            log.debug('self.__first_break: %s' % self.__first_break)
         self.__first_break = 0
 
         data = ''
@@ -134,7 +130,6 @@ class GPS(Singleton):
         gga_data = ''
         vtg_data = ''
         while self.__second_break == 0:
-            log.debug('self.__second_break: %s' % self.__second_break)
             self.__gps_timer.start(1500, 0, self.second_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
             log.debug('__second_break nread: %s' % nread)
@@ -149,11 +144,9 @@ class GPS(Singleton):
                 if rmc_data and gga_data and vtg_data:
                     self.__second_break = 1
             self.__gps_timer.stop()
-            log.debug('self.__second_break: %s' % self.__second_break)
-        log.debug('__second_break data: %s' % data)
+        log.debug('__second_break(uart_read) data: %s' % data)
         self.__second_break = 0
 
-        log.debug('uart_read data: %s' % data)
         self.uart_close()
         return data
 

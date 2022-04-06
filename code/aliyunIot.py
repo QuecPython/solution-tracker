@@ -161,6 +161,9 @@ class AliYunIot(object):
         else:
             return False
 
+    def cloud_close(self):
+        self.ali.disconnect()
+
     def ali_subcribe_topic(self):
         if self.ali.subscribe(self.ica_topic_property_post, qos=0) == -1:
             log.error('Topic [%s] Subscribe Falied.' % self.ica_topic_property_post)

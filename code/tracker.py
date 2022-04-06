@@ -91,31 +91,48 @@ class Tracker(Singleton):
         return alert_data
 
     def get_device_data(self, power_switch=True):
-        device_data = {}
+        device_data = {
+            'power_switch': power_switch,
+            'local_time': self.get_local_time(),
+        }
 
+        # Get Cloud Location Data
         loc_info = self.locator.read()
         if loc_info:
-            log.debug('loc_method: %s' % loc_info[0])
+            loc_method_dict = {1: 'GPS', 2: 'CELL', 4: 'WIFI'}
+            log.debug('Location Data loc_method: %s' % loc_method_dict.get(loc_info[0], loc_info[0]))
             device_data.update(loc_info[1])
+
+        # Get GPS Speed
+        over_speed_check_res = self.get_over_speed_check()
+        log.debug('over_speed_check_res: %s' % str(over_speed_check_res))
+        device_data.update(over_speed_check_res)
 
         current_settings = settings.settings.get()
 
+        # Get Battery Energy
         energy = self.battery.energy()
+        device_data.update({
+            'energy': energy,
+            'voltage': self.battery.voltage(),
+        })
         if energy <= current_settings['app']['low_power_alert_threshold']:
             alert_data = self.get_alert_data(30002, {'local_time': self.get_local_time()})
             device_data.update(alert_data)
 
-        # TODO: Other Machine Info.
+        # Get OTA Status & Drive Behiver Code
         device_data.update({
-            'power_switch': power_switch,
-            'energy': energy,
-            'voltage': self.battery.voltage(),
-            'local_time': self.get_local_time(),
             'ota_status': current_settings['sys']['ota_status'],
             'drive_behavior_code': current_settings['sys']['drive_behavior_code'],
         })
+
+        # Get APP Settings Info
         device_data.update(current_settings['app'])
+
+        # Format Loc Method
         device_data.update({'loc_method': self.format_loc_method(current_settings['app']['loc_method'])})
+
+        # TODO: Add Other Machine Info.
 
         return device_data
 
@@ -191,12 +208,14 @@ class Tracker(Singleton):
         sys_bus.unsubscribe(topic)
 
         if topic.endswith('/wakelock_unlock'):
-            pm.wakelock_unlock(self.power_manage.lpm_fd)
+            wulk_res = pm.wakelock_unlock(self.power_manage.lpm_fd)
+            log.debug('pm.wakelock_unlock %s.' % ('Success' if wulk_res == 0 else 'Falied'))
         elif topic.endswith('/power_down'):
             self.energy_led.period = None
             self.energy_led.switch(0)
             self.running_led.period = None
             self.running_led.switch(0)
+            self.remote.cloud.cloud_close()
             Power.powerDown()
         elif topic.endswith('/power_restart'):
             Power.powerRestart()
