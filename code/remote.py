@@ -78,17 +78,20 @@ class Controller(Singleton):
 
     def user_ota_action(self, perm, action):
         if perm == 'w':
-            if action == 0:
-                self.tracker.remote.cloud_ota_action(0)
-            elif action == 1:
-                self.tracker.remote.cloud_ota_action(1)
+            current_settings = settings.settings.get()
+            if current_settings['app']['sw_ota'] and current_settings['app']['sw_ota_auto_upgrade'] is False:
+                ota_status_info = current_settings['sys']['ota_status']
+                if ota_status_info['upgrade_status'] == 1 and current_settings['sys']['user_ota_action'] == -1:
+                    settings.settings.set('user_ota_action', action)
+                    settings.settings.save()
+                    self.tracker.remote.check_ota()
 
     def ota_status(self, perm, upgrade_info=None):
         if perm == 'r':
             self.tracker.device_data_report()
         elif perm == 'w':
-            if upgrade_info:
-                current_settings = settings.settings.get()
+            current_settings = settings.settings.get()
+            if upgrade_info and current_settings['app']['sw_ota']:
                 ota_status_info = current_settings['sys']['ota_status']
                 if ota_status_info['sys_target_version'] == '--' and ota_status_info['app_target_version'] == '--':
                     ota_info = {}
@@ -109,6 +112,7 @@ class Controller(Singleton):
 
     def work_cycle_period(self, perm, period):
         if perm == 'w':
+            # Reset work_cycle_period & Reset RTC
             self.tracker.power_manage.rtc.enable_alarm(0)
             self.tracker.power_manage.start_rtc()
 
@@ -149,13 +153,22 @@ class DownLinkOption(object):
 
     def ota_plain(self, *args, **kwargs):
         current_settings = settings.settings.get()
-        if current_settings['app']['sw_ota'] and current_settings['app']['sw_ota_auto_upgrade']:
-            if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot:
-                self.tracker.remote.cloud_ota_action(val=1)
-            elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
-                log.debug('ota_plain args: %s' % str(args))
-                log.debug('ota_plain kwargs: %s' % str(kwargs))
-                self.tracker.remote.cloud_ota_action(val=1, kwargs=kwargs)
+        if current_settings['app']['sw_ota']:
+            if current_settings['app']['sw_ota_auto_upgrade'] or current_settings['sys']['user_ota_action'] != -1:
+                if current_settings['app']['sw_ota_auto_upgrade']:
+                    ota_action_val = 1
+                else:
+                    if current_settings['sys']['user_ota_action'] != -1:
+                        ota_action_val = current_settings['sys']['user_ota_action']
+                    else:
+                        return
+
+                if current_settings['sys']['cloud'] == settings.default_values_sys._cloud.quecIot or \
+                        current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
+                    log.debug('ota_plain args: %s, kwargs: %s' % (str(args), str(kwargs)))
+                    self.tracker.remote.cloud_ota_action(val=ota_action_val, kwargs=kwargs)
+                else:
+                    log.error('Current Cloud (0x%X) Not Supported!' % current_settings['sys']['cloud'])
 
     def ota_file_download(self, *args, **kwargs):
         # TODO: To Download OTA File For MQTT Association (Not Support Now.)
@@ -391,18 +404,20 @@ class Remote(Singleton):
             self.cloud.ota_action(val)
             if val == 0:
                 self.tracker.ota_params_reset()
-        else:
+        elif current_settings['sys']['cloud'] == settings.default_values_sys._cloud.AliYun:
             if val == 0:
-                current_settings = settings.settings.get()
                 ota_status_info = current_settings['sys']['ota_status']
                 upgrade_module = SYSNAME if ota_status_info['upgrade_module'] == 1 else PROJECT_NAME
                 self.cloud.ota_device_progress(step=-1, desc='User cancels upgrade.', module=upgrade_module)
                 self.tracker.ota_params_reset()
             else:
-                upgrade_module = kwargs.get('module', '')
-                file_info = [{'size': i['fileSize'], 'url': i['fileUrl'], 'md5': i['fileMd5']} for i in kwargs.get('files', [])]
-                if not file_info:
-                    file_info = [{'size': kwargs['size'], 'url': kwargs['url'], 'md5': kwargs['md5']}]
-                ota_obj = OTA(upgrade_module, file_info)
-                ota_obj.start()
-                self.downlink_queue.put(('object_model', [('power_restart', 1)]))
+                if kwargs:
+                    upgrade_module = kwargs.get('module', '')
+                    file_info = [{'size': i['fileSize'], 'url': i['fileUrl'], 'md5': i['fileMd5']} for i in kwargs.get('files', [])]
+                    if not file_info:
+                        file_info = [{'size': kwargs['size'], 'url': kwargs['url'], 'md5': kwargs['md5']}]
+                    ota_obj = OTA(upgrade_module, file_info)
+                    ota_obj.start()
+                    self.downlink_queue.put(('object_model', [('power_restart', 1)]))
+                else:
+                    log.error('Ali OTA File Info Is Empty. kwargs: %s' % str(kwargs))

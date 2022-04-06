@@ -170,6 +170,10 @@ class Settings(Singleton):
                     return False
                 self.current_settings['sys'][opt] = val
                 return True
+            elif opt == 'user_ota_action':
+                if not isinstance(val, int):
+                    return False
+                self.current_settings['sys'][opt] = val
         else:
             return False
 

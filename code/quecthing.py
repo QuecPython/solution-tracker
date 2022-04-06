@@ -24,7 +24,6 @@ from usr.settings import settings
 from usr.settings import PROJECT_NAME
 from usr.settings import PROJECT_VERSION
 from usr.ota import SotaDownloadUpgrade
-from usr.ota import OTAFileClear
 
 log = getLogger(__name__)
 
@@ -103,19 +102,15 @@ class QuecThing(object):
         self.dk = dk
         self.ds = ds
         self.server = server
-        self.fileSize = 0
-        self.needDownloadSize = 0
-        self.crcValue = 0
-        self.downloadSize = 0
-        self.fileFp = 0
-        self.startAddr = 0
+        self.file_size = 0
+        self.need_download_size = 0
+        self.crc_value = 0
+        self.download_size = 0
+        self.start_addr = 0
         self.downlink_queue = downlink_queue
         self.post_result_wait_queue = Queue(maxsize=16)
         self.quec_timer = osTimer()
         self.cloud_init()
-
-        fileClear = OTAFileClear()
-        fileClear.file_clear()
 
     def cloud_init(self, enforce=False):
         current_settings = settings.get()
@@ -350,8 +345,8 @@ class QuecThing(object):
         self.file_size = size
         self.crc_value = crc
         self.download_size = 0
-        self.update_mode = SotaDownloadUpgrade()
         self.md5_value = md5_value
+        self.update_mode = SotaDownloadUpgrade()
 
     def sota_download_success(self, start, down_loaded_size):
         self.need_download_size = down_loaded_size

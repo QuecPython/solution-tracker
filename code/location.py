@@ -68,7 +68,6 @@ def gps_data_retrieve_cb(para_list):
 
 class GPS(Singleton):
     def __init__(self, gps_cfg):
-        self.gps_data = ''
         self.gps_cfg = gps_cfg
         self.__gps_timer = osTimer()
         self.__first_break = 0
@@ -129,6 +128,7 @@ class GPS(Singleton):
         rmc_data = ''
         gga_data = ''
         vtg_data = ''
+        gsv_data = ''
         while self.__second_break == 0:
             self.__gps_timer.start(1500, 0, self.second_gps_timer_callback)
             nread = gps_data_retrieve_queue.get()
@@ -141,7 +141,9 @@ class GPS(Singleton):
                     gga_data = self.read_location_GxGGA(data)
                 if not vtg_data:
                     vtg_data = self.read_location_GxVTG(data)
-                if rmc_data and gga_data and vtg_data:
+                if not gsv_data:
+                    gsv_data = self.read_location_GxGSV(data)
+                if rmc_data and gga_data and vtg_data and gsv_data:
                     self.__second_break = 1
             self.__gps_timer.stop()
         log.debug('__second_break(uart_read) data: %s' % data)
@@ -164,6 +166,7 @@ class GPS(Singleton):
         rmc_data = ''
         gga_data = ''
         vtg_data = ''
+        gsv_data = ''
         count = 0
         while self.__second_break == 0:
             self.__gps_timer.start(1500, 0, self.second_gps_timer_callback)
@@ -176,7 +179,9 @@ class GPS(Singleton):
                     gga_data = self.read_location_GxGGA(data)
                 if not vtg_data:
                     vtg_data = self.read_location_GxVTG(data)
-                if rmc_data and gga_data and vtg_data:
+                if not gsv_data:
+                    gsv_data = self.read_location_GxGSV(data)
+                if rmc_data and gga_data and vtg_data and gsv_data:
                     self.__second_break = 1
             self.__gps_timer.stop()
 
@@ -190,14 +195,21 @@ class GPS(Singleton):
 
     @gps_read_lock
     def read(self):
+        gps_data = ''
         current_settings = settings.settings.get()
         if current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.external:
-            self.gps_data = self.uart_read().decode()
+            gps_data = self.uart_read().decode()
         elif current_settings['sys']['gps_mode'] & settings.default_values_sys._gps_mode.internal:
-            self.gps_data = self.quecgnss_read()
-        else:
-            self.gps_data = ''
-        return self.gps_data
+            gps_data = self.quecgnss_read()
+
+        # TODO: Disable Output Satellite Num:
+        if gps_data:
+            gga_satellite = self.read_location_GxGGA_satellite_num(gps_data)
+            log.debug('GxGGA Satellite Num %s' % gga_satellite)
+            gsv_satellite = self.read_location_GxGSV_satellite_num(gps_data)
+            log.debug('GxGSV Satellite Num %s' % gsv_satellite)
+
+        return gps_data
 
     def read_location_GxRMC(self, gps_data):
         rmc_re = ure.search(
@@ -221,12 +233,35 @@ class GPS(Singleton):
             return vtg_re.group(0)
         return ""
 
+    def read_location_GxGSV(self, gps_data):
+        gsv_re = ure.search(r"\$G[NP]GSV,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d\*\d*", gps_data)
+        if gsv_re:
+            return gsv_re.group(0)
+
+        return ""
+
     def read_location_GxVTG_speed(self, gps_data):
         vtg_data = self.read_location_GxVTG(gps_data)
         if vtg_data:
             speed_re = ure.search(r",N,\d+\.\d+,K,", vtg_data)
             if speed_re:
                 return speed_re.group(0)[3:-3]
+        return ""
+
+    def read_location_GxGGA_satellite_num(self, gps_data):
+        gga_data = self.read_location_GxGGA(gps_data)
+        if gga_data:
+            satellite_num_re = ure.search(r",[EW]*,[0126]*,\d*,", gga_data)
+            if satellite_num_re:
+                return satellite_num_re.group(0).split(',')[-2]
+        return ""
+
+    def read_location_GxGSV_satellite_num(self, gps_data):
+        gsv_data = self.read_location_GxGSV(gps_data)
+        if gsv_data:
+            satellite_num_re = ure.search(r"\$G[NP]GSV,\d*,\d*,\d*,", gsv_data)
+            if satellite_num_re:
+                return satellite_num_re.group(0).split(',')[-2]
         return ""
 
     def read_quecIot(self):

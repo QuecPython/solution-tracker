@@ -28,8 +28,25 @@ from usr.settings import PROJECT_NAME
 
 log = getLogger(__name__)
 
+FOTA_ERROR_CODE = {
+    1001: "FOTA_DOMAIN_NOT_EXIST",
+    1002: "FOTA_DOMAIN_TIMEOUT",
+    1003: "FOTA_DOMAIN_UNKNOWN",
+    1004: "FOTA_SERVER_CONN_FAIL",
+    1005: "FOTA_AUTH_FAILED",
+    1006: "FOTA_FILE_NOT_EXIST",
+    1007: "FOTA_FILE_SIZE_INVALID",
+    1008: "FOTA_FILE_GET_ERR",
+    1009: "FOTA_FILE_CHECK_ERR",
+    1010: "FOTA_INTERNAL_ERR",
+    1011: "FOTA_NOT_INPROGRESS",
+    1012: "FOTA_NO_MEMORY",
+    1013: "FOTA_FILE_SIZE_TOO_LARGE",
+    1014: "FOTA_PARAM_SIZE_INVALID",
+}
 
-def OTA(object):
+
+class OTA(object):
 
     def __init__(self, module, file_info):
         self.module = module
@@ -59,13 +76,14 @@ def OTA(object):
     def fota_cb(self, args):
         down_status = args[0]
         down_process = args[1]
-        if down_status != -1:
+        if down_status in (0, 1):
+            # TODO: Report To Cloud Upgrade Process.
             log.debug('DownStatus: %s [%s][%s%%]' % (down_status, '=' * down_process, down_process))
-            if down_status == 0 and down_process == 100:
-                self.fota_queue.put(True)
-                # TODO: Report To Cloud Upgrade Process.
+        elif down_status == 2:
+            # Download Over & Check Over, To Power Restart Update.
+            self.fota_queue.put(True)
         else:
-            log.error('Down Failed. Error Code: %s' % down_process)
+            log.error('Down Failed. Error Code [%s] %s' % (down_process, FOTA_ERROR_CODE.get(down_process, down_process)))
             self.fota_queue.put(False)
 
     def start_sota(self):
@@ -98,10 +116,9 @@ class SotaDownloadUpgrade(object):
 
     def app_fota_down(self, url):
         app_fota_obj = app_fota.new()
-        fp = open(self.fp_file, "wb+")
-        fp.close()
         res = app_fota_obj.download(url, self.fp_file)
         if res == 0:
+            uos.rename('/usr/.updater' + self.fp_file, self.fp_file)
             self.hash_obj = uhashlib.md5()
             with open(self.fp_file, "rb+") as fp:
                 for fpi in fp.readlines():
@@ -126,7 +143,7 @@ class SotaDownloadUpgrade(object):
     def file_update(self, md5_value):
         md5Data = ubinascii.hexlify(self.hash_obj.digest())
         md5Data = md5Data.decode('ascii')
-        md5Value = eval(md5_value)
+        md5Value = eval(md5_value) if not isinstance(md5_value, str) else md5_value
         log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (md5Value, md5Data))
         if (md5Value != md5Data):
             log.error("MD5 Verification Failed")
@@ -173,8 +190,8 @@ class SotaDownloadUpgrade(object):
             for fileName in self.file_list:
                 app_fota_download.update_download_stat("/usr/.updater" + fileName["fileName"], fileName["fileName"], fileName["size"])
             ota_file.close()
-            log.debug("Remove /usr/sotaFile.tar.gz")
-            uos.remove("/usr/sotaFile.tar.gz")
+            log.debug("Remove %s" % self.fp_file)
+            uos.remove(self.fp_file)
         except Exception as e:
             log.error("Unpack Error: %s" % e)
             return False

@@ -34,6 +34,7 @@ from usr.mpower import PowerManage
 from usr.logging import getLogger
 from usr.location import Location
 from usr.timer import LEDTimer
+from usr.ota import OTAFileClear
 
 try:
     from misc import USB
@@ -50,6 +51,9 @@ log = getLogger(__name__)
 
 class Tracker(Singleton):
     def __init__(self, *args, **kwargs):
+        fileClear = OTAFileClear()
+        fileClear.file_clear()
+
         sim.setSimDet(1, 0)
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
@@ -301,6 +305,10 @@ class Tracker(Singleton):
         ota_status_info.update(ota_info)
         settings.settings.set('ota_status', ota_status_info)
         settings.settings.save()
+
+        if current_settings['sys']['user_ota_action'] != -1:
+            settings.settings.set('user_ota_action', -1)
+            settings.settings.save()
 
 
 class SelfCheck(object):

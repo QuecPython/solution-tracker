@@ -14,6 +14,7 @@
 
 import ujson
 import utime
+import modem
 import _thread
 import osTimer
 
@@ -132,7 +133,9 @@ class AliYunIot(object):
         self.cloud_init()
 
     def cloud_init(self, enforce=False):
+        log.debug('[cloud_init start] enforce: %s' % enforce)
         if enforce is False and self.ali is not None:
+            log.debug('self.ali.getAliyunSta(): %s' % self.ali.getAliyunSta())
             if self.ali.getAliyunSta() == 0:
                 return True
             else:
@@ -144,8 +147,13 @@ class AliYunIot(object):
         elif current_settings['sys']['ali_burning_method'] == default_values_sys._ali_burning_method.one_machine_one_density:
             self.ps = None
 
-        self.ali = aLiYun(self.pk, self.ps, self.dk, self.ds)
-        setMqttres = self.ali.setMqtt(self.dk, clean_session=False, keepAlive=current_settings['sys']['cloud_life_time'], reconn=True)
+        log.debug('aLiYun init. self.pk: %s, self.ps: %s, self.dk: %s, self.ds: %s, self.server: %s' % (self.pk, self.ps, self.dk, self.ds, self.server))
+        self.ali = aLiYun(self.pk, self.ps, self.dk, self.ds, self.server)
+        log.debug('aLiYun setMqtt.')
+        clientId = modem.getDevImei()
+        log.debug('aLiYun clientId(IMEI): %s' % clientId)
+        setMqttres = self.ali.setMqtt(clientId, clean_session=False, keepAlive=current_settings['sys']['cloud_life_time'], reconn=True)
+        log.debug('aLiYun setMqttres: %s' % setMqttres)
         if setMqttres != -1:
             self.ali.setCallback(self.ali_sub_cb)
             self.ali_subcribe_topic()
@@ -154,6 +162,7 @@ class AliYunIot(object):
             log.error('setMqtt Falied!')
             return False
 
+        log.debug('self.ali.getAliyunSta(): %s' % self.ali.getAliyunSta())
         if self.ali.getAliyunSta() == 0:
             self.device_report()
             self.ota_request()

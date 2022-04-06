@@ -68,8 +68,8 @@ class default_values_sys(object):
         none = 0x0
         quecIot = 0x1
         AliYun = 0x2
-        JTT808 = 0x3
-        customization = 0x4
+        JTT808 = 0x4
+        customization = 0x8
 
     class _gps_mode(object):
         none = 0x0
@@ -112,9 +112,11 @@ class default_values_sys(object):
 
     ota_status = {}
 
+    user_ota_action = -1
+
     drive_behavior_code = _drive_behavior_code.none
 
-    cloud = _cloud.quecIot
+    cloud = _cloud.AliYun
 
     cloud_life_time = 120
 
@@ -175,7 +177,7 @@ class default_values_sys(object):
         'PS': 'HQraBqtV8WsfCEuy',
         'DK': 'tracker_dev_jack',
         'DS': 'bfdfcca5075715e8309eff8597663c4b',
-        "SERVER": '',
+        "SERVER": 'a1q1kmZPwU2.iot-as-mqtt.cn-shanghai.aliyuncs.com',
     }
 
     _JTT808 = {
