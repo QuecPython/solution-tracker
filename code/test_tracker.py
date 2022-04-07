@@ -286,6 +286,27 @@ def test_sim():
         log.debug('sim_queue data: %s' % data)
 
 
+class A(object):
+
+    def read(self):
+        raise TypeError("Can't instantiate abstract class with abstract methods.")
+
+
+class B(A):
+    # def read(self):
+    #     print('B read.')
+
+    def write(self):
+        print('B write.')
+
+
+def test_abstract():
+    b = B()
+    print('b attr: %s' % str(dir(b)))
+    b.write()
+    b.read()
+
+
 def main():
     # test_quecthing()
     # test_settings()
@@ -300,6 +321,7 @@ def main():
     # test_gps_uart()
     # test_ostimer()
     # test_sim()
+    # test_abstract()
 
 
 if __name__ == '__main__':

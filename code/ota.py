@@ -143,14 +143,13 @@ class SotaDownloadUpgrade(object):
     def file_update(self, md5_value):
         md5Data = ubinascii.hexlify(self.hash_obj.digest())
         md5Data = md5Data.decode('ascii')
-        md5Value = eval(md5_value) if not isinstance(md5_value, str) else md5_value
-        log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (md5Value, md5Data))
-        if (md5Value != md5Data):
+        log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (md5_value, md5Data))
+        if (md5_value != md5Data):
             log.error("MD5 Verification Failed")
             return
 
         log.debug("MD5 Verification Success.")
-        ota_file = open(self.fp_file, "wb+")
+        ota_file = open(self.fp_file, "rb+")
         ota_file.seek(10)
         self.unzipFp = uzlib.DecompIO(ota_file, -15)
         log.debug('Unzip File Success.')
@@ -193,6 +192,7 @@ class SotaDownloadUpgrade(object):
             log.debug("Remove %s" % self.fp_file)
             uos.remove(self.fp_file)
         except Exception as e:
+            log.error('exception: %s' % str(dir(e)))
             log.error("Unpack Error: %s" % e)
             return False
         return True

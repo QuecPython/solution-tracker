@@ -297,19 +297,18 @@ class QuecThing(object):
         elif event == 7:
             if errcode == 10700:
                 log.info('New OTA plain.')
-                ota_info = data.decode()
-                file_info = ota_info.split(',')
+                file_info = eval(data)
                 log.info(
                     "OTA File Info: componentNo: %s, sourceVersion: %s, targetVersion: %s, "
                     "batteryLimit: %s, minSignalIntensity: %s, useSpace: %s" % tuple(file_info)
                 )
-                self.downlink_queue.put(('object_model', [('ota_status', (data[0], 1, data[2]))]))
-                self.downlink_queue.put(('ota_plain', data))
+                self.downlink_queue.put(('object_model', [('ota_status', (file_info[0], 1, file_info[2]))]))
+                self.downlink_queue.put(('ota_plain', file_info))
             elif errcode == 10701:
                 log.info('The module starts to download.')
                 if data != (7, 10701):
-                    ota_info = data.decode()
-                    file_info = ota_info.split(',')
+                    file_info = eval(data)
+                    log.debug('file_info: %s' % str(file_info))
                     self.sota_download_info(int(file_info[1]), file_info[2], int(file_info[3]))
                 self.downlink_queue.put(('object_model', [('ota_status', (None, 2, None))]))
             elif errcode == 10702:
@@ -318,8 +317,7 @@ class QuecThing(object):
             elif errcode == 10703:
                 log.info('Package download complete.')
                 if data != (7, 10703):
-                    ota_info = data.decode()
-                    file_info = ota_info.split(',')
+                    file_info = eval(data)
                     log.info("OTA File Info: componentNo: %s, length: %s, md5: %s, crc: %s" % tuple(file_info))
                     self.sota_download_success(int(file_info[2]), int(file_info[3]))
                 self.downlink_queue.put(('object_model', [('ota_status', (None, 2, None))]))
