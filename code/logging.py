@@ -13,62 +13,74 @@
 # limitations under the License.
 
 import utime
-from usr.settings import settings
-
-current_settings = settings.get()
-
-
-def asyncLog(name, level, *message, timeout=None, await_connection=True):
-        '''
-        pass
-        #
-        # yield config.getMQTT().publish(base_topic.format(level), message, qos=1, timeout=timeout,
-        #                                await_connection=await_connection)
-        '''
-        pass
-
-
-def log(name, level, *message, local_only=False, return_only=False, timeout=None):
-    if not current_settings.get('sys', {}).get('sw_log', True):
-        return
-
-    if hasattr(utime, "strftime"):
-        print("[{}]".format(utime.strftime("%Y-%m-%d %H:%M:%S")), "[{}]".format(name),
-              "[{}]".format(level), *message)
-    else:
-        t = utime.localtime()
-        print("[{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]".format(*t), "[{}]".format(name),
-              "[{}]".format(level), *message)
-    if return_only:
-        return
-    if not local_only:
-        pass
 
 
 class Logger:
     def __init__(self, name):
         self.name = name
+        self.__debug = True
+        self.__level = "debug"
+        self.__level_code = {
+            "debug": 0,
+            "info": 1,
+            "warn": 2,
+            "error": 3,
+            "critical": 4,
+        }
 
-    def critical(self, *message, local_only=True):
-        log(self.name, "critical", *message, local_only=local_only, timeout=None)
+    def get_debug(self):
+        return self.__debug
 
-    def error(self, *message, local_only=True):
-        log(self.name, "error", *message, local_only=local_only, timeout=None)
+    def set_debug(self, debug):
+        if isinstance(debug, bool):
+            self.__debug = debug
+            return True
+        return False
 
-    def warn(self, *message, local_only=True):
-        log(self.name, "warn", *message, local_only=local_only, timeout=None)
+    def get_level(self):
+        return self.__level
 
-    def info(self, *message, local_only=True):
-        log(self.name, "info", *message, local_only=local_only, timeout=20)
+    def set_level(self, level):
+        if self.__level_code.get(level) is not None:
+            self.__level = level
+            return True
+        return False
 
-    def debug(self, *message, local_only=True):
-        log(self.name, "debug", *message, local_only=local_only, timeout=5)
+    def log(self, name, level, *message):
+        if self.__debug is False:
+            if self.__level_code.get(level) < self.__level_code.get(self.__level):
+                return
 
-    def asyncLog(self, level, *message, timeout=True):
-        log(self.name, level, *message, return_only=True)
-        if timeout == 0:
-            return
-        asyncLog(self.name, level, *message, timeout=timeout)
+        if hasattr(utime, "strftime"):
+            print(
+                "[{}]".format(utime.strftime("%Y-%m-%d %H:%M:%S")),
+                "[{}]".format(name),
+                "[{}]".format(level),
+                *message
+            )
+        else:
+            t = utime.localtime()
+            print(
+                "[{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]".format(*t),
+                "[{}]".format(name),
+                "[{}]".format(level),
+                *message
+            )
+
+    def critical(self, *message):
+        self.log(self.name, "critical", *message)
+
+    def error(self, *message):
+        self.log(self.name, "error", *message)
+
+    def warn(self, *message):
+        self.log(self.name, "warn", *message)
+
+    def info(self, *message):
+        self.log(self.name, "info", *message)
+
+    def debug(self, *message):
+        self.log(self.name, "debug", *message)
 
 
 def getLogger(name):

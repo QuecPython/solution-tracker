@@ -23,8 +23,8 @@ log = getLogger(__name__)
 
 
 def main():
-    log.info('PROJECT_NAME: %s, PROJECT_VERSION: %s' % (PROJECT_NAME, PROJECT_VERSION))
-    log.info('SYSNAME: %s, DEVICE_FIRMWARE_VERSION: %s' % (SYSNAME, DEVICE_FIRMWARE_VERSION))
+    log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
+    log.info("SYSNAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (SYSNAME, DEVICE_FIRMWARE_VERSION))
 
     tracker = Tracker()
     # Start Device Check
@@ -37,5 +37,5 @@ def main():
     tracker.power_manage.start_rtc()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

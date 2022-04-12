@@ -12,29 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pm
 import sim
 import utime
 import _thread
-import sys_bus
 import checkNet
 import dataCall
 
 from misc import Power
 
-import usr.settings as settings
-
 from usr.led import LED
 from usr.sensor import Sensor
 from usr.remote import Remote
 from usr.battery import Battery
-from usr.common import numiter
-from usr.common import Singleton
-from usr.mpower import PowerManage
+from usr.mpower import LowEnergyRTC
 from usr.logging import getLogger
 from usr.location import Location
-from usr.timer import LEDTimer
-from usr.ota import OTAFileClear
+# from usr.ota import OTAFileClear
+from usr.common import numiter, Singleton
+from usr.settings import ALERTCODE, SYSNAME, PROJECT_NAME, \
+    settings, default_values_app, default_values_sys, Settings
 
 try:
     from misc import USB
@@ -48,156 +44,57 @@ except ImportError:
 
 log = getLogger(__name__)
 
+sim.setSimDet(1, 0)
+
+
+def pwk_callback(status):
+    if status == 0:
+        log.info("PowerKey Release.")
+    elif status == 1:
+        log.info("PowerKey Press.")
+    else:
+        log.warn("Unknown PowerKey Status:", status)
+
+
+def usb_callback(status):
+    if status == 0:
+        log.info("USB is disconnected.")
+    elif status == 1:
+        log.info("USB is connected.")
+    else:
+        log.warn("Unknown USB Stauts:", status)
+
+
+def nw_callback(args):
+    net_check_res = DeviceCheck().net()
+    if args[1] != 1:
+        if net_check_res[0] == 1 and net_check_res[1] != 1:
+            log.warn("SIM abnormal!")
+            alert_code = 30004
+            alert_info = {"local_time": Tracker().__get_local_time()}
+            alert_data = Tracker().__get_alert_data(alert_code, alert_info)
+            Tracker().device_data_report(event_data=alert_data, msg="sim_abnormal")
+    else:
+        if net_check_res == (3, 1):
+            pass
+
 
 class Tracker(Singleton):
-    def __init__(self, *args, **kwargs):
-        fileClear = OTAFileClear()
-        fileClear.file_clear()
+    def __init__(self):
+        self.__controller = None
+        self.__devicecheck = None
+        self.__battery = None
+        self.__sensor = None
+        self.__locator = None
 
-        sim.setSimDet(1, 0)
+        # TODO: Remote To Main Function.
+        # fileClear = OTAFileClear()
+        # fileClear.file_clear()
+
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
 
-        self.check = SelfCheck()
-        self.energy_led = LED()
-        self.running_led = LED()
-        self.sensor = Sensor()
-        self.locator = Location()
-        self.battery = Battery()
-        self.remote = Remote(self)
-        self.power_manage = PowerManage(self)
-
-        self.led_timer = LEDTimer(self)
-
-        if PowerKey is not None:
-            self.power_key = PowerKey()
-            self.power_key.powerKeyEventRegister(self.pwk_callback)
-        if USB is not None:
-            self.usb = USB()
-            self.usb.setCallback(self.usb_callback)
-        dataCall.setCallback(self.nw_callback)
-
-    def get_local_time(self):
-        return str(utime.mktime(utime.localtime()) * 1000)
-
-    def get_alert_data(self, alert_code, alert_info):
-        alert_data = {}
-        if settings.ALERTCODE.get(alert_code):
-            current_settings = settings.settings.get()
-            alert_status = current_settings.get('app', {}).get('sw_' + settings.ALERTCODE.get(alert_code))
-            if alert_status:
-                alert_data = {settings.ALERTCODE.get(alert_code): alert_info}
-            else:
-                log.warn('%s switch is %s' % (settings.ALERTCODE.get(alert_code), alert_status))
-        else:
-            log.error('altercode (%s) is not exists. alert info: %s' % (alert_code, alert_info))
-
-        return alert_data
-
-    def get_device_data(self, power_switch=True):
-        device_data = {
-            'power_switch': power_switch,
-            'local_time': self.get_local_time(),
-        }
-
-        # Get Cloud Location Data
-        loc_info = self.locator.read()
-        if loc_info:
-            loc_method_dict = {1: 'GPS', 2: 'CELL', 4: 'WIFI'}
-            log.debug('Location Data loc_method: %s' % loc_method_dict.get(loc_info[0], loc_info[0]))
-            device_data.update(loc_info[1])
-
-        # Get GPS Speed
-        over_speed_check_res = self.get_over_speed_check()
-        log.debug('over_speed_check_res: %s' % str(over_speed_check_res))
-        device_data.update(over_speed_check_res)
-
-        current_settings = settings.settings.get()
-
-        # Get Battery Energy
-        energy = self.battery.energy()
-        device_data.update({
-            'energy': energy,
-            'voltage': self.battery.voltage(),
-        })
-        if energy <= current_settings['app']['low_power_alert_threshold']:
-            alert_data = self.get_alert_data(30002, {'local_time': self.get_local_time()})
-            device_data.update(alert_data)
-
-        # Get OTA Status & Drive Behiver Code
-        device_data.update({
-            'ota_status': current_settings['sys']['ota_status'],
-            'drive_behavior_code': current_settings['sys']['drive_behavior_code'],
-        })
-
-        # Get APP Settings Info
-        device_data.update(current_settings['app'])
-
-        # Format Loc Method
-        device_data.update({'loc_method': self.format_loc_method(current_settings['app']['loc_method'])})
-
-        # TODO: Add Other Machine Info.
-
-        return device_data
-
-    def format_loc_method(self, data):
-        loc_method = '%04d' % int(bin(data)[2:])
-        gps = bool(int(loc_method[-1]))
-        cell = bool(int(loc_method[-2]))
-        wifi = bool(int(loc_method[-3]))
-
-        loc_method = {
-            'gps': gps,
-            'cell': cell,
-            'wifi': wifi,
-        }
-        return loc_method
-
-    def get_device_check(self):
-        alert_data = {}
-        device_module_status = {}
-        alert_code = 20000
-
-        net_check_res = self.check.net_check()
-        loc_check_res = self.check.loc_check()
-        sensor_check_res = self.check.sensor_check()
-
-        device_module_status['net'] = 1 if net_check_res == (3, 1) else 0
-
-        device_module_status['location'] = 1 if loc_check_res else 0
-
-        # TODO: Check Sensor.
-        if not sensor_check_res:
-            pass
-
-        self.running_led.period = 0.5 if not (net_check_res == (3, 1) and loc_check_res and sensor_check_res) else 2
-
-        if not (net_check_res == (3, 1) and loc_check_res and sensor_check_res):
-            alert_data = self.get_alert_data(alert_code, {'local_time': self.get_local_time()})
-
-        alert_data.update({'device_module_status': device_module_status})
-
-        return alert_data
-
-    def get_over_speed_check(self):
-        alert_data = {
-            'current_speed': 0.00
-        }
-        current_settings = settings.settings.get()
-        if current_settings['app']['sw_over_speed_alert'] is True:
-            if self.locator.gps:
-                gps_data = self.locator.gps.read()
-                speed = self.locator.gps.read_location_GxVTG_speed(gps_data)
-                if speed and float(speed) >= current_settings['app']['over_speed_threshold']:
-                    alert_code = 30003
-                    alert_info = {'local_time': self.get_local_time()}
-                    alert_data = self.get_alert_data(alert_code, alert_info)
-                if speed:
-                    alert_data['current_speed'] = float(speed)
-
-        return alert_data
-
-    def get_num(self):
+    def __get_num(self):
         with self.num_lock:
             try:
                 num = next(self.num_iter)
@@ -207,122 +104,330 @@ class Tracker(Singleton):
 
         return str(num)
 
-    def data_report_cb(self, topic, msg):
-        log.debug('[x] recive res topic [%s] msg [%s]' % (topic, msg))
-        sys_bus.unsubscribe(topic)
+    def __format_loc_method(self, data):
+        loc_method = "%04d" % int(bin(data)[2:])
+        gps = bool(int(loc_method[-1]))
+        cell = bool(int(loc_method[-2]))
+        wifi = bool(int(loc_method[-3]))
 
-        if topic.endswith('/wakelock_unlock'):
-            wulk_res = pm.wakelock_unlock(self.power_manage.lpm_fd)
-            log.debug('pm.wakelock_unlock %s.' % ('Success' if wulk_res == 0 else 'Falied'))
-        elif topic.endswith('/power_down'):
-            self.energy_led.period = None
-            self.energy_led.switch(0)
-            self.running_led.period = None
-            self.running_led.switch(0)
-            self.remote.cloud.cloud_close()
-            Power.powerDown()
-        elif topic.endswith('/power_restart'):
-            Power.powerRestart()
+        loc_method = {
+            "gps": gps,
+            "cell": cell,
+            "wifi": wifi,
+        }
+        return loc_method
 
-        if self.power_manage.callback:
-            self.power_manage.callback()
+    def __device_speed_check(self):
+        current_settings = self.__controller.settings_get() if self.__controller else {}
+        alert_data = {
+            "current_speed": 0.00
+        }
+        if current_settings["app"]["sw_over_speed_alert"] is True:
+            if self.locator.gps:
+                gps_data = self.locator.gps.read()
+                speed = self.locator.gps.read_location_GxVTG_speed(gps_data)
+                if speed and float(speed) >= current_settings["app"]["over_speed_threshold"]:
+                    alert_code = 30003
+                    alert_info = {"local_time": self.__get_local_time()}
+                    alert_data = self.__get_alert_data(alert_code, alert_info)
+                if speed:
+                    alert_data["current_speed"] = float(speed)
 
-        if topic.endswith('/wakelock_unlock'):
-            self.power_manage.start_rtc()
+        return alert_data
 
-    def device_data_report(self, power_switch=True, event_data={}, msg=''):
-        device_data = self.get_device_data(power_switch)
+    def __get_local_time(self):
+        return str(utime.mktime(utime.localtime()) * 1000)
+
+    def __get_alert_data(self, alert_code, alert_info):
+        current_settings = self.__controller.settings_get() if self.__controller else {}
+        alert_data = {}
+        if ALERTCODE.get(alert_code):
+            alert_status = current_settings.get("app", {}).get("sw_" + ALERTCODE.get(alert_code))
+            if alert_status:
+                alert_data = {ALERTCODE.get(alert_code): alert_info}
+            else:
+                log.warn("%s switch is %s" % (ALERTCODE.get(alert_code), alert_status))
+        else:
+            log.error("altercode (%s) is not exists. alert info: %s" % (alert_code, alert_info))
+
+        return alert_data
+
+    def get_controller(self):
+        return self.__controller
+
+    def set_controller(self, controller):
+        if isinstance(controller, Controller):
+            self.__controller = controller
+            return True
+        return False
+
+    def get_devicecheck(self):
+        return self.__devicecheck
+
+    def set_devicecheck(self, devicecheck):
+        if isinstance(devicecheck, DeviceCheck):
+            self.__devicecheck = devicecheck
+            return True
+        return False
+
+    def get_battery(self):
+        return self.__battery
+
+    def set_battery(self, battery):
+        if isinstance(battery, Battery):
+            self.__battery = battery
+            return True
+        return False
+
+    def get_sensor(self):
+        return self.__sensor
+
+    def set_sensor(self, sensor):
+        if isinstance(sensor, Sensor):
+            self.__sensor = sensor
+            return True
+        return False
+
+    def get_locator(self):
+        return self.__locator
+
+    def set_locator(self, locator):
+        if isinstance(locator, Location):
+            self.__locator = locator
+            return True
+        return False
+
+    def device_status_get(self):
+        device_status_data = {}
+        device_module_status = {}
+        alert_code = 20000
+
+        net_status = self.__devicecheck.net()
+        location_status = self.__devicecheck.location()
+        temp_status = self.__devicecheck.temp()
+        light_status = self.__devicecheck.light()
+        triaxial_status = self.__devicecheck.triaxial()
+        mike_status = self.__devicecheck.mike()
+
+        device_module_status["net"] = 1 if net_status == (3, 1) else 0
+        device_module_status["location"] = 1 if location_status else 0
+
+        # TODO: Check Sensor.
+        if temp_status is not None:
+            device_module_status["temp_sensor"] = 1 if temp_status else 0
+        if light_status is not None:
+            device_module_status["light_sensor"] = 1 if temp_status else 0
+        if triaxial_status is not None:
+            device_module_status["move_sensor"] = 1 if temp_status else 0
+        if mike_status is not None:
+            device_module_status["mike"] = 1 if temp_status else 0
+
+        device_status = True
+        # TODO: Led Show
+        if net_status == (3, 1) and location_status is True and \
+                (temp_status is True or temp_status is None) and \
+                (light_status is True or light_status is None) and \
+                (triaxial_status is True or triaxial_status is None) and \
+                (mike_status is True or mike_status is None):
+            self.running_led.period = 0.5
+        else:
+            self.running_led.period = 2
+            device_status = False
+
+        if device_status is False:
+            device_status_data = self.__get_alert_data(alert_code, {"local_time": self.__get_local_time()})
+
+        device_status_data.update({"device_module_status": device_module_status})
+
+        return device_status_data
+
+    def device_status_check(self):
+        device_status_check_res = self.device_status_get()
+        self.device_data_report(event_data=device_status_check_res)
+
+    def device_data_get(self, power_switch=True):
+        current_settings = self.__controller.settings_get() if self.__controller else {}
+
+        device_data = {
+            "power_switch": power_switch,
+            "local_time": self.__get_local_time(),
+        }
+
+        # Get Cloud Location Data
+        loc_info = self.locator.read(current_settings["app"]["loc_method"]) if self.locator else None
+        if loc_info:
+            loc_method_dict = {1: "GPS", 2: "CELL", 4: "WIFI"}
+            log.debug("Location Data loc_method: %s" % loc_method_dict.get(loc_info[0], loc_info[0]))
+            device_data.update(loc_info[1])
+
+        # Get GPS Speed
+        over_speed_check_res = self.__device_speed_check()
+        log.debug("over_speed_check_res: %s" % str(over_speed_check_res))
+        device_data.update(over_speed_check_res)
+
+        # Get Battery Energy
+        energy = self.battery.energy()
+        device_data.update({
+            "energy": energy,
+            "voltage": self.battery.voltage(),
+        })
+        if energy <= current_settings["app"]["low_power_alert_threshold"]:
+            alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
+            device_data.update(alert_data)
+
+        # Get OTA Status & Drive Behiver Code
+        device_data.update({
+            "ota_status": current_settings["sys"]["ota_status"],
+            "drive_behavior_code": current_settings["sys"]["drive_behavior_code"],
+        })
+
+        # Get APP Settings Info
+        device_data.update(current_settings["app"])
+
+        # Format Loc Method
+        device_data.update({"loc_method": self.__format_loc_method(current_settings["app"]["loc_method"])})
+
+        # TODO: Add Other Machine Info.
+
+        return device_data
+
+    def device_data_report(self, power_switch=True, event_data={}, msg=""):
+        device_data = self.device_data_get(power_switch)
         if event_data:
             device_data.update(event_data)
 
-        num = self.get_num()
-        topic = num + '/' + msg if msg else num
-        sys_bus.subscribe(topic, self.data_report_cb)
-        log.debug('[x] post data topic [%s]' % topic)
-        self.remote.post_data(topic, device_data)
+        num = self.__get_num()
+        topic = num + "/" + msg if msg else num
+        log.debug("[x] post data topic [%s]" % topic)
+        post_res = self.__controller.remote_post_data(device_data)
 
         # OTA Status RST
-        current_settings = settings.settings.get()
-        ota_status_info = current_settings['sys']['ota_status']
-        if ota_status_info['upgrade_status'] in (3, 4):
-            self.ota_params_reset()
+        current_settings = settings.get()
+        ota_status_info = current_settings["sys"]["ota_status"]
+        if ota_status_info["upgrade_status"] in (3, 4):
+            self.ota_status_reset()
 
-    def device_check(self):
-        device_check_res = self.get_device_check()
-        self.device_data_report(event_data=device_check_res)
+        return post_res
 
-    def energy_led_show(self, energy):
-        current_settings = settings.settings.get()
-        if energy <= current_settings['app']['low_power_shutdown_threshold']:
-            self.energy_led.period = None
-            self.energy_led.switch(0)
-        elif current_settings['app']['low_power_shutdown_threshold'] < energy <= current_settings['app']['low_power_alert_threshold']:
-            self.energy_led.period = 1
-        elif current_settings['app']['low_power_alert_threshold'] < energy:
-            self.energy_led.period = 0
-
-    def pwk_callback(self, status):
-        if status == 0:
-            log.info('PowerKey Release.')
-            self.device_check()
-        elif status == 1:
-            log.info('PowerKey Press.')
-        else:
-            log.warn('Unknown PowerKey Status:', status)
-
-    def usb_callback(self, status):
-        energy = self.battery.energy()
-        if status == 0:
-            log.info('USB is disconnected.')
-            self.energy_led_show(energy)
-        elif status == 1:
-            log.info('USB is connected.')
-            self.energy_led_show(energy)
-        else:
-            log.warn('Unknown USB Stauts:', status)
-
-    def nw_callback(self, args):
-        net_check_res = self.check.net_check()
-        if args[1] != 1:
-            if net_check_res[0] == 1 and net_check_res[1] != 1:
-                log.warn('SIM abnormal!')
-                alert_code = 30004
-                alert_info = {'local_time': self.get_local_time()}
-                alert_data = self.get_alert_data(alert_code, alert_info)
-                self.device_data_report(event_data=alert_data, msg='sim_abnormal')
-        else:
-            if net_check_res == (3, 1):
-                pass
-
-    def ota_params_reset(self):
-        current_settings = settings.settings.get()
-        ota_status_info = current_settings['sys']['ota_status']
+    def ota_status_reset(self):
+        current_settings = self.__controller.get()
+        ota_status_info = current_settings["sys"]["ota_status"]
         ota_info = {}
-        ota_info['sys_target_version'] = '--'
-        ota_info['app_target_version'] = '--'
-        ota_info['upgrade_module'] = 0
-        ota_info['upgrade_status'] = 0
+        ota_info["sys_target_version"] = "--"
+        ota_info["app_target_version"] = "--"
+        ota_info["upgrade_module"] = 0
+        ota_info["upgrade_status"] = 0
         ota_status_info.update(ota_info)
-        settings.settings.set('ota_status', ota_status_info)
-        settings.settings.save()
+        self.__controller.settings_set("ota_status", ota_status_info)
 
-        if current_settings['sys']['user_ota_action'] != -1:
-            settings.settings.set('user_ota_action', -1)
-            settings.settings.save()
+        if current_settings["sys"]["user_ota_action"] != -1:
+            self.__controller.settings_set("user_ota_action", -1)
+
+    # Do Cloud Event Down Command By Controller
+    def event_option(self, *args, **kwargs):
+        # TODO: Data Type Passthrough (Not Support Now).
+        return False
+
+    def event_done(self, *args, **kwargs):
+        try:
+            setting_flag = 0
+
+            for arg in args:
+                if hasattr(default_values_app, arg[0]):
+                    set_res = self.__controller.settings_set(arg[0], arg[1])
+                    if set_res and setting_flag == 0:
+                        setting_flag = 1
+                if hasattr(self, arg[0]):
+                    getattr(self, arg[0])(arg[1])
+
+            if setting_flag:
+                self.__controller.settings_save()
+            return True
+        except:
+            return False
+
+    def event_query(self, *args, **kwargs):
+        return self.device_data_report()
+
+    def event_ota_plain(self, *args, **kwargs):
+        current_settings = settings.get()
+        if current_settings["app"]["sw_ota"]:
+            if current_settings["app"]["sw_ota_auto_upgrade"] or current_settings["sys"]["user_ota_action"] != -1:
+                if current_settings["app"]["sw_ota_auto_upgrade"]:
+                    ota_action_val = 1
+                else:
+                    if current_settings["sys"]["user_ota_action"] != -1:
+                        ota_action_val = current_settings["sys"]["user_ota_action"]
+                    else:
+                        return
+
+                if current_settings["sys"]["cloud"] == default_values_sys._cloud.quecIot or \
+                        current_settings["sys"]["cloud"] == default_values_sys._cloud.AliYun:
+                    log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
+                    self.__controller.remote_ota_action(action=ota_action_val, module=kwargs.get("module"))
+                else:
+                    log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])
+
+    def event_ota_file_download(self, *args, **kwargs):
+        # OAT MQTT File Download Is Not Supported Yet.
+        return False
+
+    def power_switch(self, flag=None):
+        self.event_query(power_switch=flag)
+        if flag is False:
+            self.__controller.power_down()
+
+    def user_ota_action(self, action):
+        current_settings = self.__controller.settings_get()
+        if current_settings["app"]["sw_ota"] and current_settings["app"]["sw_ota_auto_upgrade"] is False:
+            ota_status_info = current_settings["sys"]["ota_status"]
+            if ota_status_info["upgrade_status"] == 1 and current_settings["sys"]["user_ota_action"] == -1:
+                self.__controller.settings_set("user_ota_action", action)
+                self.__controller.settings_save()
+                self.__controller.remote_ota_check()
+
+    def ota_status(self, upgrade_info=None):
+        current_settings = self.__controller.settings_get()
+        if upgrade_info and current_settings["app"]["sw_ota"]:
+            ota_status_info = current_settings["sys"]["ota_status"]
+            if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
+                ota_info = {}
+                if upgrade_info[0] == SYSNAME:
+                    ota_info["upgrade_module"] = 1
+                    ota_info["sys_target_version"] = upgrade_info[2]
+                elif upgrade_info[0] == PROJECT_NAME:
+                    ota_info["upgrade_module"] = 2
+                    ota_info["app_target_version"] = upgrade_info[2]
+                ota_info["upgrade_status"] = upgrade_info[1]
+                ota_status_info.update(ota_info)
+                self.__controller.settings_set("ota_status", ota_status_info)
+                self.__controller.settings_save()
+
+    def power_restart(self, flag):
+        self.event_query(power_switch=False)
+        self.__controller.power_restart()
+
+    def work_cycle_period(self, period):
+        # Reset work_cycle_period & Reset RTC
+        self.__controller.low_energy_rtc_enable(0)
+        self.__controller.low_energy_rtc_start()
+
+    def cloud_init_params(self, params):
+        self.__controller.settings_set("cloud_init_params", params)
+        self.__controllers.save()
 
 
-class SelfCheck(object):
+class DeviceCheck(object):
 
-    def net_check(self):
-        # return True if OK
-        current_settings = settings.settings.get()
+    def net(self):
+        current_settings = settings.get()
         checknet = checkNet.CheckNetwork(settings.PROJECT_NAME, settings.PROJECT_VERSION)
-        timeout = current_settings.get('sys', {}).get('checknet_timeout', 60)
+        timeout = current_settings.get("sys", {}).get("checknet_timeout", 60)
         check_res = checknet.wait_network_connected(timeout)
-        log.debug('net_check res: %s' % str(check_res))
+        log.debug("DeviceCheck.net res: %s" % str(check_res))
         return check_res
 
-    def loc_check(self):
+    def loction(self):
         # return True if OK
         locator = Location()
 
@@ -345,7 +450,142 @@ class SelfCheck(object):
 
         return False
 
-    def sensor_check(self):
+    def temp(self):
         # return True if OK
-        # TODO: How To Check Light & Movement Sensor?
-        return True
+        return None
+
+    def light(self):
+        # return True if OK
+        return None
+
+    def triaxial(self):
+        # return True if OK
+        return None
+
+    def mike(self):
+        # return True if OK
+        return None
+
+
+class Controller(Singleton):
+    def __init__(self):
+        self.__remote = None
+        self.__settings = None
+        self.__low_energy_rtc = None
+        self.__energy_led = None
+        self.__running_led = None
+        self.__power_key = None
+        self.__usb = None
+        self.__data_call = None
+
+    def get_remote(self):
+        return self.__remote
+
+    def set_remote(self, remote):
+        if isinstance(remote, Remote):
+            self.__remote = remote
+            return True
+        return False
+
+    def set_settings(self, settings):
+        if isinstance(settings, Settings):
+            self.__settings = settings
+            return True
+        return False
+
+    def get_low_energy_rtc(self):
+        return self.__low_energy_rtc
+
+    def set_low_energy_rtc(self, low_energy_rtc):
+        if isinstance(low_energy_rtc, LowEnergyRTC):
+            self.__low_energy_rtc = low_energy_rtc
+            return True
+        return False
+
+    def get_energy_led(self):
+        return self.__energy_led
+
+    def set_energy_led(self, energy_led):
+        if isinstance(energy_led, LED):
+            self.__energy_led = energy_led
+            return True
+        return False
+
+    def get_running_led(self):
+        return self.__running_led
+
+    def set_running_led(self, running_led):
+        if isinstance(running_led, LED):
+            self.__running_led = running_led
+            return True
+        return False
+
+    def get_power_key(self):
+        return self.__power_key
+
+    def set_power_key(self, power_key, power_key_cb):
+        if isinstance(power_key, PowerKey):
+            self.__power_key = power_key
+            self.__power_key.powerKeyEventRegister(self.power_key_cb)
+            return True
+        return False
+
+    def get_usb(self):
+        return self.__usb
+
+    def set_usb(self, usb, usb_cb):
+        if isinstance(usb, USB):
+            self.__usb = usb
+            if usb_cb:
+                self.__usb.setCallback(usb_cb)
+            return True
+        return False
+
+    def get_data_call(self):
+        return self.__data_call
+
+    def set_data_call(self, data_call, data_call_cb):
+        if isinstance(data_call, dataCall):
+            self.__data_call = data_call
+            if data_call_cb:
+                self.__data_call.setCallback(data_call_cb)
+            return True
+        return False
+
+    def settings_get(self):
+        return self.__settings.get()
+
+    def settings_set(self, key, value):
+        if key == "loc_method":
+            v = "0b"
+            v += str(int(value.get(3, 0)))
+            v += str(int(value.get(2, 0)))
+            v += str(int(value.get(1, 0)))
+            value = int(v, 2)
+        set_res = self.__settings.set(key, value)
+        log.debug("__settings_set key: %s, val: %s, set_res: %s" % (key, value, set_res))
+        return set_res
+
+    def settings_save(self):
+        return self.__settings.save()
+
+    def power_restart(self):
+        Power.powerRestart()
+
+    def power_down(self):
+        Power.powerDown()
+
+    def remote_post_data(self, data):
+        return self.__remote.post_data(data)
+
+    def remote_ota_check(self):
+        return self.__remote.cloud_ota_check()
+
+    def remote_ota_action(self, action, module):
+        return self.__remote.cloud_ota_action(action, module)
+
+    def low_energy_rtc_start(self):
+        return self.__low_energy_rtc.start_rtc()
+
+    def low_energy_rtc_enable(self, enable):
+        return self.__low_energy_rtc.enable_alarm(enable)

@@ -12,317 +12,407 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pm
-import sim
-import ure
 import utime
-import _thread
-import osTimer
 
-from queue import Queue
-from machine import RTC
-from machine import UART
-
-import usr.settings as settings
-
-from usr.logging import getLogger
+from usr.logging import Logger
+from usr.battery import Battery
+from usr.history import History
+from usr.location import Location
 from usr.quecthing import QuecThing
-from usr.remote import Remote
-from usr.location import Location, GPS
-from usr.tracker import Tracker
-from usr.aliyunIot import AliYunIot
+from usr.mpower import LowEnergyRTC
+from usr.common import Observable, Observer
+from usr.remote import RemoteSubcribe, RemotePublish
+from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION
 
-log = getLogger(__name__)
-
-
-class QuecIotLog(object):
-    def __init__(self):
-        self.cfg = settings.default_values_sys._gps_cfg
-        self.quecIot_log_queue = Queue(maxsize=16)
-        self.uart_obj = UART(
-            UART.UART0, self.cfg['buadrate'], self.cfg['databits'],
-            self.cfg['parity'], self.cfg['stopbits'], self.cfg['flowctl']
-        )
-        self.uart_obj.set_callback(self.quecIot_log_retrieve_cb)
-        _thread.start_new_thread(self.quecIot_log_retrieve_thread, ())
-
-    def quecIot_log_retrieve_cb(self, params):
-        log.debug('[quecIot_log] %s' % params)
-
-    def quecIot_log_retrieve_thread(self):
-        while True:
-            data = self.uart_obj.read()
-            log.info('[quecIot_log] UART0 Read Data:', data)
-            utime.sleep(3)
-
-    def uart_send_data(self):
-        self.uart_obj.write('test usrt0 log.')
+log = Logger(__name__)
 
 
-def test_quecthing():
-    log.info('[x] start test_quecthing')
-    current_settings = settings.settings.get()
-    cloud_init_params = current_settings['sys']['cloud_init_params']
-    downlink_queue = Queue(maxsize=64)
-    cloud = QuecThing(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], downlink_queue)
-    post_data_res = cloud.post_data({'power_switch': True})
-    log.info('post_data_res:', post_data_res)
-    log.info('[x] end test_quecthing')
+def test_led():
+    pass
+
+
+def test_logger():
+    res = {"all": 0, "success": 0, "failed": 0}
+
+    log = Logger("test_logger")
+    log.debug("debug Level Log.")
+    log.info("info Level Log.")
+    log.warn("warn Level Log.")
+    log.error("error Level Log.")
+    log.critical("critical Level Log.")
+
+    assert log.get_debug() is True, "[test_logger] FAILED: log.get_debug() is not True."
+    print("[test_logger] SUCCESS: log.get_debug() is True.")
+    res["success"] += 1
+
+    assert log.set_debug(True) is True, "[test_logger] FAILED: log.set_debug(True)."
+    print("[test_logger] SUCCESS: log.set_debug(True).")
+    res["success"] += 1
+    assert log.set_debug(False) is True, "[test_logger] FAILED: log.set_debug(False)."
+    print("[test_logger] SUCCESS: log.set_debug(False).")
+    res["success"] += 1
+
+    assert log.get_level() == "debug", "[test_logger] FAILED: log.get_level() is not debug."
+    print("[test_logger] SUCCESS: log.get_level() is debug.")
+    res["success"] += 1
+
+    for level in ("debug", "info", "warn", "error", "critical"):
+        assert log.set_level(level) is True and log.get_level() == level, "[test_logger] FAILED: log.set_level(%s)." % level
+        print("[test_logger] SUCCESS: log.set_level(%s)." % level)
+        res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_logger] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
 def test_settings():
-    log.info('[x] start test_settings')
-    current_settings = settings.settings.get()
-    log.info("current_settings", current_settings)
-    log.info('[x] end test_settings')
+    res = {"all": 0, "success": 0, "failed": 0}
+    settings = Settings()
+
+    assert settings.init() is True, "[test_settings] FAILED: Settings.init()."
+    print("[test_settings] SUCCESS: Settings.init().")
+    res["success"] += 1
+
+    current_settings = settings.get()
+    assert current_settings and isinstance(current_settings, dict)
+    print("[test_settings] SUCCESS: Settings.get().")
+    res["success"] += 1
+
+    for key, val in current_settings.get("app", {}).items():
+        val = "18888888888" if key == "phone_num" else val
+        assert settings.set(key, val) is True, "[test_settings] FAILED: APP Settings.set(%s, %s)." % (key, val)
+        print("[test_settings] SUCCESS: APP Settings.set(%s, %s)." % (key, val))
+        res["success"] += 1
+    for key, val in current_settings.get("sys", {}).items():
+        if key in ("sw_log", "ota_status", "cloud_init_params", "user_ota_action"):
+            assert settings.set(key, val) is True, "[test_settings] FAILED: SYS Settings.set(%s, %s)." % (key, val)
+            print("[test_settings] SUCCESS: SYS Settings.set(%s, %s)." % (key, val))
+            res["success"] += 1
+
+    assert settings.save() is True, "[test_settings] FAILED: Settings.save()."
+    print("[test_settings] SUCCESS: Settings.save().")
+    res["success"] += 1
+
+    assert settings.reset() is True, "[test_settings] FAILED: Settings.reset()."
+    print("[test_settings] SUCCESS: Settings.reset().")
+    res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_settings] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-def test_uart():
-    log.info('[x] start test_uart')
-    current_settings = settings.settings.get()
-    gps_cfg = current_settings['sys']['locator_init_params']
+def test_battery():
+    res = {"all": 0, "success": 0, "failed": 0}
+    battery = Battery()
 
-    uart1 = UART(UART.UART1, gps_cfg['buadrate'], gps_cfg['databits'], gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl'])
-    log.info("uart1.write('Test UART1 Msg.')")
-    uart1.write('Test UART1 Msg.')
-    utime.sleep(1)
-    ms = uart1.any()
-    log.info("uart1.any()", ms)
-    if ms:
-        msg = uart1.read(ms)
-        log.info("uart1 read msg", msg)
-    uart1.close()
+    assert battery.get_temp() == 20, "[test_battery] FAILED: battery.get_temp() is not 20."
+    print("[test_battery] SUCCESS: battery.get_temp() is 20.")
+    res["success"] += 1
 
+    assert battery.set_temp(30) and battery.get_temp() == 30, "[test_battery] FAILED: battery.set_temp(30)."
+    print("[test_battery] SUCCESS: battery.set_temp(30).")
+    res["success"] += 1
 
-def test_ure():
-    gps_data = '$GNVTG,218.45,T,,M,0.03,N,0.06,K,A*2C'
-    a = ure.search(r',N,[0-9]+\.[0-9]+,K,', gps_data)
-    if a:
-        print(a.group[0])
+    voltage = battery.get_voltage()
+    assert isinstance(voltage, int) and voltage > 0, "[test_battery] FAILED: battery.get_voltage() %s." % voltage
+    print("[test_battery] SUCCESS: battery.get_voltage() is %s." % voltage)
+    res["success"] += 1
 
+    energy = battery.get_energy()
+    assert isinstance(energy, int) and energy >= 0, "[test_battery] FAILED: battery.get_energy() %s." % energy
+    print("[test_battery] SUCCESS: battery.get_energy() is %s." % energy)
+    res["success"] += 1
 
-def test_remote():
-    log.info('[x] start test_remote')
-    log.info('settings.current_settings: %s' % settings.settings.get())
-    Remote()
-    log.info('[x] end test_remote')
+    res["all"] = res["success"] + res["failed"]
+    print("[test_battery] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-def test_tracker():
-    log.info('[x] start test_tracker')
+class TestHistObservable(Observable):
 
-    tracker = Tracker()
+    def produce_hist_data(self, local_time):
+        hist_data = [{"local_time": local_time}]
+        self.notifyObservers(self, *hist_data)
 
-    log.info('[.] sleep 3')
-    utime.sleep(3)
 
-    log.info('[.] tracker.device_check()')
-    device_check_res = tracker.device_check()
-    log.info('[.] device_check_res:', device_check_res)
+def test_history():
+    res = {"all": 0, "success": 0, "failed": 0}
 
-    log.info('[.] sleep 10')
-    utime.sleep(10)
+    history = History()
+    test_hist_obs = TestHistObservable()
+    test_hist_obs.addObserver(history)
 
-    log.info('[.] tracker.power_manage.low_energy_init()')
-    tracker.power_manage.low_energy_init()
-    log.info('[.] tracker.power_manage.start_rtc()')
-    tracker.power_manage.start_rtc()
-    log.info('[.] end tracker.power_manage.start_rtc()')
+    hist_data = [{"test": "test"}]
+    assert history.write(hist_data), "[test_history] FAILED: history.write()."
+    print("[test_history] SUCCESS: history.write(%s)." % str(hist_data))
+    res["success"] += 1
 
-    # log.info('[.] sleep 3')
-    # utime.sleep(3)
+    hist = history.read()
+    assert hist.get("data") is not None and isinstance(hist["data"], list), "[test_history] FAILED: history.read() %s." % hist
+    print("[test_history] SUCCESS: history.read() is %s." % hist)
+    res["success"] += 1
 
-    # log.info('[.] test tracker.remote.check_ota()')
-    # check_ota_res = tracker.remote.check_ota()
-    # log.info('[.] check_ota_res:', check_ota_res)
+    local_time = utime.mktime(utime.localtime())
+    test_hist_obs.produce_hist_data(local_time)
+    hist = history.read()
+    obs_res = False
+    for i in hist.get("data", []):
+        if i.get("local_time") == local_time:
+            obs_res = True
+            break
+    assert obs_res, "[test_history] FAILED: history.update() %s." % str(hist)
+    print("[test_history] SUCCESS: history.update() %s." % str(hist))
+    res["success"] += 1
 
-    log.info('[x] end test_tracker')
+    assert history.clean(), "[test_history] FAILED: history.clean()."
+    print("[test_history] SUCCESS: history.clean().")
+    res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_history] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
 def test_location():
-    log.debug('[x] start test_location')
-    try:
-        locator = Location(None)
-        if locator.gps is not None:
-            gps_data = None
-            retry = 0
-            while retry < 10:
-                gps_data = locator.gps.quecgnss_read()
-                if gps_data:
-                    log.debug('gps_data: %s' % gps_data)
-                    break
-                else:
-                    log.debug('gps_data is empty: %s' % gps_data)
-                utime.sleep(1)
-    except Exception as e:
-        raise e
-    log.debug('[x] end test_location')
+    res = {"all": 0, "success": 0, "failed": 0}
+
+    settings = Settings()
+    current_settings = settings.get()
+    gps_mode = 0x2
+    locator_init_params = current_settings["sys"]["locator_init_params"]
+
+    locator = Location(gps_mode, locator_init_params)
+    for loc_method in range(1, 8):
+        loc_data = locator.read(loc_method, read_all=True)
+        if loc_method & 0x1:
+            assert loc_data.get(0x1) not in ("", (), None), "[test_location] FAILED: locator.read(%s) loc_data: %s." % (loc_method, loc_data)
+        if loc_method & 0x2:
+            assert loc_data.get(0x2) not in ("", (), None), "[test_location] FAILED: locator.read(%s) loc_data: %s." % (loc_method, loc_data)
+        if loc_method & 0x4:
+            assert loc_data.get(0x4) not in ("", (), None), "[test_location] FAILED: locator.read(%s) loc_data: %s." % (loc_method, loc_data)
+        print("[test_location] SUCCESS: locator.read(%s) loc_data: %s." % (loc_method, loc_data))
+        res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+
+    print("[test_location] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-def test_gps():
-    log.debug('[x] start test_gps')
-    gps = GPS(settings.default_values_sys._gps_cfg)
-    gps_data = None
-    retry = 0
-    while retry < 10:
-        gps_data = gps.quecgnss_read()
-        if gps_data:
-            log.debug('gps_data: %s' % gps_data)
-            break
-        else:
-            log.debug('gps_data is empty: %s' % gps_data)
-        utime.sleep(1)
+def test_quecthing():
+    res = {"all": 0, "success": 0, "failed": 0}
 
-    log.debug('[x] gps_data: %s' % gps_data)
-    log.debug('[x] end test_gps')
+    settings = Settings()
+    current_settings = settings.get()
+    cloud_init_params = current_settings["sys"]["cloud_init_params"]
 
-
-def test_aliyuniot():
-    log.debug('[x] start test_aliyuniot')
-
-    current_settings = settings.settings.get()
-    cloud_init_params = current_settings['sys']['cloud_init_params']
-    downlink_queue = Queue(maxsize=64)
-    cloud = AliYunIot(cloud_init_params['PK'], cloud_init_params['PS'], cloud_init_params['DK'], cloud_init_params['DS'], downlink_queue)
-    log.debug("cloud.ali.getAliyunSta(): ", cloud.ali.getAliyunSta())
-
-    log.debug('[x] end test_aliyuniot')
-
-
-def test_pm():
-    # create wakelock
-    lpm_fd = pm.create_wakelock("test_lock", len("test_lock"))
-    # set auto sleep
-    pm.autosleep(1)
-
-    # 模拟测试，实际开发请根据业务场景选择使用
-    count = 0
-    while count < 3:
-        utime.sleep(20)  # 休眠
-        res = pm.wakelock_lock(lpm_fd)
-        print("ql_lpm_idlelock_lock, g_c1_axi_fd = %d" % lpm_fd)
-        print("unlock  sleep")
-        utime.sleep(20)
-        res = pm.wakelock_unlock(lpm_fd)
-        print(res)
-        print("ql_lpm_idlelock_unlock, g_c1_axi_fd = %d" % lpm_fd)
-        num = pm.get_wakelock_num()  # 获取已创建锁的数量
-        print(num)
-        count += 1
-
-    pm.delete_wakelock(lpm_fd)
-
-
-def test_rtc():
-
-    def rtc_cb(df):
-        print('rtc call back test. [%s]' % df)
-
-    rtc = RTC()
-    log.debug('rtc.datatime: %s' % str(rtc.datetime()))
-    rtc.register_callback(rtc_cb)
-
-    atime = utime.localtime(utime.mktime(utime.localtime()) + 10)
-    alarm_time = (atime[0], atime[1], atime[2], 0, atime[3], atime[4], atime[5], 0)
-    log.debug('rtc.set_alarm alarm_time: %s' % str(alarm_time))
-    rtc.set_alarm(alarm_time)
-    log.debug('rtc.enable_alarm')
-    rtc.enable_alarm(1)
-
-
-gps_uart_queue = Queue(maxsize=64)
-
-
-def test_gps_uart_cb(args):
-    global gps_uart_queue
-    log.debug('[test_gps_uart_cb] args: %s' % str(args))
-    if args:
-        if gps_uart_queue.size() >= 64:
-            gps_uart_queue.get()
-        gps_uart_queue.put(args)
-
-
-def test_gps_uart():
-    global gps_uart_queue
-
-    gps_cfg = settings.default_values_sys._gps_cfg
-    uart_obj = UART(
-        gps_cfg['UARTn'], gps_cfg['buadrate'], gps_cfg['databits'],
-        gps_cfg['parity'], gps_cfg['stopbits'], gps_cfg['flowctl']
+    cloud = QuecThing(
+        cloud_init_params["PK"],
+        cloud_init_params["PS"],
+        cloud_init_params["DK"],
+        cloud_init_params["DS"],
+        cloud_init_params["SERVER"],
+        mcu_name=PROJECT_NAME,
+        mcu_version=PROJECT_VERSION
     )
-    uart_obj.set_callback(test_gps_uart_cb)
-    while True:
-        log.debug('[test_gps_uart] gps_uart_queue get')
-        gps_uart_data = gps_uart_queue.get()
-        log.debug('[test_gps_uart] gps_uart_data: %s' % str(gps_uart_data))
-        gps_info = uart_obj.read(gps_uart_data[2]).decode()
-        log.debug('[test_gps_uart] gps_info size: %s' % len(gps_info))
+    remote_sub = RemoteSubcribe()
+    cloud.addObserver(remote_sub)
+
+    gps_mode = 0x2
+    locator_init_params = current_settings["sys"]["locator_init_params"]
+    locator = Location(gps_mode, locator_init_params)
+
+    msg = "[test_quecthing] %s: cloud.cloud_init()."
+    assert cloud.cloud_init(), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_quecthing] %s: cloud.get_loc_data(%s, %s) %s."
+    loc_method = 0x2
+    loc_data = ""
+    quec_loc_data = cloud.get_loc_data(loc_method, loc_data)
+    assert quec_loc_data == {"non_gps": ["LBS"]}, msg % ("FAILED", loc_method, loc_data, quec_loc_data)
+    print(msg % ("SUCCESS", loc_method, loc_data, quec_loc_data))
+    res["success"] += 1
+
+    loc_method = 0x1
+    loc_data = locator.read(loc_method)
+    quec_loc_data = cloud.get_loc_data(loc_method, loc_data.get(loc_method))
+    assert quec_loc_data != "", msg % ("FAILED", loc_method, loc_data, quec_loc_data)
+    print(msg % ("SUCCESS", loc_method, loc_data, quec_loc_data))
+    res["success"] += 1
+
+    msg = "[test_quecthing] %s: cloud.post_data(%s)."
+    assert cloud.post_data(quec_loc_data), msg % ("FAILED", str(quec_loc_data))
+    print(msg % ("SUCCESS", str(quec_loc_data)))
+    res["success"] += 1
+
+    msg = "[test_quecthing] %s: cloud.ota_request()."
+    assert cloud.ota_request(), msg % ("FAILED",)
+    print(msg % ("SUCCESS",))
+    res["success"] += 1
+
+    # # PASS: No OTA Plain, ota_action Return False
+    # msg = "[test_quecthing] %s: cloud.ota_action()."
+    # assert cloud.ota_action() is True, msg % ("FAILED",)
+    # print(msg % ("SUCCESS",))
+
+    msg = "[test_quecthing] %s: cloud.cloud_close()."
+    assert cloud.cloud_close(), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_quecthing] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-def timer_cb(args):
-    print('[%s] timer callback' % utime.mktime(utime.localtime()))
+def test_remote():
+    res = {"all": 0, "success": 0, "failed": 0}
+
+    settings = Settings()
+    current_settings = settings.get()
+    cloud_init_params = current_settings["sys"]["cloud_init_params"]
+
+    cloud = QuecThing(
+        cloud_init_params["PK"],
+        cloud_init_params["PS"],
+        cloud_init_params["DK"],
+        cloud_init_params["DS"],
+        cloud_init_params["SERVER"],
+        mcu_name=PROJECT_NAME,
+        mcu_version=PROJECT_VERSION
+    )
+    remote_sub = RemoteSubcribe()
+    cloud.addObserver(remote_sub)
+    remote_pub = RemotePublish()
+
+    msg = "[test_remote] %s: cloud.cloud_init()."
+    assert cloud.cloud_init(), msg % "FAILED"
+    print(msg % "SUCCESS")
+
+    msg = "[test_remote] %s: remote_pub.set_cloud(cloud)."
+    assert remote_pub.set_cloud(cloud), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_remote] %s: remote_pub.get_cloud()."
+    assert isinstance(remote_pub.get_cloud(), QuecThing), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_remote] %s: remote_pub.cloud_ota_check()."
+    assert remote_pub.cloud_ota_check(), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    # # PASS: No OTA Plain, ota_action Return False
+    # msg = "[test_remote] %s: remote_pub.ota_request()."
+    # assert remote_pub.ota_request(), msg % "FAILED"
+    # print(msg % "SUCCESS")
+
+    gps_mode = 0x2
+    locator_init_params = current_settings["sys"]["locator_init_params"]
+    locator = Location(gps_mode, locator_init_params)
+
+    loc_method = 0x1
+    loc_data = locator.read(loc_method)
+    quec_loc_data = cloud.get_loc_data(loc_method, loc_data.get(loc_method))
+
+    msg = "[test_remote] %s: remote_pub.post_data(%s)."
+    assert remote_pub.post_data(quec_loc_data), msg % ("FAILED", str(quec_loc_data))
+    print(msg % ("SUCCESS", str(quec_loc_data)))
+    res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_remote] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-def test_ostimer():
-    timer = osTimer()
-    timer.start(1000, 2, timer_cb)
+class TestRTCObserver(Observer):
+
+    def update(self, observable, *args, **kwargs):
+        log.debug("observable: %s" % observable)
+        log.debug("args: %s" % str(args))
+        log.debug("kwargs: %s" % str(kwargs))
+        observable.start_rtc()
+        return True
 
 
-sim_queue = Queue(maxsize=8)
+def test_low_energy_rtc():
+    res = {"all": 0, "success": 0, "failed": 0}
+
+    low_energy_rtc = LowEnergyRTC()
+    test_rtc_obs = TestRTCObserver()
+    low_energy_rtc.addObserver(test_rtc_obs)
+
+    period = 5
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_period(%s)."
+    assert low_energy_rtc.set_period(period), msg % ("FAILED", period)
+    print(msg % ("SUCCESS", period))
+    res["success"] += 1
+
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_period()."
+    assert low_energy_rtc.get_period() == period, msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    work_mode = 0x1
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_work_mode(%s)."
+    assert low_energy_rtc.set_work_mode(work_mode), msg % ("FAILED", work_mode)
+    print(msg % ("SUCCESS", work_mode))
+    res["success"] += 1
+
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_work_mode()."
+    assert low_energy_rtc.get_work_mode() == work_mode, msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    low_energy_method = "PM"
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_low_energy_method(%s)."
+    assert low_energy_rtc.set_low_energy_method(low_energy_method), msg % ("FAILED", low_energy_method)
+    print(msg % ("SUCCESS", low_energy_method))
+    res["success"] += 1
+
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_low_energy_method()."
+    assert low_energy_rtc.get_low_energy_method() == low_energy_method, msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.low_energy_init()."
+    assert low_energy_rtc.low_energy_init(), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_lpm_fd()."
+    assert low_energy_rtc.get_lpm_fd() is not None, msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.start_rtc()."
+    assert low_energy_rtc.start_rtc(), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    utime.sleep(period * 3 + 1)
+    msg = "[test_low_energy_rtc] %s: low_energy_rtc.enable_rtc(0)."
+    assert low_energy_rtc.enable_rtc(0), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_low_energy_rtc] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-def sim_cb(args):
-    log.debug('sim_cb args: %s' % str(args))
-    sim_queue.put(args)
-
-
-def test_sim():
-    sim_status = sim.getStatus()
-    log.debug('sim_status: %s' % sim_status)
-    sim.setCallback(sim_cb)
-    sim.setSimDet(1, 1)
-    while True:
-        data = sim_queue.get()
-        log.debug('sim_queue data: %s' % data)
-
-
-class A(object):
-
-    def read(self):
-        raise TypeError("Can't instantiate abstract class with abstract methods.")
-
-
-class B(A):
-    # def read(self):
-    #     print('B read.')
-
-    def write(self):
-        print('B write.')
-
-
-def test_abstract():
-    b = B()
-    print('b attr: %s' % str(dir(b)))
-    b.write()
-    b.read()
+def test_tracker():
+    pass
 
 
 def main():
-    # test_quecthing()
-    # test_settings()
-    # test_uart()
-    # test_remote()
-    # test_location()
-    # test_gps()
-    # test_aliyuniot()
-    test_tracker()
-    # test_pm()
-    # test_rtc()
-    # test_gps_uart()
-    # test_ostimer()
-    # test_sim()
-    # test_abstract()
+    test_logger()
+    test_settings()
+    test_battery()
+    test_history()
+    test_location()
+    test_quecthing()
+    test_remote()
+    test_low_energy_rtc()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

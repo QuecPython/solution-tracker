@@ -14,17 +14,16 @@
 
 import uos
 import fota
-import app_fota
 import uzlib
 import ql_fs
+import app_fota
 import uhashlib
 import ubinascii
 import app_fota_download
+
 from queue import Queue
 
 from usr.logging import getLogger
-from usr.settings import SYSNAME
-from usr.settings import PROJECT_NAME
 
 log = getLogger(__name__)
 
@@ -48,29 +47,19 @@ FOTA_ERROR_CODE = {
 
 class OTA(object):
 
-    def __init__(self, module, file_info):
-        self.module = module
+    def __init__(self, file_info, ota_type="FOTA", ota_cb=None):
         self.file_info = file_info
+        self.ota_type = ota_type
+        self.ota_cb = ota_cb
         self.fota_queue = Queue(maxsize=4)
 
     def start(self):
-        if self.module == SYSNAME:
+        if self.ota_type == "FOTA":
             return self.start_fota()
-        elif self.module == PROJECT_NAME:
+        elif self.ota_type == "SOTA":
             return self.start_sota()
         else:
-            log.error('OTA Module %s Is Not Error!' % self.module)
-            return False
-
-    def start_fota(self):
-        fota_obj = fota()
-        url1 = self.file_info[0]['url']
-        url2 = self.file_info[1]['url'] if len(self.file_info) > 1 else ''
-        res = fota_obj.httpDownload(url1=url1, url2=url2, callback=self.fota_cb)
-        if res == 0:
-            fota_res = self.fota_queue.get()
-            return fota_res
-        else:
+            log.error("OTA Type %s Is FOTA Or SOTA Error!" % self.ota_type)
             return False
 
     def fota_cb(self, args):
@@ -78,20 +67,36 @@ class OTA(object):
         down_process = args[1]
         if down_status in (0, 1):
             # TODO: Report To Cloud Upgrade Process.
-            log.debug('DownStatus: %s [%s][%s%%]' % (down_status, '=' * down_process, down_process))
+            log.debug("DownStatus: %s [%s][%s%%]" % (down_status, "=" * down_process, down_process))
         elif down_status == 2:
             # Download Over & Check Over, To Power Restart Update.
             self.fota_queue.put(True)
         else:
-            log.error('Down Failed. Error Code [%s] %s' % (down_process, FOTA_ERROR_CODE.get(down_process, down_process)))
+            log.error("Down Failed. Error Code [%s] %s" % (down_process, FOTA_ERROR_CODE.get(down_process, down_process)))
             self.fota_queue.put(False)
+        if self.ota_cb:
+            self.ota_cb(args)
+
+    def start_fota(self):
+        fota_obj = fota()
+        url1 = self.file_info[0]["url"]
+        url2 = self.file_info[1]["url"] if len(self.file_info) > 1 else ""
+        res = fota_obj.httpDownload(url1=url1, url2=url2, callback=self.fota_cb)
+        if res == 0:
+            fota_res = self.fota_queue.get()
+            return fota_res
+        else:
+            return False
 
     def start_sota(self):
-        ota_module_obj = SotaDownloadUpgrade()
+        ota_module_obj = SOTA()
         for file in self.file_info:
-            if ota_module_obj.app_fota_down(file['url']):
-                if ota_module_obj.file_update(file['md5']):
-                    continue
+            if ota_module_obj.app_fota_down(file["url"]):
+                if ota_module_obj.check_md5(file["md5"]):
+                    if ota_module_obj.file_update():
+                        continue
+                    else:
+                        return False
                 else:
                     return False
             else:
@@ -101,13 +106,11 @@ class OTA(object):
         return True
 
 
-class SotaDownloadUpgrade(object):
+class SOTA(object):
     def __init__(self, parent_dir="/usr/.updater/usr/"):
         self.fp_file = "/usr/sotaFile.tar.gz"
-        self.file_list = []
         self.parent_dir = parent_dir
-        self.unzipFp = 0
-        self.hash_obj = uhashlib.md5()
+        self.hash_obj = None
 
     def write_update_data(self, data):
         with open(self.fp_file, "wb+") as fp:
@@ -118,7 +121,7 @@ class SotaDownloadUpgrade(object):
         app_fota_obj = app_fota.new()
         res = app_fota_obj.download(url, self.fp_file)
         if res == 0:
-            uos.rename('/usr/.updater' + self.fp_file, self.fp_file)
+            uos.rename("/usr/.updater" + self.fp_file, self.fp_file)
             self.hash_obj = uhashlib.md5()
             with open(self.fp_file, "rb+") as fp:
                 for fpi in fp.readlines():
@@ -128,44 +131,50 @@ class SotaDownloadUpgrade(object):
             return False
 
     def __get_file_size(self, data):
-        size = data.decode('ascii')
-        size = size.rstrip('\0')
+        size = data.decode("ascii")
+        size = size.rstrip("\0")
         if (len(size) == 0):
             return 0
         size = int(size, 8)
         return size
 
     def __get_file_name(self, name):
-        fileName = name.decode('ascii')
-        fileName = fileName.rstrip('\0')
+        fileName = name.decode("ascii")
+        fileName = fileName.rstrip("\0")
         return fileName
 
-    def file_update(self, md5_value):
-        md5Data = ubinascii.hexlify(self.hash_obj.digest())
-        md5Data = md5Data.decode('ascii')
-        log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (md5_value, md5Data))
-        if (md5_value != md5Data):
+    def check_md5(self, cloud_md5):
+        file_md5 = ubinascii.hexlify(self.hash_obj.digest())
+        file_md5 = file_md5.decode("ascii")
+        log.debug("DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (cloud_md5, file_md5))
+        if (cloud_md5 != file_md5):
             log.error("MD5 Verification Failed")
-            return
+            return False
 
         log.debug("MD5 Verification Success.")
+        return True
+
+    def file_update(self):
         ota_file = open(self.fp_file, "rb+")
         ota_file.seek(10)
-        self.unzipFp = uzlib.DecompIO(ota_file, -15)
-        log.debug('Unzip File Success.')
+        unzipFp = uzlib.DecompIO(ota_file, -15)
+        log.debug("Unzip File Success.")
         ql_fs.mkdirs(self.parent_dir)
+        file_list = []
         try:
             while True:
-                data = self.unzipFp.read(0x200)
+                data = unzipFp.read(0x200)
                 if not data:
                     log.debug("Read File Size Zore.")
                     break
+
                 size = self.__get_file_size(data[124:135])
                 fileName = self.__get_file_name(data[:100])
                 log.debug("File Name: %s, File Size: %s" % (fileName, size))
+
                 if not size:
                     if len(fileName):
-                        log.debug("Create File Dir: %s" % self.parent_dir + fileName)
+                        log.debug("Create File: %s" % self.parent_dir + fileName)
                         ql_fs.mkdirs(self.parent_dir + fileName)
                     else:
                         log.debug("Have No File Unzip.")
@@ -175,26 +184,28 @@ class SotaDownloadUpgrade(object):
                     fp = open(self.parent_dir + fileName, "wb+")
                     fileSize = size
                     while fileSize:
-                        data = self.unzipFp.read(0x200)
+                        data = unzipFp.read(0x200)
                         if (fileSize < 0x200):
                             fp.write(data[:fileSize])
                             fileSize = 0
                             fp.close()
-                            self.file_list.append({"fileName": "/usr/" + fileName, "size": size})
+                            file_list.append({"fileName": "/usr/" + fileName, "size": size})
                             break
                         else:
                             fileSize -= 0x200
                             fp.write(data)
 
-            for fileName in self.file_list:
+            for fileName in file_list:
                 app_fota_download.update_download_stat("/usr/.updater" + fileName["fileName"], fileName["fileName"], fileName["size"])
-            ota_file.close()
+
             log.debug("Remove %s" % self.fp_file)
             uos.remove(self.fp_file)
         except Exception as e:
-            log.error('exception: %s' % str(dir(e)))
             log.error("Unpack Error: %s" % e)
             return False
+        finally:
+            ota_file.close()
+
         return True
 
     def sota_set_flag(self):

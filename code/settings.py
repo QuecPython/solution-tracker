@@ -19,43 +19,24 @@ import ujson
 import _thread
 
 from usr.common import Singleton
+from usr.common import option_lock
 from usr.settings_app import default_values_app
 from usr.settings_sys import default_values_sys
 
 # For Other Module To Import
-from usr.settings_sys import SYSNAME, PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_VERSION, \
-    DATA_NON_LOCA, DATA_LOCA_NON_GPS, DATA_LOCA_GPS, ALERTCODE, LOWENERGYMAP
+from usr.settings_sys import PROJECT_NAME, PROJECT_VERSION, \
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, ALERTCODE, LOWENERGYMAP
 
-SYSNAME
 PROJECT_NAME
 PROJECT_VERSION
+DEVICE_FIRMWARE_NAME
 DEVICE_FIRMWARE_VERSION
-DATA_NON_LOCA
-DATA_LOCA_NON_GPS
-DATA_LOCA_GPS
 ALERTCODE
 LOWENERGYMAP
 
-tracker_settings_file = '/usr/tracker_settings.json'
+tracker_settings_file = "/usr/tracker_settings.json"
 
 _settings_lock = _thread.allocate_lock()
-
-
-def settings_lock(func_name):
-    def settings_lock_fun(func):
-        def wrapperd_fun(*args, **kwargs):
-            with _settings_lock:
-                return func(*args, **kwargs)
-        return wrapperd_fun
-    return settings_lock_fun
-
-
-class SettingsError(Exception):
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
 
 
 class Settings(Singleton):
@@ -66,127 +47,107 @@ class Settings(Singleton):
         self.current_settings_sys = {}
         self.init()
 
-    @settings_lock('Settings.init')
+    @option_lock(_settings_lock)
     def init(self):
         try:
             default_values_sys.locator_init_params = default_values_sys._get_locator_init_params(default_values_app.loc_method)
             default_values_sys.cloud_init_params = default_values_sys._get_cloud_init_params(default_values_sys.cloud)
             default_values_sys.ota_status = default_values_sys._ota_status_init_params()
 
-            default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith('_')}
-            default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith('_')}
-            default_settings = {'app': default_settings_app, 'sys': default_settings_sys}
+            default_settings_app = {k: v for k, v in default_values_app.__dict__.items() if not k.startswith("_")}
+            default_settings_sys = {k: v for k, v in default_values_sys.__dict__.items() if not k.startswith("_")}
+            default_settings = {"app": default_settings_app, "sys": default_settings_sys}
 
             if not ql_fs.path_exists(tracker_settings_file):
-                with open(tracker_settings_file, 'w') as f:
+                with open(tracker_settings_file, "w") as f:
                     ujson.dump(default_settings, f)
                 self.current_settings = dict(default_settings)
             else:
-                with open(tracker_settings_file, 'r') as f:
+                with open(tracker_settings_file, "r") as f:
                     self.current_settings = ujson.load(f)
             return True
         except:
             return False
 
-    @settings_lock('Settings.get')
+    @option_lock(_settings_lock)
     def get(self):
         return self.current_settings
 
-    @settings_lock('Settings.set')
+    @option_lock(_settings_lock)
     def set(self, opt, val):
-        if opt in self.current_settings['app']:
-            if opt == 'phone_num':
+        if opt in self.current_settings["app"]:
+            if opt == "phone_num":
                 if not isinstance(val, str):
                     return False
-                pattern = ure.compile(r'^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$')
+                pattern = ure.compile(r"^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$")
                 if pattern.search(val):
-                    self.current_settings['app'][opt] = val
+                    self.current_settings["app"][opt] = val
                     return True
                 return False
-
-            elif opt == 'loc_method':
+            elif opt == "loc_method":
                 if not isinstance(val, int):
                     return False
                 if val > default_values_app._loc_method.all:
                     return False
-                self.current_settings['app'][opt] = val
-                self.current_settings['sys']['locator_init_params'] = default_values_sys._get_locator_init_params(val)
+                self.current_settings["app"][opt] = val
+                self.current_settings["sys"]["locator_init_params"] = default_values_sys._get_locator_init_params(val)
                 return True
-
-            elif opt == 'work_mode':
+            elif opt == "work_mode":
                 if not isinstance(val, int):
                     return False
                 if val > default_values_app._work_mode.intelligent:
                     return False
-                self.current_settings['app'][opt] = val
+                self.current_settings["app"][opt] = val
                 return True
-
-            elif opt == 'work_cycle_period':
+            elif opt in ("work_cycle_period", "over_speed_threshold"):
                 if not isinstance(val, int):
                     return False
                 if val < 1:
                     return False
-                self.current_settings['app'][opt] = val
+                self.current_settings["app"][opt] = val
                 return True
-
-            elif opt == 'low_power_alert_threshold' or opt == 'low_power_shutdown_threshold':
+            elif opt in ("low_power_alert_threshold", "low_power_shutdown_threshold"):
                 if not isinstance(val, int):
                     return False
                 if val < 0 or val > 100:
                     return False
-                self.current_settings['app'][opt] = val
+                self.current_settings["app"][opt] = val
                 return True
-
-            elif opt in (
-                    'sw_ota', 'sw_ota_auto_upgrade', 'sw_voice_listen', 'sw_voice_record',
-                    'sw_fault_alert', 'sw_low_power_alert', 'sw_over_speed_alert',
-                    'sw_sim_abnormal_alert', 'sw_disassemble_alert', 'sw_drive_behavior_alert'):
+            elif opt in ("sw_ota", "sw_ota_auto_upgrade", "sw_voice_listen", "sw_voice_record",
+                         "sw_fault_alert", "sw_low_power_alert", "sw_over_speed_alert",
+                         "sw_sim_abnormal_alert", "sw_disassemble_alert", "sw_drive_behavior_alert"):
                 if not isinstance(val, bool):
                     return False
-                self.current_settings['app'][opt] = val
+                self.current_settings["app"][opt] = val
                 return True
-            elif opt == 'over_speed_threshold':
-                if not isinstance(val, int):
-                    return False
-                if val < 1:
-                    return False
-                self.current_settings['app'][opt] = val
-                return True
-            else:
-                return False
-        if opt in self.current_settings['sys']:
-            if opt == 'sw_log':
+        if opt in self.current_settings["sys"]:
+            if opt == "sw_log":
                 if not isinstance(val, bool):
                     return False
-                self.current_settings['sys'][opt] = val
+                self.current_settings["sys"][opt] = val
                 return True
-            elif opt == 'ota_status':
+            elif opt in ("ota_status", "cloud_init_params"):
                 if not isinstance(val, dict):
                     return False
-                self.current_settings['sys'][opt] = val
+                self.current_settings["sys"][opt] = val
                 return True
-            elif opt == 'cloud_init_params':
-                if not isinstance(val, dict):
-                    return False
-                self.current_settings['sys'][opt] = val
-                return True
-            elif opt == 'user_ota_action':
+            elif opt == "user_ota_action":
                 if not isinstance(val, int):
                     return False
-                self.current_settings['sys'][opt] = val
-        else:
-            return False
+                self.current_settings["sys"][opt] = val
+                return True
+        return False
 
-    @settings_lock('Settings.save')
+    @option_lock(_settings_lock)
     def save(self):
         try:
-            with open(tracker_settings_file, 'w') as f:
+            with open(tracker_settings_file, "w") as f:
                 ujson.dump(self.current_settings, f)
             return True
         except:
             return False
 
-    @settings_lock('Settings.reset')
+    @option_lock(_settings_lock)
     def reset(self):
         try:
             uos.remove(tracker_settings_file)

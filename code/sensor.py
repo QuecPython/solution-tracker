@@ -27,13 +27,13 @@ def sensor_process(args):
         sensor_read = self.sensor_queue.get()
         if sensor_read:
             sensor_data = {}
-            sensor_data['temperature'] = self.temperature()
-            sensor_data['light'] = self.light()
-            sensor_data['driving_behavior_code'] = self.driving_behavior()
+            sensor_data["temperature"] = self.temperature()
+            sensor_data["light"] = self.light()
+            sensor_data["driving_behavior_code"] = self.driving_behavior()
             if self.sensor_read_cb:
                 self.sensor_read_cb(**sensor_data)
             else:
-                log.warn('Sensor read callback is not defined.')
+                log.warn("Sensor read callback is not defined.")
 
 
 class Sensor(Singleton):

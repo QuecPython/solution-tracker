@@ -20,106 +20,126 @@ import _thread
 from queue import Queue
 from machine import RTC
 
-from usr.common import Singleton
+from usr.common import Observable
 from usr.logging import getLogger
 from usr.settings import settings
 from usr.settings import LOWENERGYMAP
-from usr.settings import default_values_app
 
 log = getLogger(__name__)
 
+LOW_ENERGY_METHOD = ("CYCLE", "PM", "PSM", "POWERDOWN")
 
-class PowerManage(Singleton):
 
-    def __init__(self, tracker, callback=None):
-        self.tracker = tracker
-        self.callback = callback
+class LowEnergyRTC(Observable):
 
-        self.lpm_fd = None
-        self.low_energy_queue = Queue(maxsize=8)
+    def __init__(self):
+        super().__init__()
 
-        self.period = None
-        self.low_energy_method = None
-        self.set_period()
-        self.get_low_energy_method()
+        self.__period = 60
+        self.__work_mode = 0x1
+        self.__low_energy_method = "PM"
+        self.__thread_id = None
 
-        self.rtc = RTC()
-        self.rtc.register_callback(self.rtc_callback)
+        self.__lpm_fd = None
+        self.__pm_lock_name = "low_energy_pm_lock"
+        self.__low_energy_queue = Queue(maxsize=8)
 
-    def set_period(self, seconds=None):
-        if seconds is None:
-            current_settings = settings.get()
-            seconds = current_settings['app']['work_cycle_period']
-        self.period = seconds
+        self.__rtc = RTC()
+        self.__rtc.register_callback(self.__rtc_callback)
 
-    def start_rtc(self):
-        current_settings = settings.get()
-        if current_settings['app']['work_mode'] == default_values_app._work_mode.intelligent:
-            if self.tracker.locator.gps:
-                gps_data = self.tracker.locator.gps.read()
-                speed = self.tracker.locator.gps.read_location_GxVTG_speed(gps_data)
-                if not speed:
-                    return
-                elif float(speed) <= 0:
-                    return
+    def __rtc_callback(self, args):
+        self.enable_rtc(0)
+        self.__low_energy_queue.put(self.__low_energy_method)
 
-        self.set_period()
-        atime = utime.localtime(utime.mktime(utime.localtime()) + self.period)
-        alarm_time = [atime[0], atime[1], atime[2], atime[6], atime[3], atime[4], atime[5], 0]
-        self.rtc.set_alarm(alarm_time)
-        self.rtc.enable_alarm(1)
-
-    def rtc_callback(self, args):
-        self.rtc.enable_alarm(0)
-        if self.low_energy_method == 'PM':
-            self.low_energy_queue.put('wakelock_unlock')
-        elif self.low_energy_method == 'PSM':
-            self.low_energy_queue.put('psm')
-        elif self.low_energy_method == 'POWERDOWN':
-            self.low_energy_queue.put('power_dwon')
-        elif self.low_energy_method is None:
-            self.low_energy_queue.put('cycle_report')
-
-    def get_low_energy_method(self):
+    # TODO: Remove To Business Module
+    def __get_low_energy_method(self):
         current_settings = settings.get()
         device_model = modem.getDevModel()
         support_methds = LOWENERGYMAP.get(device_model, [])
         if support_methds:
-            if self.period >= current_settings['sys']['work_mode_timeline']:
+            if self.__period >= current_settings["sys"]["work_mode_timeline"]:
                 if "PSM" in support_methds:
-                    self.low_energy_method = "PSM"
+                    self.__low_energy_method = "PSM"
                 elif "POWERDOWN" in support_methds:
-                    self.low_energy_method = "POWERDOWN"
+                    self.__low_energy_method = "POWERDOWN"
                 elif "PM" in support_methds:
-                    self.low_energy_method = "PM"
+                    self.__low_energy_method = "PM"
             else:
                 if "PM" in support_methds:
-                    self.low_energy_method = "PM"
+                    self.__low_energy_method = "PM"
 
-        return self.low_energy_method
+        return self.__low_energy_method
 
-    def low_energy_init(self):
-        if self.low_energy_method == 'PM':
-            _thread.start_new_thread(self.low_energy_work, (True,))
-            self.lpm_fd = pm.create_wakelock("lowenergy_lock", len("lowenergy_lock"))
-            pm.autosleep(1)
-        elif self.low_energy_method == 'PSM':
-            pass
-        elif self.low_energy_method == 'POWERDOWN':
-            pass
-        elif self.low_energy_method is None:
-            _thread.start_new_thread(self.low_energy_work, (False,))
-
-    def low_energy_work(self, lowenergy_tag):
+    def __low_energy_work(self, lowenergy_tag):
         while True:
-            data = self.low_energy_queue.get()
+            data = self.__low_energy_queue.get()
             if data:
                 if lowenergy_tag:
-                    if self.lpm_fd is None:
-                        self.lpm_fd = pm.create_wakelock("lowenergy_lock", len("lowenergy_lock"))
+                    if self.__lpm_fd is None:
+                        self.__lpm_fd = pm.create_wakelock(self.__pm_lock_name, len(self.__pm_lock_name))
                         pm.autosleep(1)
-                    wlk_res = pm.wakelock_lock(self.lpm_fd)
-                    log.debug('pm.wakelock_lock %s.' % ('Success' if wlk_res == 0 else 'Falied'))
+                    wlk_res = pm.wakelock_lock(self.__lpm_fd)
+                    log.debug("pm.wakelock_lock %s." % ("Success" if wlk_res == 0 else "Falied"))
 
-                self.tracker.device_data_report(msg=data)
-                self.tracker.remote.check_ota()
+                self.notifyObservers(self, *(data,))
+
+    def get_period(self):
+        return self.__period
+
+    def set_period(self, seconds=0):
+        if isinstance(seconds, int) and seconds > 0:
+            self.__period = seconds
+            return True
+        return False
+
+    def get_work_mode(self):
+        return self.__work_mode
+
+    def set_work_mode(self, work_mode):
+        if work_mode in (0x1, 0x2):
+            self.__work_mode = work_mode
+            return True
+        return False
+
+    def get_low_energy_method(self):
+        return self.__low_energy_method
+
+    def set_low_energy_method(self, method):
+        if method in LOW_ENERGY_METHOD:
+            self.__low_energy_method = method
+            return True
+        return False
+
+    def get_lpm_fd(self):
+        return self.__lpm_fd
+
+    def low_energy_init(self):
+        try:
+            if self.__thread_id is not None:
+                _thread.stop_thread(self.__thread_id)
+            if self.__lpm_fd is not None:
+                pm.delete_wakelock(self.__lpm_fd)
+                self.__lpm_fd = None
+
+            if self.__low_energy_method == "PM":
+                self.__thread_id = _thread.start_new_thread(self.__low_energy_work, (True,))
+                self.__lpm_fd = pm.create_wakelock(self.__pm_lock_name, len(self.__pm_lock_name))
+                pm.autosleep(1)
+            elif self.__low_energy_method == "CYCLE":
+                self.__thread_id = _thread.start_new_thread(self.__low_energy_work, (False,))
+            elif self.__low_energy_method in ("PSM", "POWERDOWN"):
+                pass
+            return True
+        except:
+            return False
+
+    def start_rtc(self):
+        atime = utime.localtime(utime.mktime(utime.localtime()) + self.__period)
+        alarm_time = [atime[0], atime[1], atime[2], atime[6], atime[3], atime[4], atime[5], 0]
+        if self.__rtc.set_alarm(alarm_time) == 0:
+            return self.enable_rtc(1)
+        return False
+
+    def enable_rtc(self, enable):
+        enable_alarm_res = self.__rtc.enable_alarm(enable)
+        return True if enable_alarm_res == 0 else False

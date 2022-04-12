@@ -17,8 +17,8 @@ from usr.logging import getLogger
 
 log = getLogger(__name__)
 
-battery_ocv_table = {
-    'nix_coy_mnzo2': {
+BATTERY_OCV_TABLE = {
+    "nix_coy_mnzo2": {
         55: {
             4152: 100, 4083: 95, 4023: 90, 3967: 85, 3915: 80, 3864: 75, 3816: 70, 3773: 65, 3737: 60, 3685: 55,
             3656: 50, 3638: 45, 3625: 40, 3612: 35, 3596: 30, 3564: 25, 3534: 20, 3492: 15, 3457: 10, 3410: 5, 3380: 0,
@@ -35,55 +35,53 @@ battery_ocv_table = {
 }
 
 
-def _get_soc_from_dict(key, volt_arg):
-    if key in battery_ocv_table['nix_coy_mnzo2']:
-        volts = sorted(battery_ocv_table['nix_coy_mnzo2'][key].keys(), reverse=True)
-        pre_volt = 0
-        volt_not_under = 0  # Determine whether the voltage is lower than the minimum voltage value of soc.
-        for volt in volts:
-            if volt_arg > volt:
-                volt_not_under = 1
-                soc1 = battery_ocv_table['nix_coy_mnzo2'][key].get(volt, 0)
-                soc2 = battery_ocv_table['nix_coy_mnzo2'][key].get(pre_volt, 0)
-                break
-            else:
-                pre_volt = volt
-        if pre_volt == 0:  # Input Voltarg > Highest Voltarg
-            return soc1
-        elif volt_not_under == 0:
-            return 0
-        else:
-            return soc2 - (soc2 - soc1) * (pre_volt - volt_arg) // (pre_volt - volt)
-
-
-def get_soc(temp, volt_arg, bat_type='nix_coy_mnzo2'):
-    if bat_type == 'nix_coy_mnzo2':
-        if temp > 30:
-            return _get_soc_from_dict(55, volt_arg)
-        elif temp < 10:
-            return _get_soc_from_dict(0, volt_arg)
-        else:
-            return _get_soc_from_dict(20, volt_arg)
-
-
 class Battery(object):
     def __init__(self):
-        self.now_energy = 100
+        self.__energy = 100
+        self.__temp = 20
 
-    def indicate(self, low_power_threshold, low_power_cb):
-        # TODO: This fun for what?
-        self.low_power_threshold = low_power_threshold
-        self.low_power_cb = low_power_cb
+    def __get_soc_from_dict(self, key, volt_arg):
+        if key in BATTERY_OCV_TABLE["nix_coy_mnzo2"]:
+            volts = sorted(BATTERY_OCV_TABLE["nix_coy_mnzo2"][key].keys(), reverse=True)
+            pre_volt = 0
+            volt_not_under = 0  # Determine whether the voltage is lower than the minimum voltage value of soc.
+            for volt in volts:
+                if volt_arg > volt:
+                    volt_not_under = 1
+                    soc1 = BATTERY_OCV_TABLE["nix_coy_mnzo2"][key].get(volt, 0)
+                    soc2 = BATTERY_OCV_TABLE["nix_coy_mnzo2"][key].get(pre_volt, 0)
+                    break
+                else:
+                    pre_volt = volt
+            if pre_volt == 0:  # Input Voltarg > Highest Voltarg
+                return soc1
+            elif volt_not_under == 0:
+                return 0
+            else:
+                return soc2 - (soc2 - soc1) * (pre_volt - volt_arg) // (pre_volt - volt)
 
-    def charge(self):
-        pass
+    def __get_soc(self, temp, volt_arg, bat_type="nix_coy_mnzo2"):
+        if bat_type == "nix_coy_mnzo2":
+            if temp > 30:
+                return self.__get_soc_from_dict(55, volt_arg)
+            elif temp < 10:
+                return self.__get_soc_from_dict(0, volt_arg)
+            else:
+                return self.__get_soc_from_dict(20, volt_arg)
 
-    def energy(self):
-        volt_arg = Power.getVbatt()
+    def get_temp(self):
+        return self.__temp
+
+    def set_temp(self, temp):
         # TODO: Get temp from sensor
-        temp = 20
-        self.now_energy = get_soc(temp, volt_arg)
-        return self.now_energy
+        if isinstance(temp, int) or isinstance(temp, float):
+            self.__temp = temp
+            return True
+        return False
 
-    def voltage(self):
+    def get_voltage(self):
         return Power.getVbatt()
+
+    def get_energy(self):
+        self.__energy = self.__get_soc(self.get_temp(), self.get_voltage())
+        return self.__energy
