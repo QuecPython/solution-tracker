@@ -54,6 +54,113 @@ LOWENERGYMAP = {
     ],
 }
 
+quec_object_model = {
+    # property
+    9: ("power_switch", "rw"),
+    4: ("energy", "r"),
+    23: ("phone_num", "rw"),
+    24: ("loc_method", "rw"),
+    25: ("work_mode", "rw"),
+    26: ("work_cycle_period", "rw"),
+    19: ("local_time", "r"),
+    15: ("low_power_alert_threshold", "rw"),
+    16: ("low_power_shutdown_threshold", "rw"),
+    12: ("sw_ota", "rw"),
+    13: ("sw_ota_auto_upgrade", "rw"),
+    10: ("sw_voice_listen", "rw"),
+    11: ("sw_voice_record", "rw"),
+    27: ("sw_fault_alert", "rw"),
+    28: ("sw_low_power_alert", "rw"),
+    29: ("sw_over_speed_alert", "rw"),
+    30: ("sw_sim_abnormal_alert", "rw"),
+    31: ("sw_disassemble_alert", "rw"),
+    32: ("sw_drive_behavior_alert", "rw"),
+    21: ("drive_behavior_code", "r"),
+    33: ("power_restart", "w"),
+    34: ("over_speed_threshold", "rw"),
+    36: ("device_module_status", "r"),
+    37: ("gps_mode", "r"),
+    38: ("user_ota_action", "w"),
+    41: ("voltage", "r"),
+    42: ("ota_status", "r"),
+    43: ("current_speed", "r"),
+
+    # event
+    6:  ("sos_alert", "r"),
+    14: ("fault_alert", "r"),
+    17: ("low_power_alert", "r"),
+    18: ("sim_abnormal_alert", "r"),
+    20: ("disassemble_alert", "r"),
+    22: ("drive_behavior_alert", "r"),
+    35: ("over_speed_alert", "r"),
+}
+
+quec_object_model_struct = {
+    "device_module_status": {
+        "net": 1,
+        "location": 2,
+        "temp_sensor": 3,
+        "light_sensor": 4,
+        "move_sensor": 5,
+        "mike": 6,
+    },
+    "loc_method": {
+        "gps": 1,
+        "cell": 2,
+        "wifi": 3,
+    },
+    "ota_status": {
+        "sys_current_version": 1,
+        "sys_target_version": 2,
+        "app_current_version": 3,
+        "app_target_version": 4,
+        "upgrade_module": 5,
+        "upgrade_status": 6,
+    },
+}
+
+ali_object_model = {
+    "event": [
+        "sos_alert",
+        "fault_alert",
+        "low_power_alert",
+        "sim_abnormal_alert",
+        "disassemble_alert",
+        "drive_behavior_alert",
+        "over_speed_alert",
+    ],
+    "property": [
+        "power_switch",
+        "energy",
+        "phone_num",
+        "loc_method",
+        "work_mode",
+        "work_cycle_period",
+        "local_time",
+        "low_power_alert_threshold",
+        "low_power_shutdown_threshold",
+        "sw_ota",
+        "sw_ota_auto_upgrade",
+        "sw_voice_listen",
+        "sw_voice_record",
+        "sw_fault_alert",
+        "sw_low_power_alert",
+        "sw_over_speed_alert",
+        "sw_sim_abnormal_alert",
+        "sw_disassemble_alert",
+        "sw_drive_behavior_alert",
+        "drive_behavior_code",
+        "power_restart",
+        "over_speed_threshold",
+        "device_module_status",
+        "gps_mode",
+        "user_ota_action",
+        "ota_status",
+        "GeoLocation",
+        "voltage",
+    ],
+}
+
 
 class default_values_sys(object):
     """

@@ -51,7 +51,7 @@ class RemoteSubcribe(CloudObserver):
         else:
             return False
 
-    def do_event(self, observable, *args, **kwargs):
+    def execute(self, observable, *args, **kwargs):
         """
         1. observable: Cloud Iot Object.
         2. args[1]: Cloud DownLink Data Type.
@@ -62,14 +62,14 @@ class RemoteSubcribe(CloudObserver):
         2.5 ota_file_download: Download OTA File For MQTT Association (Not Support Now).
         3. args[2]: Cloud DownLink Data(List Or Dict).
         """
-        option_attr = args[1]
-        args = args[2] if not isinstance(args[2], dict) else ()
-        kwargs = args[2] if isinstance(args[2], dict) else {}
-        if hasattr(self, option_attr):
-            option_fun = getattr(self, option_attr)
-            return option_fun(*args, **kwargs)
+        opt_attr = args[1]
+        opt_args = args[2] if not isinstance(args[2], dict) else ()
+        opt_kwargs = args[2] if isinstance(args[2], dict) else {}
+        if hasattr(self, opt_attr):
+            option_fun = getattr(self, opt_attr)
+            return option_fun(*opt_args, **opt_kwargs)
         else:
-            log.error("RemoteSubcribe Has No Attribute [%s]." % option_attr)
+            log.error("RemoteSubcribe Has No Attribute [%s]." % opt_attr)
             return False
 
 
@@ -83,16 +83,13 @@ class RemotePublish(Observable):
         self.__cloud = None
 
     def __cloud_conn(self, enforce=False):
-        return self.__cloud.cloud_init(enforce=enforce) if self.__cloud else False
+        return self.__cloud.init(enforce=enforce) if self.__cloud else False
 
     def __cloud_post(self, data):
         return self.__cloud.post_data(data) if self.__cloud else False
 
-    def get_cloud(self):
-        return self.__cloud
-
     def set_cloud(self, cloud):
-        if hasattr(cloud, "cloud_init") and \
+        if hasattr(cloud, "init") and \
                 hasattr(cloud, "post_data") and \
                 hasattr(cloud, "ota_request") and \
                 hasattr(cloud, "ota_action"):
@@ -143,10 +140,10 @@ class RemotePublish(Observable):
         if hist["data"]:
             pt_count = 0
             for i, data in enumerate(hist["data"]):
+                pt_count += 1
                 if not self.post_data(data):
                     res = False
                     break
-                pt_count += 1
 
             hist["data"] = hist["data"][pt_count:]
             if hist["data"]:

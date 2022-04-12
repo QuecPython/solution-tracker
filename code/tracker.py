@@ -14,6 +14,7 @@
 
 import sim
 import utime
+import modem
 import _thread
 import checkNet
 import dataCall
@@ -26,10 +27,10 @@ from usr.remote import Remote
 from usr.battery import Battery
 from usr.mpower import LowEnergyRTC
 from usr.logging import getLogger
-from usr.location import Location
-# from usr.ota import OTAFileClear
+from usr.location import Location, GPSMatch, GPSParse
+from usr.ota import OTAFileClear
 from usr.common import numiter, Singleton
-from usr.settings import ALERTCODE, SYSNAME, PROJECT_NAME, \
+from usr.settings import ALERTCODE, DEVICE_FIRMWARE_NAME, PROJECT_NAME, LOWENERGYMAP, \
     settings, default_values_app, default_values_sys, Settings
 
 try:
@@ -87,10 +88,6 @@ class Tracker(Singleton):
         self.__sensor = None
         self.__locator = None
 
-        # TODO: Remote To Main Function.
-        # fileClear = OTAFileClear()
-        # fileClear.file_clear()
-
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
 
@@ -125,7 +122,7 @@ class Tracker(Singleton):
         if current_settings["app"]["sw_over_speed_alert"] is True:
             if self.locator.gps:
                 gps_data = self.locator.gps.read()
-                speed = self.locator.gps.read_location_GxVTG_speed(gps_data)
+                speed = GPSParse.GxVTG_speed(GPSMatch().GxVTG(gps_data))
                 if speed and float(speed) >= current_settings["app"]["over_speed_threshold"]:
                     alert_code = 30003
                     alert_info = {"local_time": self.__get_local_time()}
@@ -152,8 +149,77 @@ class Tracker(Singleton):
 
         return alert_data
 
-    def get_controller(self):
-        return self.__controller
+    def __get_low_energy_method(self, period):
+        current_settings = self.__controller.settings_get()
+        device_model = modem.getDevModel()
+        support_methds = LOWENERGYMAP.get(device_model, [])
+        method = "NULL"
+        if support_methds:
+            if period >= current_settings["sys"]["work_mode_timeline"]:
+                if "PSM" in support_methds:
+                    method = "PSM"
+                elif "POWERDOWN" in support_methds:
+                    method = "POWERDOWN"
+                elif "PM" in support_methds:
+                    method = "PM"
+            else:
+                if "PM" in support_methds:
+                    method = "PM"
+
+        return method
+
+    def __get_ali_loc_data(self, loc_method, loc_data):
+        res = {"GeoLocation": {}}
+
+        if loc_method == 0x1:
+            gps_match = GPSMatch()
+            gps_parse = GPSParse()
+            gga_data = gps_match.GxGGA(loc_data)
+            data = {}
+            if gga_data:
+                Latitude = gps_parse.GxGGA_latitude(gga_data)
+                if Latitude:
+                    data["Latitude"] = float('%.2f' % float(Latitude))
+                Longtitude = gps_parse.GxGGA_longtitude()
+                if Longtitude:
+                    data["Longtitude"] = float('%.2f' % float(Longtitude))
+                Altitude = gps_parse.GxGGA_altitude()
+                if Altitude:
+                    data["Altitude"] = float('%.2f' % float(Altitude))
+                if data:
+                    data["CoordinateSystem"] = 1
+            res = {"GeoLocation": data}
+        elif loc_method in (0x2, 0x4):
+            if loc_data:
+                res["GeoLocation"] = {
+                    "Longtitude": round(loc_data[0], 2),
+                    "Latitude": round(loc_data[1], 2),
+                    # "Altitude": 0.0,
+                    "CoordinateSystem": 1
+                }
+
+        return res
+
+    def __get_quec_loc_data(self, loc_method, loc_data):
+        if loc_method == 0x1:
+            res = {"gps": []}
+            gps_match = GPSMatch()
+            r = gps_match.GxRMC(loc_data)
+            if r:
+                res["gps"].append(r)
+
+            r = gps_match.GxGGA(loc_data)
+            if r:
+                res["gps"].append(r)
+
+            r = gps_match.GxVTG(loc_data)
+            if r:
+                res["gps"].append(r)
+            return res
+        elif loc_method == 0x2:
+            return {"non_gps": ["LBS"]}
+        elif loc_method == 0x4:
+            return {"non_gps": []}
 
     def set_controller(self, controller):
         if isinstance(controller, Controller):
@@ -161,17 +227,11 @@ class Tracker(Singleton):
             return True
         return False
 
-    def get_devicecheck(self):
-        return self.__devicecheck
-
     def set_devicecheck(self, devicecheck):
         if isinstance(devicecheck, DeviceCheck):
             self.__devicecheck = devicecheck
             return True
         return False
-
-    def get_battery(self):
-        return self.__battery
 
     def set_battery(self, battery):
         if isinstance(battery, Battery):
@@ -179,17 +239,11 @@ class Tracker(Singleton):
             return True
         return False
 
-    def get_sensor(self):
-        return self.__sensor
-
     def set_sensor(self, sensor):
         if isinstance(sensor, Sensor):
             self.__sensor = sensor
             return True
         return False
-
-    def get_locator(self):
-        return self.__locator
 
     def set_locator(self, locator):
         if isinstance(locator, Location):
@@ -253,19 +307,19 @@ class Tracker(Singleton):
             "local_time": self.__get_local_time(),
         }
 
-        # Get Cloud Location Data
+        # Get cloud location data
         loc_info = self.locator.read(current_settings["app"]["loc_method"]) if self.locator else None
         if loc_info:
             loc_method_dict = {1: "GPS", 2: "CELL", 4: "WIFI"}
             log.debug("Location Data loc_method: %s" % loc_method_dict.get(loc_info[0], loc_info[0]))
             device_data.update(loc_info[1])
 
-        # Get GPS Speed
+        # Get gps speed
         over_speed_check_res = self.__device_speed_check()
         log.debug("over_speed_check_res: %s" % str(over_speed_check_res))
         device_data.update(over_speed_check_res)
 
-        # Get Battery Energy
+        # Get battery energy
         energy = self.battery.energy()
         device_data.update({
             "energy": energy,
@@ -275,19 +329,19 @@ class Tracker(Singleton):
             alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
             device_data.update(alert_data)
 
-        # Get OTA Status & Drive Behiver Code
+        # Get ota status & drive behiver code
         device_data.update({
             "ota_status": current_settings["sys"]["ota_status"],
             "drive_behavior_code": current_settings["sys"]["drive_behavior_code"],
         })
 
-        # Get APP Settings Info
+        # Get app settings info
         device_data.update(current_settings["app"])
 
-        # Format Loc Method
+        # Format loc method
         device_data.update({"loc_method": self.__format_loc_method(current_settings["app"]["loc_method"])})
 
-        # TODO: Add Other Machine Info.
+        # TODO: Add other machine info.
 
         return device_data
 
@@ -301,7 +355,7 @@ class Tracker(Singleton):
         log.debug("[x] post data topic [%s]" % topic)
         post_res = self.__controller.remote_post_data(device_data)
 
-        # OTA Status RST
+        # OTA status rst
         current_settings = settings.get()
         ota_status_info = current_settings["sys"]["ota_status"]
         if ota_status_info["upgrade_status"] in (3, 4):
@@ -323,7 +377,7 @@ class Tracker(Singleton):
         if current_settings["sys"]["user_ota_action"] != -1:
             self.__controller.settings_set("user_ota_action", -1)
 
-    # Do Cloud Event Down Command By Controller
+    # Do cloud event downlink option by controller
     def event_option(self, *args, **kwargs):
         # TODO: Data Type Passthrough (Not Support Now).
         return False
@@ -392,7 +446,7 @@ class Tracker(Singleton):
             ota_status_info = current_settings["sys"]["ota_status"]
             if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
                 ota_info = {}
-                if upgrade_info[0] == SYSNAME:
+                if upgrade_info[0] == DEVICE_FIRMWARE_NAME:
                     ota_info["upgrade_module"] = 1
                     ota_info["sys_target_version"] = upgrade_info[2]
                 elif upgrade_info[0] == PROJECT_NAME:
@@ -410,11 +464,38 @@ class Tracker(Singleton):
     def work_cycle_period(self, period):
         # Reset work_cycle_period & Reset RTC
         self.__controller.low_energy_rtc_enable(0)
+
+        self.__controller.low_energy_rtc_set_period(period)
+        method = self.__get_low_energy_method(period)
+        self.__controller.low_energy_rtc_set_method(method)
+
+        self.__controller.low_energy_rtc_init()
         self.__controller.low_energy_rtc_start()
 
     def cloud_init_params(self, params):
         self.__controller.settings_set("cloud_init_params", params)
-        self.__controllers.save()
+        self.__controller.settings_save()
+
+    def low_engery_rtc_option(self, low_energy_method):
+        current_settings = self.__controller.settings_get()
+        if current_settings["app"]["work_mode"] == default_values_app._work_mode.intelligent:
+            speed_info = self.__device_speed_check()
+            if speed_info.get("current_speed") > 0:
+                self.device_data_report()
+        else:
+            self.device_data_report()
+
+        self.__controller.low_energy_rtc_start()
+
+        if low_energy_method == "PSM":
+            # TODO: PSM option.
+            pass
+        elif low_energy_method == "POWERDOWN":
+            self.__controller.power_down()
+
+    def update(self, observable, *args, **kwargs):
+        if isinstance(observable, LowEnergyRTC):
+            self.low_engery_rtc_option(args[1])
 
 
 class DeviceCheck(object):
@@ -477,9 +558,7 @@ class Controller(Singleton):
         self.__power_key = None
         self.__usb = None
         self.__data_call = None
-
-    def get_remote(self):
-        return self.__remote
+        self.__ota_file_clear = None
 
     def set_remote(self, remote):
         if isinstance(remote, Remote):
@@ -493,17 +572,11 @@ class Controller(Singleton):
             return True
         return False
 
-    def get_low_energy_rtc(self):
-        return self.__low_energy_rtc
-
     def set_low_energy_rtc(self, low_energy_rtc):
         if isinstance(low_energy_rtc, LowEnergyRTC):
             self.__low_energy_rtc = low_energy_rtc
             return True
         return False
-
-    def get_energy_led(self):
-        return self.__energy_led
 
     def set_energy_led(self, energy_led):
         if isinstance(energy_led, LED):
@@ -511,17 +584,11 @@ class Controller(Singleton):
             return True
         return False
 
-    def get_running_led(self):
-        return self.__running_led
-
     def set_running_led(self, running_led):
         if isinstance(running_led, LED):
             self.__running_led = running_led
             return True
         return False
-
-    def get_power_key(self):
-        return self.__power_key
 
     def set_power_key(self, power_key, power_key_cb):
         if isinstance(power_key, PowerKey):
@@ -529,9 +596,6 @@ class Controller(Singleton):
             self.__power_key.powerKeyEventRegister(self.power_key_cb)
             return True
         return False
-
-    def get_usb(self):
-        return self.__usb
 
     def set_usb(self, usb, usb_cb):
         if isinstance(usb, USB):
@@ -541,14 +605,17 @@ class Controller(Singleton):
             return True
         return False
 
-    def get_data_call(self):
-        return self.__data_call
-
     def set_data_call(self, data_call, data_call_cb):
         if isinstance(data_call, dataCall):
             self.__data_call = data_call
             if data_call_cb:
                 self.__data_call.setCallback(data_call_cb)
+            return True
+        return False
+
+    def set_ota_file_clear(self, ota_file_clear):
+        if isinstance(ota_file_clear, OTAFileClear):
+            self.__ota_file_clear = ota_file_clear
             return True
         return False
 
@@ -584,8 +651,26 @@ class Controller(Singleton):
     def remote_ota_action(self, action, module):
         return self.__remote.cloud_ota_action(action, module)
 
+    def low_energy_rtc_init(self):
+        return self.__low_energy_rtc.low_energy_init()
+
     def low_energy_rtc_start(self):
         return self.__low_energy_rtc.start_rtc()
 
     def low_energy_rtc_enable(self, enable):
         return self.__low_energy_rtc.enable_alarm(enable)
+
+    def low_energy_rtc_set_period(self, period):
+        return self.__low_energy_rtc.set_period(period)
+
+    def low_energy_rtc_set_method(self, method):
+        return self.__low_energy_rtc.set_low_energy_method(method)
+
+    def ota_file_clean(self):
+        self.__ota_file_clear.file_clear()
+
+
+def tracker_main():
+    tracker = Tracker()
+    devicecheck = DeviceCheck()
+    tracker.set_devicecheck(devicecheck)

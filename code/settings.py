@@ -25,7 +25,8 @@ from usr.settings_sys import default_values_sys
 
 # For Other Module To Import
 from usr.settings_sys import PROJECT_NAME, PROJECT_VERSION, \
-    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, ALERTCODE, LOWENERGYMAP
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, ALERTCODE, LOWENERGYMAP, \
+    quec_object_model, quec_object_model_struct, ali_object_model
 
 PROJECT_NAME
 PROJECT_VERSION
@@ -33,6 +34,9 @@ DEVICE_FIRMWARE_NAME
 DEVICE_FIRMWARE_VERSION
 ALERTCODE
 LOWENERGYMAP
+quec_object_model
+quec_object_model_struct
+ali_object_model
 
 tracker_settings_file = "/usr/tracker_settings.json"
 

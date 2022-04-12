@@ -12,29 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from usr.tracker import Tracker
-from usr.settings import PROJECT_NAME
-from usr.settings import PROJECT_VERSION
-from usr.settings import SYSNAME
-from usr.settings import DEVICE_FIRMWARE_VERSION
 from usr.logging import getLogger
+from usr.tracker import tracker_main
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
 log = getLogger(__name__)
 
 
 def main():
     log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
-    log.info("SYSNAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (SYSNAME, DEVICE_FIRMWARE_VERSION))
+    log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
 
-    tracker = Tracker()
-    # Start Device Check
-    tracker.device_check()
-
-    # Start PowerManage
-    # Init Low Energy Work Mode
-    tracker.power_manage.low_energy_init()
-    # Start RTC
-    tracker.power_manage.start_rtc()
+    tracker_main()
 
 
 if __name__ == "__main__":

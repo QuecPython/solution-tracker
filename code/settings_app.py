@@ -14,9 +14,9 @@
 
 
 class default_values_app(object):
-    '''
+    """
     App default settings
-    '''
+    """
 
     class _loc_method(object):
         none = 0x0
@@ -35,11 +35,11 @@ class default_values_app(object):
         suddenly_turn_left = 0x2
         suddenly_turn_right = 0x3
 
-    '''
-    variables of App default settings below MUST NOT start with '_'
-    '''
+    """
+    variables of App default settings below MUST NOT start with "_"
+    """
 
-    phone_num = ''
+    phone_num = ""
 
     loc_method = _loc_method.all
 

@@ -88,7 +88,7 @@ class Observable(Singleton):
 
 class CloudObserver(object):
 
-    def do_event(self, observable, *args, **kwargs):
+    def execute(self, observable, *args, **kwargs):
         pass
 
 
@@ -105,9 +105,12 @@ class CloudObservable(Singleton):
 
     def notifyObservers(self, *args, **kwargs):
         for o in self.__observers:
-            o.do_event(self, *args, **kwargs)
+            o.execute(self, *args, **kwargs)
 
-    def cloud_init(self, enforce=False):
+    def init(self, enforce=False):
+        pass
+
+    def close(self):
         pass
 
     def post_data(self, data):

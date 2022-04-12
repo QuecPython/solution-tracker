@@ -14,7 +14,6 @@
 
 import pm
 import utime
-import modem
 import _thread
 
 from queue import Queue
@@ -22,12 +21,10 @@ from machine import RTC
 
 from usr.common import Observable
 from usr.logging import getLogger
-from usr.settings import settings
-from usr.settings import LOWENERGYMAP
 
 log = getLogger(__name__)
 
-LOW_ENERGY_METHOD = ("CYCLE", "PM", "PSM", "POWERDOWN")
+LOW_ENERGY_METHOD = ("NULL", "PM", "PSM", "POWERDOWN")
 
 
 class LowEnergyRTC(Observable):
@@ -36,7 +33,6 @@ class LowEnergyRTC(Observable):
         super().__init__()
 
         self.__period = 60
-        self.__work_mode = 0x1
         self.__low_energy_method = "PM"
         self.__thread_id = None
 
@@ -51,25 +47,6 @@ class LowEnergyRTC(Observable):
         self.enable_rtc(0)
         self.__low_energy_queue.put(self.__low_energy_method)
 
-    # TODO: Remove To Business Module
-    def __get_low_energy_method(self):
-        current_settings = settings.get()
-        device_model = modem.getDevModel()
-        support_methds = LOWENERGYMAP.get(device_model, [])
-        if support_methds:
-            if self.__period >= current_settings["sys"]["work_mode_timeline"]:
-                if "PSM" in support_methds:
-                    self.__low_energy_method = "PSM"
-                elif "POWERDOWN" in support_methds:
-                    self.__low_energy_method = "POWERDOWN"
-                elif "PM" in support_methds:
-                    self.__low_energy_method = "PM"
-            else:
-                if "PM" in support_methds:
-                    self.__low_energy_method = "PM"
-
-        return self.__low_energy_method
-
     def __low_energy_work(self, lowenergy_tag):
         while True:
             data = self.__low_energy_queue.get()
@@ -83,21 +60,16 @@ class LowEnergyRTC(Observable):
 
                 self.notifyObservers(self, *(data,))
 
+                if lowenergy_tag:
+                    wulk_res = pm.wakelock_unlock(self.__lpm_fd)
+                    log.debug("pm.wakelock_unlock %s." % ("Success" if wulk_res == 0 else "Falied"))
+
     def get_period(self):
         return self.__period
 
     def set_period(self, seconds=0):
         if isinstance(seconds, int) and seconds > 0:
             self.__period = seconds
-            return True
-        return False
-
-    def get_work_mode(self):
-        return self.__work_mode
-
-    def set_work_mode(self, work_mode):
-        if work_mode in (0x1, 0x2):
-            self.__work_mode = work_mode
             return True
         return False
 
@@ -125,7 +97,7 @@ class LowEnergyRTC(Observable):
                 self.__thread_id = _thread.start_new_thread(self.__low_energy_work, (True,))
                 self.__lpm_fd = pm.create_wakelock(self.__pm_lock_name, len(self.__pm_lock_name))
                 pm.autosleep(1)
-            elif self.__low_energy_method == "CYCLE":
+            elif self.__low_energy_method == "NULL":
                 self.__thread_id = _thread.start_new_thread(self.__low_energy_work, (False,))
             elif self.__low_energy_method in ("PSM", "POWERDOWN"):
                 pass

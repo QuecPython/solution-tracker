@@ -22,7 +22,8 @@ from usr.quecthing import QuecThing
 from usr.mpower import LowEnergyRTC
 from usr.common import Observable, Observer
 from usr.remote import RemoteSubcribe, RemotePublish
-from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION
+from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, \
+    quec_object_model, quec_object_model_struct
 
 log = Logger(__name__)
 
@@ -181,7 +182,7 @@ def test_location():
 
     locator = Location(gps_mode, locator_init_params)
     for loc_method in range(1, 8):
-        loc_data = locator.read(loc_method, read_all=True)
+        loc_data = locator.read(loc_method)
         if loc_method & 0x1:
             assert loc_data.get(0x1) not in ("", (), None), "[test_location] FAILED: locator.read(%s) loc_data: %s." % (loc_method, loc_data)
         if loc_method & 0x2:
@@ -219,8 +220,18 @@ def test_quecthing():
     locator_init_params = current_settings["sys"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
-    msg = "[test_quecthing] %s: cloud.cloud_init()."
-    assert cloud.cloud_init(), msg % "FAILED"
+    msg = "[test_quecthing] %s: cloud.set_object_model(%s)."
+    assert cloud.set_object_model(quec_object_model), msg % ("FAILED", quec_object_model)
+    print(msg % ("SUCCESS", quec_object_model))
+    res["success"] += 1
+
+    msg = "[test_quecthing] %s: cloud.set_object_model_struct(%s)."
+    assert cloud.set_object_model_struct(quec_object_model_struct), msg % ("FAILED", quec_object_model_struct)
+    print(msg % ("SUCCESS", quec_object_model_struct))
+    res["success"] += 1
+
+    msg = "[test_quecthing] %s: cloud.init()."
+    assert cloud.init(), msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
@@ -254,8 +265,8 @@ def test_quecthing():
     # assert cloud.ota_action() is True, msg % ("FAILED",)
     # print(msg % ("SUCCESS",))
 
-    msg = "[test_quecthing] %s: cloud.cloud_close()."
-    assert cloud.cloud_close(), msg % "FAILED"
+    msg = "[test_quecthing] %s: cloud.close()."
+    assert cloud.close(), msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
@@ -352,17 +363,6 @@ def test_low_energy_rtc():
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    work_mode = 0x1
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_work_mode(%s)."
-    assert low_energy_rtc.set_work_mode(work_mode), msg % ("FAILED", work_mode)
-    print(msg % ("SUCCESS", work_mode))
-    res["success"] += 1
-
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_work_mode()."
-    assert low_energy_rtc.get_work_mode() == work_mode, msg % "FAILED"
-    print(msg % "SUCCESS")
-    res["success"] += 1
-
     low_energy_method = "PM"
     msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_low_energy_method(%s)."
     assert low_energy_rtc.set_low_energy_method(low_energy_method), msg % ("FAILED", low_energy_method)
@@ -404,13 +404,13 @@ def test_tracker():
 
 
 def main():
-    test_logger()
-    test_settings()
-    test_battery()
-    test_history()
-    test_location()
-    test_quecthing()
-    test_remote()
+    # test_logger()
+    # test_settings()
+    # test_battery()
+    # test_history()
+    # test_location()
+    # test_quecthing()
+    # test_remote()
     test_low_energy_rtc()
 
 

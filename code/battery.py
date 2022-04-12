@@ -69,19 +69,18 @@ class Battery(object):
             else:
                 return self.__get_soc_from_dict(20, volt_arg)
 
-    def get_temp(self):
-        return self.__temp
-
     def set_temp(self, temp):
-        # TODO: Get temp from sensor
+        # Set now temperature.
         if isinstance(temp, int) or isinstance(temp, float):
             self.__temp = temp
             return True
         return False
 
     def get_voltage(self):
-        return Power.getVbatt()
+        # Get voltage from vbat
+        # TODO: Get voltage by ADC
+        return int(sum([Power.getVbatt() for i in range(100)]) / 100)
 
     def get_energy(self):
-        self.__energy = self.__get_soc(self.get_temp(), self.get_voltage())
+        self.__energy = self.__get_soc(self.__temp, self.get_voltage())
         return self.__energy

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import ure
-import utime
 import osTimer
 import _thread
 import cellLocator
@@ -50,9 +49,9 @@ class _gps_mode(object):
     external = 0x2
 
 
-class GPSParsing(object):
+class GPSMatch(object):
 
-    def read_GxRMC(self, gps_data):
+    def GxRMC(self, gps_data):
         rmc_re = ure.search(
             r"\$G[NP]RMC,\d+\.\d+,[AV],\d+\.\d+,[NS],\d+\.\d+,[EW],\d+\.\d+,\d+\.\d+,\d+,\d*\.*\d*,[EW]*,[ADEN]*,[SCUV]*\**(\d|\w)*",
             gps_data)
@@ -60,7 +59,7 @@ class GPSParsing(object):
             return rmc_re.group(0)
         return ""
 
-    def read_GxGGA(self, gps_data):
+    def GxGGA(self, gps_data):
         gga_re = ure.search(
             r"\$G[BLPN]GGA,\d+\.\d+,\d+\.\d+,[NS],\d+\.\d+,[EW],[0126],\d+,\d+\.\d+,-*\d+\.\d+,M,-*\d+\.\d+,M,\d*,\**(\d|\w)*",
             gps_data)
@@ -68,232 +67,263 @@ class GPSParsing(object):
             return gga_re.group(0)
         return ""
 
-    def read_GxGGA_satellite_num(self, gps_data):
-        gga_data = self.read_GxGGA(gps_data)
-        if gga_data:
-            satellite_num_re = ure.search(r",[EW],[0126],\d+,", gga_data)
-            if satellite_num_re:
-                return satellite_num_re.group(0).split(",")[-2]
-        return ""
-
-    def read_GxVTG(self, gps_data):
+    def GxVTG(self, gps_data):
         vtg_re = ure.search(r"\$G[NP]VTG,\d+\.\d+,T,\d*\.*\d*,M,\d+\.\d+,N,\d+\.\d+,K,[ADEN]*\*(\d|\w)*", gps_data)
         if vtg_re:
             return vtg_re.group(0)
         return ""
 
-    def read_GxVTG_speed(self, gps_data):
-        vtg_data = self.read_GxVTG(gps_data)
-        if vtg_data:
-            speed_re = ure.search(r",N,\d+\.\d+,K,", vtg_data)
-            if speed_re:
-                return speed_re.group(0)[3:-3]
-        return ""
-
-    def read_GxGSV(self, gps_data):
+    def GxGSV(self, gps_data):
         gsv_re = ure.search(r"\$G[NP]GSV,\d+,\d+,\d+,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*\**(\d|\w)*", gps_data)
         if gsv_re:
             return gsv_re.group(0)
 
         return ""
 
-    def read_GxGSV_satellite_num(self, gps_data):
-        gsv_data = self.read_GxGSV(gps_data)
+
+class GPSParse(object):
+
+    def GxGGA_satellite_num(self, gga_data):
+        if gga_data:
+            satellite_num_re = ure.search(r",[EW],[0126],\d+,", gga_data)
+            if satellite_num_re:
+                return satellite_num_re.group(0).split(",")[-2]
+        return ""
+
+    def GxVTG_speed(self, vtg_data):
+        if vtg_data:
+            speed_re = ure.search(r",N,\d+\.\d+,K,", vtg_data)
+            if speed_re:
+                return speed_re.group(0)[3:-3]
+        return ""
+
+    def GxGSV_satellite_num(self, gsv_data):
         if gsv_data:
             satellite_num_re = ure.search(r"\$G[NP]GSV,\d+,\d+,\d+,", gsv_data)
             if satellite_num_re:
                 return satellite_num_re.group(0).split(",")[-2]
         return ""
 
+    def GxGGA_latitude(self, gga_data):
+        if gga_data:
+            latitude_re = ure.search(r",[0-9]+\.[0-9]+,[NS],", gga_data)
+            if latitude_re:
+                return latitude_re.group(0)[1:-3]
+        return ""
+
+    def GxGGA_longtitude(self, gga_data):
+        if gga_data:
+            longtitude_re = ure.search(r",[0-9]+\.[0-9]+,[EW],", gga_data)
+            if longtitude_re:
+                return longtitude_re.group(0)[1:-3]
+        return ""
+
+    def GxGGA_altitude(self, gga_data):
+        if gga_data:
+            altitude_re = ure.search(r",-*[0-9]+\.[0-9]+,M,", gga_data)
+            if altitude_re:
+                return altitude_re.group(0)[1:-3]
+        return ""
+
 
 class GPS(Singleton):
     def __init__(self, gps_cfg, gps_mode):
-        self.gps_cfg = gps_cfg
-        self.gps_mode = gps_mode
-        self.uart_obj = None
-        self.gnss_obj = quecgnss
-        self.gps_parsing = GPSParsing()
+        self.__gps_cfg = gps_cfg
+        self.__gps_mode = gps_mode
+        self.__external_obj = None
+        self.__internal_obj = quecgnss
+        self.__gps_match = GPSMatch()
+        self.__gps_parse = GPSParse()
 
-        self.__uart_retrieve_queue = None
+        self.__external_retrieve_queue = None
         self.__first_break = 0
-        self.__second_break = 0
+        self.__break = 0
+        self.__gps_data = ""
+        self.__rmc_data = ""
+        self.__gga_data = ""
+        self.__vtg_data = ""
+        self.__gsv_data = ""
         self.__gps_timer = osTimer()
+        self.__gps_clean_timer = osTimer()
 
-        if self.gps_mode & _gps_mode.external:
-            self._uart_init()
-        elif self.gps_mode & _gps_mode.internal:
-            self._gnss_init()
+        if self.__gps_mode & _gps_mode.external:
+            self.__external_init()
+        elif self.__gps_mode & _gps_mode.internal:
+            self.__internal_init()
 
-    def _uart_init(self):
-        self.__uart_retrieve_queue = Queue(maxsize=8)
-        self._uart_open()
+    def __first_gps_timer_callback(self, args):
+        self.__first_break = 1
+        if self.__external_retrieve_queue is not None:
+            self.__external_retrieve_queue.put(0)
 
-    def _uart_open(self):
-        self.uart_obj = UART(
-            self.gps_cfg["UARTn"], self.gps_cfg["buadrate"], self.gps_cfg["databits"],
-            self.gps_cfg["parity"], self.gps_cfg["stopbits"], self.gps_cfg["flowctl"]
+    def __gps_timer_callback(self, args):
+        self.__break = 1
+        if self.__external_retrieve_queue is not None:
+            self.__external_retrieve_queue.put(0)
+
+    def __gps_clean_cb(self, args):
+        if self.__break == 0:
+            self.__gps_data = ""
+            self.__rmc_data = ""
+            self.__gga_data = ""
+            self.__vtg_data = ""
+            self.__gsv_data = ""
+
+    def __external_init(self):
+        self.__external_retrieve_queue = Queue(maxsize=8)
+        self.__external_open()
+
+    def __external_open(self):
+        self.__external_obj = UART(
+            self.__gps_cfg["UARTn"], self.__gps_cfg["buadrate"], self.__gps_cfg["databits"],
+            self.__gps_cfg["parity"], self.__gps_cfg["stopbits"], self.__gps_cfg["flowctl"]
         )
-        self.uart_obj.set_callback(self._uart_retrieve_cb)
+        self.__external_obj.set_callback(self.__external_retrieve_cb)
 
-    def _uart_close(self):
-        self.uart_obj.close()
+    def __external_close(self):
+        self.__external_obj.close()
 
-    def _uart_retrieve_cb(self, args):
+    def __external_retrieve_cb(self, args):
         """
         GPS data retrieve callback from UART
         When data comes, send a message to queue of data length
         """
         toRead = args[2]
-        log.debug("GPS _uart_retrieve_cb args: %s" % str(args))
+        log.debug("GPS __external_retrieve_cb args: %s" % str(args))
         if toRead:
-            if self.__uart_retrieve_queue.size() >= 8:
-                self.__uart_retrieve_queue.get()
-            self.__uart_retrieve_queue.put(toRead)
+            if self.__external_retrieve_queue.size() >= 8:
+                self.__external_retrieve_queue.get()
+            self.__external_retrieve_queue.put(toRead)
 
-    def _gnss_init(self):
-        if self.gnss_obj:
-            if self.gnss_obj.init() != 0:
-                self._gnss_open()
+    def __internal_init(self):
+        if self.__internal_obj:
+            if self.__internal_obj.init() != 0:
+                self.__insternal_open()
                 log.error("GNSS INIT Failed.")
             else:
                 log.debug("GNSS INIT Success.")
         else:
             log.error("Module quecgnss Import Error.")
 
-    def _gnss_open(self):
-        if self.gnss_obj.get_state() == 0:
-            self.gnss_obj.gnssEnable(1)
+    def __insternal_open(self):
+        if self.__internal_obj.get_state() == 0:
+            self.__internal_obj.gnssEnable(1)
 
-    def _gnss_close(self):
-        self.gnss_obj.gnssEnable(0)
-
-    def _first_gps_timer_callback(self, args):
-        self.__first_break = 1
-        if self.__uart_retrieve_queue is not None:
-            self.__uart_retrieve_queue.put(0)
-
-    def _second_gps_timer_callback(self, args):
-        self.__second_break = 1
-        if self.__uart_retrieve_queue is not None:
-            self.__uart_retrieve_queue.put(0)
-
-    def _uart_read(self):
-        self._uart_open()
-        log.debug("_uart_read start")
-
-        while self.__first_break == 0:
-            self.__gps_timer.start(50, 0, self._first_gps_timer_callback)
-            nread = self.__uart_retrieve_queue.get()
-            log.debug("__first_break nread: %s" % nread)
-            data = self.uart_obj.read(nread).decode()
-            self.__gps_timer.stop()
-        self.__first_break = 0
-
-        data = ""
-        rmc_data = ""
-        gga_data = ""
-        vtg_data = ""
-        gsv_data = ""
-        while self.__second_break == 0:
-            get_flag = False
-            self.__gps_timer.start(1500, 0, self._second_gps_timer_callback)
-            nread = self.__uart_retrieve_queue.get()
-            log.debug("__second_break nread: %s" % nread)
-            if nread:
-                if not rmc_data:
-                    rmc_data = self.gps_parsing.read_GxRMC(data)
-                    get_flag = True
-                if not gga_data:
-                    gga_data = self.gps_parsing.read_GxGGA(data)
-                    get_flag = True
-                if not vtg_data:
-                    vtg_data = self.gps_parsing.read_GxVTG(data)
-                    get_flag = True
-                if not gsv_data:
-                    gsv_data = self.gps_parsing.read_GxGSV(data)
-                    get_flag = True
-                if get_flag:
-                    data += self.uart_obj.read(nread).decode()
-                if rmc_data and gga_data and vtg_data and gsv_data:
-                    self.__second_break = 1
-            self.__gps_timer.stop()
-        log.debug("__second_break(_uart_read) data: %s" % data)
-        self.__second_break = 0
-
-        self._uart_close()
-        return data
-
-    def _quecgnss_read(self):
-        self._gnss_init()
-
-        while self.__first_break == 0:
-            self.__gps_timer.start(50, 0, self._first_gps_timer_callback)
-            data = quecgnss.read(1024)
-            self.__gps_timer.stop()
-        self.__first_break = 0
-
-        data = ""
-        rmc_data = ""
-        gga_data = ""
-        vtg_data = ""
-        gsv_data = ""
-        count = 0
-        while self.__second_break == 0:
-            get_flag = False
-            self.__gps_timer.start(1500, 0, self._second_gps_timer_callback)
-            gnss_data = quecgnss.read(1024)
-            if gnss_data and gnss_data[1]:
-                if not rmc_data:
-                    rmc_data = self.gps_parsing.read_GxRMC(data)
-                    get_flag = True
-                if not gga_data:
-                    gga_data = self.gps_parsing.read_GxGGA(data)
-                    get_flag = True
-                if not vtg_data:
-                    vtg_data = self.gps_parsing.read_GxVTG(data)
-                    get_flag = True
-                if not gsv_data:
-                    gsv_data = self.gps_parsing.read_GxGSV(data)
-                    get_flag = True
-                if get_flag:
-                    data += gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ""
-                if rmc_data and gga_data and vtg_data and gsv_data:
-                    self.__second_break = 1
-            self.__gps_timer.stop()
-
-            if count > 5:
-                self.__second_break = 1
-            count += 1
-            utime.sleep_ms(300)
-        self.__second_break = 0
-
-        self._gnss_close()
-        return data
+    def __internal_close(self):
+        self.__internal_obj.gnssEnable(0)
 
     @option_lock(_gps_read_lock)
+    def __external_read(self):
+        self.__external_open()
+        log.debug("__external_read start")
+
+        while self.__break == 0:
+            self.__gps_timer.start(50, 0, self.__gps_timer_callback)
+            nread = self.__external_retrieve_queue.get()
+            log.debug("[first] nread: %s" % nread)
+            self.__gps_data = self.__external_obj.read(nread).decode()
+        self.__break = 0
+
+        self.__gps_data = ""
+        self.__rmc_data = ""
+        self.__gga_data = ""
+        self.__vtg_data = ""
+        self.__gsv_data = ""
+        self.__gps_clean_timer.start(1050, 1, self.__gps_clean_cb)
+        while self.__break == 0:
+            self.__gps_timer.start(1500, 0, self.__gps_timer_callback)
+            nread = self.__external_retrieve_queue.get()
+            log.debug("[second] nread: %s" % nread)
+            if nread:
+                self.__gps_data += self.__external_obj.read(nread).decode()
+                if not self.__rmc_data:
+                    self.__rmc_data = self.__gps_match.GxRMC(self.__gps_data)
+                if not self.__gga_data:
+                    self.__gga_data = self.__gps_match.GxGGA(self.__gps_data)
+                if not self.__vtg_data:
+                    self.__vtg_data = self.__gps_match.GxVTG(self.__gps_data)
+                if not self.__gsv_data:
+                    self.__gsv_data = self.__gps_match.GxGSV(self.__gps_data)
+                if self.__rmc_data and self.__gga_data and self.__vtg_data and self.__gsv_data:
+                    self.__break = 1
+            self.__gps_timer.stop()
+        self.__gps_clean_timer.stop()
+        self.__break = 0
+
+        self.__external_close()
+        log.debug("__external_read data: %s" % self.__gps_data)
+        return self.__gps_data
+
+    @option_lock(_gps_read_lock)
+    def __internal_read(self):
+        self.__external_open()
+
+        while self.__break == 0:
+            self.__gps_timer.start(50, 0, self.__gps_timer_callback)
+            self.__gps_data = quecgnss.read(1024)
+            self.__gps_timer.stop()
+        self.__break = 0
+
+        self.__gps_data = ""
+        self.__rmc_data = ""
+        self.__gga_data = ""
+        self.__vtg_data = ""
+        self.__gsv_data = ""
+        self.__gps_clean_timer.start(1050, 1, self.__gps_clean_cb)
+        while self.__break == 0:
+            self.__gps_timer.start(1500, 0, self.__gps_timer_callback)
+            gnss_data = quecgnss.read(1024)
+            if gnss_data and gnss_data[1]:
+                self.__gps_data += gnss_data[1].decode() if len(gnss_data) > 1 and gnss_data[1] else ""
+                if not self.__rmc_data:
+                    self.__rmc_data = self.__gps_match.GxRMC(self.__gps_data)
+                if not self.__gga_data:
+                    self.__gga_data = self.__gps_match.GxGGA(self.__gps_data)
+                if not self.__vtg_data:
+                    self.__vtg_data = self.__gps_match.GxVTG(self.__gps_data)
+                if not self.__gsv_data:
+                    self.__gsv_data = self.__gps_match.GxGSV(self.__gps_data)
+                if self.__rmc_data and self.__gga_data and self.__vtg_data and self.__gsv_data:
+                    self.__break = 1
+            self.__gps_timer.stop()
+        self.__gps_clean_timer.stop()
+        self.__break = 0
+
+        self.__internal_close()
+        return self.__gps_data
+
     def read(self):
         res = -1
         gps_data = ""
-        if self.gps_mode & _gps_mode.external:
-            gps_data = self._uart_read()
-        elif self.gps_mode & _gps_mode.internal:
-            gps_data = self._quecgnss_read()
+        if self.__gps_mode & _gps_mode.external:
+            gps_data = self.__external_read()
+        elif self.__gps_mode & _gps_mode.internal:
+            gps_data = self.__internal_read()
 
         # TODO: Disable Output Satellite Num:
         if gps_data:
-            gga_satellite = self.gps_parsing.read_GxGGA_satellite_num(gps_data)
+            gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(gps_data))
             log.debug("GxGGA Satellite Num %s" % gga_satellite)
-            gsv_satellite = self.gps_parsing.read_GxGSV_satellite_num(gps_data)
+            gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(gps_data))
             log.debug("GxGSV Satellite Num %s" % gsv_satellite)
             res = 0
 
         return (res, gps_data)
 
-    def start(self):
+    def read_latitude(self, gps_data):
+        return self.__gps_parse.GxGGA_latitude(self.__gps_match.GxGGA(gps_data))
+
+    def read_longtitude(self, gps_data):
+        return self.__gps_parse.GxGGA_longtitude(self.__gps_match.GxGGA(gps_data))
+
+    def read_altitude(self, gps_data):
+        return self.__gps_parse.GxGGA_altitude(self.__gps_match.GxGGA(gps_data))
+
+    def on(self):
         # TODO: Set GPS ON
         return True
 
-    def stop(self):
+    def off(self):
         # TODO: Set GPS OFF
         return True
 
@@ -342,7 +372,7 @@ class Location(Singleton):
     wifiLoc = None
 
     def __init__(self, gps_mode, locator_init_params):
-        self.gps_mode = gps_mode
+        self.__gps_mode = gps_mode
         self.locator_init_params = locator_init_params
 
     def __locater_init(self, loc_method):
@@ -350,7 +380,7 @@ class Location(Singleton):
         if loc_method & _loc_method.gps:
             if self.gps is None:
                 if self.locator_init_params.get("gps_cfg"):
-                    self.gps = GPS(self.locator_init_params["gps_cfg"], self.gps_mode)
+                    self.gps = GPS(self.locator_init_params["gps_cfg"], self.__gps_mode)
                 else:
                     raise ValueError("Invalid gps init parameters.")
         else:
@@ -389,13 +419,11 @@ class Location(Singleton):
             return self.wifiLoc.read()[1]
         return ()
 
-    def read(self, loc_method, read_all=False):
+    def read(self, loc_method):
         """
-        1. If read_all Is False
-        1.1. Get GPS If loc_method Include GPS And GPS Data Exist;
-        1.2. Get Cell If loc_method Inculde Cell And Not GPS Data;
-        1.3. Get Wifi If loc_method Include Wifi And Not Cell Data;
-        2. If read_all Is True, Return loc_method Include All Loc Method Data.
+        1. If loc_method include gps then get gps data;
+        2. If loc_method inculde cell then get cell data;
+        3. If loc_method Include wifi then get wifi data;
 
         Return Data Format:
 
@@ -410,17 +438,11 @@ class Location(Singleton):
 
         if loc_method & _loc_method.gps:
             loc_data[_loc_method.gps] = self.__read_gps()
-            if read_all is False:
-                return loc_data
 
         if loc_method & _loc_method.cell:
             loc_data[_loc_method.cell] = self.__read_cell()
-            if read_all is False:
-                return loc_data
 
         if loc_method & _loc_method.wifi:
             loc_data[_loc_method.wifi] = self.__read_wifi()
-            if read_all is False:
-                return loc_data
 
         return loc_data
