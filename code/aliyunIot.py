@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ure
 import ujson
 import utime
 import modem
@@ -21,56 +20,18 @@ import osTimer
 
 from aLiYun import aLiYun
 
-from usr.common import numiter
-from usr.common import option_lock
-from usr.common import CloudObservable
 from usr.logging import getLogger
+from usr.common import numiter, option_lock, CloudObservable, CloudObjectModel
 
 log = getLogger(__name__)
 
 _gps_read_lock = _thread.allocate_lock()
 
 
-class AliObjectModule(object):
+class AliObjectModel(CloudObjectModel):
 
     def __init__(self):
-        self.event = {}
-        self.property = {}
-
-    def add_item(self, name, data_type, struct_info={}):
-        om_data = {
-            "name": name,
-            "data_type": data_type,
-            "struct_info": struct_info,
-        }
-        if data_type == "event":
-            if self.event.get(name) is None:
-                self.event[name] = om_data
-                return True
-        elif data_type == "property":
-            if self.property.get(name) is None:
-                self.property[name] = om_data
-                return True
-        return False
-
-    def update_item(self, name, data_type, struct_info={}):
-        if self.items.get(name) is not None:
-            self.del_item(name, data_type)
-            self.add_item(name, data_type, struct_info)
-            return True
-        return False
-
-    def del_item(self, name, data_type):
-        if data_type == "event":
-            if self.event.get(name) is not None:
-                self.event.pop(name)
-        elif data_type == "property":
-            if self.property.get(name) is not None:
-                self.property.pop(name)
-        else:
-            return False
-
-        return True
+        super().__init__()
 
 
 class AliYunIot(CloudObservable):
@@ -137,7 +98,7 @@ class AliYunIot(CloudObservable):
 
     @option_lock(_gps_read_lock)
     def __get_post_res(self, msg_id):
-        self.__ali_timer.start(5 * 1000, 0, self.__ali_timer_cb)
+        self.__ali_timer.start(1000 * 10, 0, self.__ali_timer_cb)
         while self.__post_res.get(msg_id) is None:
             if self.__breack_flag:
                 self.__post_res[msg_id] = False
@@ -159,7 +120,7 @@ class AliYunIot(CloudObservable):
             log.error("Topic [%s] Subscribe Falied." % self.ica_topic_property_get)
         if self.__ali.subscribe(self.ica_topic_property_query, qos=0) == -1:
             log.error("Topic [%s] Subscribe Falied." % self.ica_topic_property_query)
-        for tsl_event_identifier in self.__object_model.event.keys():
+        for tsl_event_identifier in self.__object_model.items["event"].keys():
             post_topic = self.ica_topic_event_post.format(tsl_event_identifier)
             if self.__ali.subscribe(post_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % post_topic)
@@ -207,8 +168,8 @@ class AliYunIot(CloudObservable):
             self.__put_post_res(data["id"], True if int(data["code"]) == 200 else False)
             if data["code"] == 200:
                 self.notifyObservers(self, *("ota_file_download", data["data"]))
-        elif topic.find('/rrpc/request/') != -1:
-            self.notifyObservers(self, *('rrpc_request', topic, data))
+        elif topic.find("/rrpc/request/") != -1:
+            self.notifyObservers(self, *("rrpc_request", topic, data))
         else:
             pass
 
@@ -218,12 +179,12 @@ class AliYunIot(CloudObservable):
         event_params = {}
         # Format Publish Params.
         for k, v in data.items():
-            if k in self.__object_model.property.keys():
+            if k in self.__object_model.items["property"].keys():
                 property_params[k] = {
                     "value": v,
                     "time": utime.mktime(utime.localtime()) * 1000
                 }
-            elif k in self.__object_model.event.keys():
+            elif k in self.__object_model.items["event"].keys():
                 event_params[k] = {
                     "value": {},
                     "time": utime.mktime(utime.localtime()) * 1000
@@ -265,7 +226,7 @@ class AliYunIot(CloudObservable):
         return res
 
     def set_object_model(self, object_model):
-        if object_model and isinstance(object_model, AliObjectModule):
+        if object_model and isinstance(object_model, AliObjectModel):
             self.__object_model = object_model
             return True
         return False
@@ -305,6 +266,7 @@ class AliYunIot(CloudObservable):
 
     def close(self):
         self.__ali.disconnect()
+        return True
 
     def post_data(self, data):
         if self.__ali.getAliyunSta() == 0:
@@ -316,7 +278,7 @@ class AliYunIot(CloudObservable):
                 # Publish Event Data.
                 for item in publish_data["event"]:
                     self.__ali.publish(publish_data["event_topic"][item["id"]], ujson.dumps(item), qos=0)
-                 pub_res = [self.__get_post_res(msg_id) for msg_id in publish_data["msg_ids"]]
+                pub_res = [self.__get_post_res(msg_id) for msg_id in publish_data["msg_ids"]]
                 return True if False not in pub_res else False
             except Exception:
                 log.error("AliYun publish topic %s failed. data: %s" % (data.get("topic"), data.get("data")))

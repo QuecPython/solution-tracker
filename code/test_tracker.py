@@ -15,15 +15,18 @@
 import utime
 
 from usr.logging import Logger
+from usr.tracker import Tracker
 from usr.battery import Battery
 from usr.history import History
 from usr.location import Location
-from usr.quecthing import QuecThing
+from usr.quecthing import QuecThing, QuecObjectModel
+from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.mpower import LowEnergyRTC
 from usr.common import Observable, Observer
 from usr.remote import RemoteSubcribe, RemotePublish
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, \
-    quec_object_model, quec_object_model_struct
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
+    quec_object_model, ali_object_model, default_values_sys
 
 log = Logger(__name__)
 
@@ -202,7 +205,7 @@ def test_quecthing():
 
     settings = Settings()
     current_settings = settings.get()
-    cloud_init_params = current_settings["sys"]["cloud_init_params"]
+    cloud_init_params = default_values_sys._quecIot
 
     cloud = QuecThing(
         cloud_init_params["PK"],
@@ -216,18 +219,18 @@ def test_quecthing():
     remote_sub = RemoteSubcribe()
     cloud.addObserver(remote_sub)
 
+    tracker = Tracker()
+    quec_om = QuecObjectModel()
+    tracker.set_cloud_om(quec_om)
+    tracker.init_cloud_object_module(quec_object_model)
+
     gps_mode = 0x2
     locator_init_params = current_settings["sys"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
     msg = "[test_quecthing] %s: cloud.set_object_model(%s)."
-    assert cloud.set_object_model(quec_object_model), msg % ("FAILED", quec_object_model)
-    print(msg % ("SUCCESS", quec_object_model))
-    res["success"] += 1
-
-    msg = "[test_quecthing] %s: cloud.set_object_model_struct(%s)."
-    assert cloud.set_object_model_struct(quec_object_model_struct), msg % ("FAILED", quec_object_model_struct)
-    print(msg % ("SUCCESS", quec_object_model_struct))
+    assert cloud.set_object_model(tracker.cloud_om), msg % ("FAILED", tracker.cloud_om)
+    print(msg % ("SUCCESS", tracker.cloud_om))
     res["success"] += 1
 
     msg = "[test_quecthing] %s: cloud.init()."
@@ -235,17 +238,10 @@ def test_quecthing():
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    msg = "[test_quecthing] %s: cloud.get_loc_data(%s, %s) %s."
-    loc_method = 0x2
-    loc_data = ""
-    quec_loc_data = cloud.get_loc_data(loc_method, loc_data)
-    assert quec_loc_data == {"non_gps": ["LBS"]}, msg % ("FAILED", loc_method, loc_data, quec_loc_data)
-    print(msg % ("SUCCESS", loc_method, loc_data, quec_loc_data))
-    res["success"] += 1
-
+    msg = "[test_quecthing] %s: tracker.__get_quec_loc_data(%s, %s) %s."
     loc_method = 0x1
     loc_data = locator.read(loc_method)
-    quec_loc_data = cloud.get_loc_data(loc_method, loc_data.get(loc_method))
+    quec_loc_data = tracker.__get_quec_loc_data(loc_method, loc_data.get(loc_method))
     assert quec_loc_data != "", msg % ("FAILED", loc_method, loc_data, quec_loc_data)
     print(msg % ("SUCCESS", loc_method, loc_data, quec_loc_data))
     res["success"] += 1
@@ -272,6 +268,84 @@ def test_quecthing():
 
     res["all"] = res["success"] + res["failed"]
     print("[test_quecthing] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
+
+
+def test_aliyuniot():
+    res = {"all": 0, "success": 0, "failed": 0}
+
+    settings = Settings()
+    current_settings = settings.get()
+    cloud_init_params = default_values_sys._AliYun
+
+    cloud = AliYunIot(
+        cloud_init_params["PK"],
+        cloud_init_params["PS"],
+        cloud_init_params["DK"],
+        cloud_init_params["DS"],
+        cloud_init_params["SERVER"],
+        burning_method=1,
+        mcu_name=PROJECT_NAME,
+        mcu_version=PROJECT_VERSION,
+        firmware_name=DEVICE_FIRMWARE_NAME,
+        firmware_version=DEVICE_FIRMWARE_VERSION
+    )
+    remote_sub = RemoteSubcribe()
+    cloud.addObserver(remote_sub)
+
+    tracker = Tracker()
+    ali_om = AliObjectModel()
+    tracker.set_cloud_om(ali_om)
+    tracker.init_cloud_object_module(ali_object_model)
+
+    gps_mode = 0x2
+    locator_init_params = current_settings["sys"]["locator_init_params"]
+    locator = Location(gps_mode, locator_init_params)
+
+    msg = "[test_aliyuniot] %s: cloud.set_object_model(%s)."
+    assert cloud.set_object_model(tracker.cloud_om), msg % ("FAILED", tracker.cloud_om)
+    print(msg % ("SUCCESS", tracker.cloud_om))
+    res["success"] += 1
+
+    msg = "[test_aliyuniot] %s: cloud.init()."
+    assert cloud.init(), msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    msg = "[test_aliyuniot] %s: tracker.__get_ali_loc_data(%s, %s) %s."
+    loc_method = 0x1
+    loc_data = locator.read(loc_method)
+    ali_loc_data = tracker.__get_ali_loc_data(loc_method, loc_data.get(loc_method))
+    assert ali_loc_data != "", msg % ("FAILED", loc_method, loc_data, ali_loc_data)
+    print(msg % ("SUCCESS", loc_method, loc_data, ali_loc_data))
+    res["success"] += 1
+
+    msg = "[test_aliyuniot] %s: cloud.post_data(%s)."
+    assert cloud.post_data(ali_loc_data), msg % ("FAILED", str(ali_loc_data))
+    print(msg % ("SUCCESS", str(ali_loc_data)))
+    res["success"] += 1
+
+    msg = "[test_aliyuniot] %s: cloud.ota_request()."
+    assert cloud.ota_request(), msg % ("FAILED",)
+    print(msg % ("SUCCESS",))
+    res["success"] += 1
+
+    msg = "[test_aliyuniot] %s: cloud.device_report()."
+    assert cloud.device_report(), msg % ("FAILED",)
+    print(msg % ("SUCCESS",))
+    res["success"] += 1
+
+    # # PASS: No OTA Plain, ota_action Return False
+    # msg = "[test_aliyuniot] %s: cloud.ota_action()."
+    # assert cloud.ota_action() is True, msg % ("FAILED",)
+    # print(msg % ("SUCCESS",))
+
+    msg = "[test_aliyuniot] %s: cloud.close()."
+    assert cloud.close() and cloud.__ali.getAliyunSta() != 0, msg % "FAILED"
+    print(msg % "SUCCESS")
+    res["success"] += 1
+
+    res["all"] = res["success"] + res["failed"]
+    print("[test_aliyuniot] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
 def test_remote():
@@ -410,8 +484,9 @@ def main():
     # test_history()
     # test_location()
     # test_quecthing()
+    test_aliyuniot()
     # test_remote()
-    test_low_energy_rtc()
+    # test_low_energy_rtc()
 
 
 if __name__ == "__main__":

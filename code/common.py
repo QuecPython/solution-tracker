@@ -121,3 +121,44 @@ class CloudObservable(Singleton):
 
     def ota_action(self, action, module=None):
         pass
+
+
+class CloudObjectModel(Singleton):
+
+    def __init__(self):
+        self.items = {
+            "event": {},
+            "property": {},
+        }
+
+    def set_item(self, om_type, om_key, om_key_id=None, om_key_perm=None):
+        om_data = {
+            "name": om_key,
+            "id": om_key_id,
+            "perm": om_key_perm,
+            "struct_info": {}
+        }
+        if self.items.get(om_type) is not None:
+            self.items[om_type][om_key] = om_data
+            return True
+        return False
+
+    def del_item(self, om_type, om_key):
+        if self.items.get(om_type) is not None:
+            if self.items[om_type].get(om_key) is not None:
+                self.items[om_type].pop(om_key)
+                return True
+        return False
+
+    def set_item_struct(self, om_type, om_key, struct_key, struct_key_id=None, struct_key_struct=None):
+        if self.items.get(om_type) is not None:
+            if self.items[om_type].get(om_key) is not None:
+                if self.items[om_type][om_key].get("struct_info") is None:
+                    self.items[om_type][om_key]["struct_info"] = {}
+                self.items[om_type][om_key]["struct_info"][struct_key] = {
+                    "name": struct_key,
+                    "id": struct_key_id,
+                    "struct_info": struct_key_struct,
+                }
+                return True
+        return False

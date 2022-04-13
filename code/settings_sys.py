@@ -54,111 +54,496 @@ LOWENERGYMAP = {
     ],
 }
 
+cloud_object_model = {
+    "event": {
+        "event_key": {
+            "id": 1,
+            "perm": "",
+            "struct_info": {
+                "struct_key": {
+                    "id": 1
+                }
+            }
+        }
+    },
+    "property": {
+        "property_key": {
+            "id": 1,
+            "perm": "",
+            "struct_info": {
+                "struct_key": {
+                    "id": 1
+                }
+            }
+        }
+    }
+}
+
 quec_object_model = {
-    # property
-    9: ("power_switch", "rw"),
-    4: ("energy", "r"),
-    23: ("phone_num", "rw"),
-    24: ("loc_method", "rw"),
-    25: ("work_mode", "rw"),
-    26: ("work_cycle_period", "rw"),
-    19: ("local_time", "r"),
-    15: ("low_power_alert_threshold", "rw"),
-    16: ("low_power_shutdown_threshold", "rw"),
-    12: ("sw_ota", "rw"),
-    13: ("sw_ota_auto_upgrade", "rw"),
-    10: ("sw_voice_listen", "rw"),
-    11: ("sw_voice_record", "rw"),
-    27: ("sw_fault_alert", "rw"),
-    28: ("sw_low_power_alert", "rw"),
-    29: ("sw_over_speed_alert", "rw"),
-    30: ("sw_sim_abnormal_alert", "rw"),
-    31: ("sw_disassemble_alert", "rw"),
-    32: ("sw_drive_behavior_alert", "rw"),
-    21: ("drive_behavior_code", "r"),
-    33: ("power_restart", "w"),
-    34: ("over_speed_threshold", "rw"),
-    36: ("device_module_status", "r"),
-    37: ("gps_mode", "r"),
-    38: ("user_ota_action", "w"),
-    41: ("voltage", "r"),
-    42: ("ota_status", "r"),
-    43: ("current_speed", "r"),
-
-    # event
-    6:  ("sos_alert", "r"),
-    14: ("fault_alert", "r"),
-    17: ("low_power_alert", "r"),
-    18: ("sim_abnormal_alert", "r"),
-    20: ("disassemble_alert", "r"),
-    22: ("drive_behavior_alert", "r"),
-    35: ("over_speed_alert", "r"),
+    "event": {
+        "sos_alert": {
+            "id": 6,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+        "fault_alert": {
+            "id": 14,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+        "low_power_alert": {
+            "id": 17,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+        "sim_abnormal_alert": {
+            "id": 18,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+        "disassemble_alert": {
+            "id": 20,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+        "drive_behavior_alert": {
+            "id": 22,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+        "over_speed_alert": {
+            "id": 35,
+            "perm": "r",
+            "struct_info": {
+                "local_time": {
+                    "id": 19
+                }
+            }
+        },
+    },
+    "property": {
+        "power_switch": {
+            "id": 9,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "energy": {
+            "id": 4,
+            "perm": "r",
+            "struct_info": {}
+        },
+        "phone_num": {
+            "id": 23,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "loc_method": {
+            "id": 24,
+            "perm": "rw",
+            "struct_info": {
+                "gps": {
+                    "id": 1
+                },
+                "cell": {
+                    "id": 2
+                },
+                "wifi": {
+                    "id": 3
+                },
+            },
+        },
+        "work_mode": {
+            "id": 25,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "work_cycle_period": {
+            "id": 26,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "local_time": {
+            "id": 19,
+            "perm": "r",
+            "struct_info": {}
+        },
+        "low_power_alert_threshold": {
+            "id": 15,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "low_power_shutdown_threshold": {
+            "id": 16,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_ota": {
+            "id": 12,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_ota_auto_upgrade": {
+            "id": 13,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_voice_listen": {
+            "id": 10,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_voice_record": {
+            "id": 11,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_fault_alert": {
+            "id": 27,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_low_power_alert": {
+            "id": 28,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_over_speed_alert": {
+            "id": 29,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_sim_abnormal_alert": {
+            "id": 30,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_disassemble_alert": {
+            "id": 31,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "sw_drive_behavior_alert": {
+            "id": 32,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "drive_behavior_code": {
+            "id": 21,
+            "perm": "r",
+            "struct_info": {}
+        },
+        "power_restart": {
+            "id": 33,
+            "perm": "w",
+            "struct_info": {}
+        },
+        "over_speed_threshold": {
+            "id": 34,
+            "perm": "rw",
+            "struct_info": {}
+        },
+        "device_module_status": {
+            "id": 36,
+            "perm": "r",
+            "struct_info": {
+                "net": {
+                    "id": 1
+                },
+                "location": {
+                    "id": 2
+                },
+                "temp_sensor": {
+                    "id": 3
+                },
+                "light_sensor": {
+                    "id": 4
+                },
+                "move_sensor": {
+                    "id": 5
+                },
+                "mike": {
+                    "id": 6
+                },
+            }
+        },
+        "gps_mode": {
+            "id": 37,
+            "perm": "r",
+            "struct_info": {}
+        },
+        "user_ota_action": {
+            "id": 38,
+            "perm": "w",
+            "struct_info": {}
+        },
+        "voltage": {
+            "id": 41,
+            "perm": "r",
+            "struct_info": {}
+        },
+        "ota_status": {
+            "id": 42,
+            "perm": "r",
+            "struct_info": {
+                "sys_current_version": {
+                    "id": 1
+                },
+                "sys_target_version": {
+                    "id": 2
+                },
+                "app_current_version": {
+                    "id": 3
+                },
+                "app_target_version": {
+                    "id": 4
+                },
+                "upgrade_module": {
+                    "id": 5
+                },
+                "upgrade_status": {
+                    "id": 6
+                },
+            },
+        },
+        "current_speed": {
+            "id": 43,
+            "perm": "r",
+            "struct_info": {}
+        }
+    }
 }
 
-quec_object_model_struct = {
-    "device_module_status": {
-        "net": 1,
-        "location": 2,
-        "temp_sensor": 3,
-        "light_sensor": 4,
-        "move_sensor": 5,
-        "mike": 6,
-    },
-    "loc_method": {
-        "gps": 1,
-        "cell": 2,
-        "wifi": 3,
-    },
-    "ota_status": {
-        "sys_current_version": 1,
-        "sys_target_version": 2,
-        "app_current_version": 3,
-        "app_target_version": 4,
-        "upgrade_module": 5,
-        "upgrade_status": 6,
-    },
-}
 
 ali_object_model = {
-    "event": [
-        "sos_alert",
-        "fault_alert",
-        "low_power_alert",
-        "sim_abnormal_alert",
-        "disassemble_alert",
-        "drive_behavior_alert",
-        "over_speed_alert",
-    ],
-    "property": [
-        "power_switch",
-        "energy",
-        "phone_num",
-        "loc_method",
-        "work_mode",
-        "work_cycle_period",
-        "local_time",
-        "low_power_alert_threshold",
-        "low_power_shutdown_threshold",
-        "sw_ota",
-        "sw_ota_auto_upgrade",
-        "sw_voice_listen",
-        "sw_voice_record",
-        "sw_fault_alert",
-        "sw_low_power_alert",
-        "sw_over_speed_alert",
-        "sw_sim_abnormal_alert",
-        "sw_disassemble_alert",
-        "sw_drive_behavior_alert",
-        "drive_behavior_code",
-        "power_restart",
-        "over_speed_threshold",
-        "device_module_status",
-        "gps_mode",
-        "user_ota_action",
-        "ota_status",
-        "GeoLocation",
-        "voltage",
-    ],
+    "event": {
+        "sos_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+        "fault_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+        "low_power_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+        "sim_abnormal_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+        "disassemble_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+        "drive_behavior_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+        "over_speed_alert": {
+            "id": "",
+            "struct_info": {},
+        },
+    },
+    "property": {
+        "power_switch": {
+            "id": "",
+            "struct_info": {}
+        },
+        "energy": {
+            "id": "",
+            "struct_info": {}
+        },
+        "phone_num": {
+            "id": "",
+            "struct_info": {}
+        },
+        "loc_method": {
+            "id": "",
+            "struct_info": {
+                "gps": {
+                    "id": 1
+                },
+                "cell": {
+                    "id": 2
+                },
+                "wifi": {
+                    "id": 3
+                },
+            },
+        },
+        "work_mode": {
+            "id": "",
+            "struct_info": {}
+        },
+        "work_cycle_period": {
+            "id": "",
+            "struct_info": {}
+        },
+        "local_time": {
+            "id": "",
+            "struct_info": {}
+        },
+        "low_power_alert_threshold": {
+            "id": "",
+            "struct_info": {}
+        },
+        "low_power_shutdown_threshold": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_ota": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_ota_auto_upgrade": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_voice_listen": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_voice_record": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_fault_alert": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_low_power_alert": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_over_speed_alert": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_sim_abnormal_alert": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_disassemble_alert": {
+            "id": "",
+            "struct_info": {}
+        },
+        "sw_drive_behavior_alert": {
+            "id": "",
+            "struct_info": {}
+        },
+        "drive_behavior_code": {
+            "id": "",
+            "struct_info": {}
+        },
+        "power_restart": {
+            "id": "",
+            "struct_info": {}
+        },
+        "over_speed_threshold": {
+            "id": "",
+            "struct_info": {}
+        },
+        "device_module_status": {
+            "id": "",
+            "struct_info": {
+                "net": {
+                    "id": 1
+                },
+                "location": {
+                    "id": 2
+                },
+                "temp_sensor": {
+                    "id": 3
+                },
+                "light_sensor": {
+                    "id": 4
+                },
+                "move_sensor": {
+                    "id": 5
+                },
+                "mike": {
+                    "id": 6
+                },
+            }
+        },
+        "gps_mode": {
+            "id": "",
+            "struct_info": {}
+        },
+        "user_ota_action": {
+            "id": "",
+            "struct_info": {}
+        },
+        "ota_status": {
+            "id": "",
+            "struct_info": {
+                "sys_current_version": {
+                    "id": 1
+                },
+                "sys_target_version": {
+                    "id": 2
+                },
+                "app_current_version": {
+                    "id": 3
+                },
+                "app_target_version": {
+                    "id": 4
+                },
+                "upgrade_module": {
+                    "id": 5
+                },
+                "upgrade_status": {
+                    "id": 6
+                },
+            },
+        },
+        "GeoLocation": {
+            "id": "",
+            "struct_info": {}
+        },
+        "voltage": {
+            "id": "",
+            "struct_info": {
+                "Longitude": {
+                    "id": 1
+                },
+                "Latitude": {
+                    "id": 2
+                },
+                "Altitude": {
+                    "id": 3
+                },
+                "CoordinateSystem": {
+                    "id": 4
+                }
+            }
+        },
+    },
 }
 
 

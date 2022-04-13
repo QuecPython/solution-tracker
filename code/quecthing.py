@@ -20,8 +20,8 @@ import quecIot
 from queue import Queue
 
 from usr.ota import SOTA
-from usr.common import CloudObservable
 from usr.logging import getLogger
+from usr.common import CloudObservable, CloudObjectModel
 
 log = getLogger(__name__)
 
@@ -95,38 +95,32 @@ EVENT_CODE = {
 }
 
 
-class QuecObjectModule(object):
+class QuecObjectModel(CloudObjectModel):
 
     def __init__(self):
-        self.items = {}
+        super().__init__()
         self.items_id = {}
 
-    def add_item(self, eid, name, perm, data_type, struct_info={}):
-        om_data = {
-            "id": eid,
-            "name": name,
-            "perm": perm,
-            "data_type": data_type,
-            "struct_info": struct_info,
-        }
-        if self.items.get(name) is None:
-            self.items[name] = om_data
-            self.items_id[eid] = name
-            return True
-        return False
-
-    def update_item(self, eid, name, perm, data_type, struct_info={}):
-        if self.items.get(name) is not None:
-            self.del_item(name)
-            self.add_item(eid, name, perm, data_type, struct_info)
-            return True
-        return False
-
-    def del_item(self, name):
-        if self.items.get(name) is not None:
-            self.items_id.pop(self.items[name]["id"])
-            self.items.pop(name)
+    def __init_items_id(self, om_key, om_key_id):
+        self.items_id[om_key_id] = om_key
         return True
+
+    def __del_items_id(self, om_type, om_key):
+        if self.items.get(om_type) is not None:
+            if self.items[om_type].get(om_key):
+                om_key_id = self.items[om_type][om_key]['id']
+                self.items_id.pop(om_key_id)
+        return True
+
+    def set_item(self, om_type, om_key, om_key_id, om_key_perm):
+        if super().set_item(om_type, om_key, om_key_id=om_key_id, om_key_perm=om_key_perm):
+            self.__init_items_id(om_key, om_key_id)
+            return True
+        return False
+
+    def del_item(self, om_type, om_key):
+        self.__del_items_id(om_type, om_key)
+        return super().del_item(om_type, om_key)
 
 
 class QuecThing(CloudObservable):
@@ -140,7 +134,7 @@ class QuecThing(CloudObservable):
         self.__life_time = life_time
         self.__mcu_name = mcu_name
         self.__mcu_version = mcu_version
-        self.__object_model = {}
+        self.__object_model = None
 
         self.__file_size = 0
         self.__md5_value = ""
@@ -156,7 +150,7 @@ class QuecThing(CloudObservable):
         self.__put_post_res(False)
 
     def __get_post_res(self):
-        self.__quec_timer.start(5000, 0, self.__quec_timer_cb)
+        self.__quec_timer.start(1000 * 10, 0, self.__quec_timer_cb)
         res = self.__post_result_wait_queue.get()
         self.__quec_timer.stop()
         return res
@@ -198,6 +192,32 @@ class QuecThing(CloudObservable):
 
         res_data = ("object_model", [("power_restart", 1)])
         self.notifyObservers(self, *res_data)
+
+    def __data_format(self, k, v):
+        # log.debug("k: %s, v: %s" % (k, v))
+        k_id = None
+        struct_info = {}
+        if self.__object_model.items['event'].get(k):
+            k_id = self.__object_model.items['event'][k]['id']
+            if isinstance(self.__object_model.items['event'][k]["struct_info"], dict):
+                struct_info = self.__object_model.items['event'][k]["struct_info"]
+        elif self.__object_model.items['property'].get(k):
+            k_id = self.__object_model.items['property'][k]['id']
+            if isinstance(self.__object_model.items['property'][k]["struct_info"], dict):
+                struct_info = self.__object_model.items['property'][k]["struct_info"]
+        else:
+            return False
+
+        if isinstance(v, dict):
+            nv = {}
+            for ik, iv in v.items():
+                if struct_info.get(ik):
+                    nv[struct_info[ik]["id"]] = iv
+                else:
+                    nv[ik] = iv
+            v = nv
+
+        return {k_id: v}
 
     def __event_cb(self, data):
         res_data = ()
@@ -272,7 +292,7 @@ class QuecThing(CloudObservable):
             self.__sota_upgrade_start(int(file_info[2]), int(file_info[3]))
 
     def set_object_model(self, object_model):
-        if object_model and isinstance(object_model, QuecObjectModule):
+        if object_model and isinstance(object_model, QuecObjectModel):
             self.__object_model = object_model
             return True
         return False
@@ -326,27 +346,13 @@ class QuecThing(CloudObservable):
     def close(self):
         return quecIot.setConnmode(0)
 
-    def __data_format(self, k, v):
-        if isinstance(v, dict):
-            nv = {}
-            for ik, iv in v.items():
-                struct_info = self.__object_model.items[k]["struct_info"] if isinstance(self.__object_model.items[k]["struct_info"], dict) else {}
-                if struct_info.get(ik):
-                    nv[struct_info[ik]["id"]] = iv
-                else:
-                    nv[ik] = iv
-            v = nv
-        # log.debug("k: %s, v: %s" % (k, v))
-        return {self.__object_model.items.get(k): v}
-
     def post_data(self, data):
         res = True
         # log.debug("post_data: %s" % str(data))
         for k, v in data.items():
-            if self.__object_model.items.get(k) is not None:
-                # Event Data Format From object_mode_code
+            om_data = self.__data_format(k, v)
+            if om_data is not False:
                 if v is not None:
-                    om_data = self.__data_format(k, v)
                     phymodelReport_res = quecIot.phymodelReport(1, om_data)
                     if not phymodelReport_res:
                         res = False

@@ -23,13 +23,15 @@ from misc import Power
 
 from usr.led import LED
 from usr.sensor import Sensor
-from usr.remote import Remote
 from usr.battery import Battery
-from usr.mpower import LowEnergyRTC
-from usr.logging import getLogger
-from usr.location import Location, GPSMatch, GPSParse
 from usr.ota import OTAFileClear
+from usr.logging import getLogger
+from usr.mpower import LowEnergyRTC
+from usr.remote import RemotePublish
+from usr.aliyunIot import AliObjectModel
+from usr.quecthing import QuecObjectModel
 from usr.common import numiter, Singleton
+from usr.location import Location, GPSMatch, GPSParse
 from usr.settings import ALERTCODE, DEVICE_FIRMWARE_NAME, PROJECT_NAME, LOWENERGYMAP, \
     settings, default_values_app, default_values_sys, Settings
 
@@ -87,6 +89,7 @@ class Tracker(Singleton):
         self.__battery = None
         self.__sensor = None
         self.__locator = None
+        self.cloud_om = None
 
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
@@ -179,13 +182,13 @@ class Tracker(Singleton):
             if gga_data:
                 Latitude = gps_parse.GxGGA_latitude(gga_data)
                 if Latitude:
-                    data["Latitude"] = float('%.2f' % float(Latitude))
-                Longtitude = gps_parse.GxGGA_longtitude()
+                    data["Latitude"] = float("%.2f" % float(Latitude))
+                Longtitude = gps_parse.GxGGA_longtitude(gga_data)
                 if Longtitude:
-                    data["Longtitude"] = float('%.2f' % float(Longtitude))
-                Altitude = gps_parse.GxGGA_altitude()
+                    data["Longtitude"] = float("%.2f" % float(Longtitude))
+                Altitude = gps_parse.GxGGA_altitude(gga_data)
                 if Altitude:
-                    data["Altitude"] = float('%.2f' % float(Altitude))
+                    data["Altitude"] = float("%.2f" % float(Altitude))
                 if data:
                     data["CoordinateSystem"] = 1
             res = {"GeoLocation": data}
@@ -221,6 +224,19 @@ class Tracker(Singleton):
         elif loc_method == 0x4:
             return {"non_gps": []}
 
+    def init_cloud_object_module(self, cloud_object_model):
+        for om_type in cloud_object_model.keys():
+            for om_key in cloud_object_model[om_type]:
+                om_key_id = cloud_object_model[om_type][om_key].get("id")
+                om_key_perm = cloud_object_model[om_type][om_key].get("perm")
+                self.cloud_om.set_item(om_type, om_key, om_key_id, om_key_perm)
+                om_key_struct = cloud_object_model[om_type][om_key].get("struct_info", {})
+                for struct_key in om_key_struct.keys():
+                    self.cloud_om.set_item_struct(
+                        om_type, om_key, struct_key, struct_key_id=om_key_struct[struct_key].get("id"),
+                        struct_key_struct=om_key_struct[struct_key].get("struct_info")
+                    )
+
     def set_controller(self, controller):
         if isinstance(controller, Controller):
             self.__controller = controller
@@ -250,6 +266,20 @@ class Tracker(Singleton):
             self.__locator = locator
             return True
         return False
+
+    def set_cloud_om(self, cloud_om):
+        if isinstance(cloud_om, QuecObjectModel) or isinstance(cloud_om, AliObjectModel):
+            self.cloud_om = cloud_om
+            return True
+        return False
+
+    def get_loc_data(self, loc_method, loc_data):
+        current_settings = self.__controller.settings_get()
+        if current_settings['sys']['cloud'] & default_values_sys._cloud.quecIot:
+            return self.__get_quec_loc_data(loc_method, loc_data)
+        elif current_settings['sys']['cloud'] & default_values_sys._cloud.AliYun:
+            return self.__get_ali_loc_data(loc_method, loc_data)
+        return {}
 
     def device_status_get(self):
         device_status_data = {}
@@ -561,7 +591,7 @@ class Controller(Singleton):
         self.__ota_file_clear = None
 
     def set_remote(self, remote):
-        if isinstance(remote, Remote):
+        if isinstance(remote, RemotePublish):
             self.__remote = remote
             return True
         return False
