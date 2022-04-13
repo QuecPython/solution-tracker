@@ -543,6 +543,10 @@ ali_object_model = {
                 }
             }
         },
+        "current_speed": {
+            "id": "",
+            "struct_info": {}
+        }
     },
 }
 
@@ -604,7 +608,7 @@ class default_values_sys(object):
 
     drive_behavior_code = _drive_behavior_code.none
 
-    cloud = _cloud.quecIot
+    cloud = _cloud.AliYun
 
     cloud_life_time = 120
 
@@ -620,7 +624,7 @@ class default_values_sys(object):
         "PS": "Q0ZQQndaN3pCUFd6",
         "DK": "trackdev0304",
         "DS": "b56c9cf279b146d7d7a48e7e767362d9",
-        "SERVER": "iot-south.quectel.com:2883",
+        "SERVER": "iot-south.quectel.com:1883",
     }
 
     # # trackerdemo0326 (PROENV)
@@ -629,7 +633,7 @@ class default_values_sys(object):
     #     "PS": "Q0ZQQndaN3pCUFd6",
     #     "DK": "trackerdemo0326",
     #     "DS": "32d540996e32f95c58dd98f18d473d52",
-    #     "SERVER": "iot-south.quectel.com:2883",
+    #     "SERVER": "iot-south.quectel.com:1883",
     # }
 
     # # IMEI (PROENV)
@@ -638,7 +642,7 @@ class default_values_sys(object):
     #     "PS": "Q0ZQQndaN3pCUFd6",
     #     "DK": "",
     #     "DS": "",
-    #     "SERVER": "iot-south.quectel.com:2883",
+    #     "SERVER": "iot-south.quectel.com:1883",
     # }
 
     # # TrackerDevEC600NCNLC (TESTENV)

@@ -50,6 +50,7 @@ class LowEnergyRTC(Observable):
     def __low_energy_work(self, lowenergy_tag):
         while True:
             data = self.__low_energy_queue.get()
+            log.debug("__low_energy_work data: %s, lowenergy_tag: %s" % (data, lowenergy_tag))
             if data:
                 if lowenergy_tag:
                     if self.__lpm_fd is None:

@@ -91,6 +91,7 @@ class Tracker(Singleton):
         self.__battery = None
         self.__sensor = None
         self.__locator = None
+        self.__history = None
         self.cloud_om = None
 
         self.num_iter = numiter()
@@ -173,7 +174,7 @@ class Tracker(Singleton):
             else:
                 if "PM" in support_methds:
                     method = "PM"
-
+        log.debug("__get_low_energy_method: %s" % method)
         return method
 
     def __get_ali_loc_data(self, loc_method, loc_data):
@@ -278,6 +279,12 @@ class Tracker(Singleton):
             return True
         return False
 
+    def set_history(self, history):
+        if isinstance(history, History):
+            self.__history = history
+            return True
+        return False
+
     def get_loc_data(self, loc_method, loc_data):
         current_settings = self.__controller.settings_get()
         if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
@@ -354,9 +361,9 @@ class Tracker(Singleton):
                     break
             if loc_data:
                 report_loc_data = None
-                if current_settings['sys']['cloud'] & default_values_sys._cloud.quecIot:
+                if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
                     report_loc_data = self.__get_quec_loc_data(loc_method, loc_data)
-                elif current_settings['sys']['cloud'] & default_values_sys._cloud.AliYun:
+                elif current_settings["sys"]["cloud"] & default_values_sys._cloud.AliYun:
                     report_loc_data = self.__get_ali_loc_data(loc_method, loc_data)
                 if report_loc_data:
                     device_data.update(report_loc_data)
@@ -423,6 +430,25 @@ class Tracker(Singleton):
 
         if current_settings["sys"]["user_ota_action"] != -1:
             self.__controller.settings_set("user_ota_action", -1)
+
+    def report_history(self):
+        res = True
+
+        hist = self.__history.read()
+        if hist["data"]:
+            pt_count = 0
+            for i, data in enumerate(hist["data"]):
+                pt_count += 1
+                if not self.__controller.remote_post_data(data):
+                    res = False
+                    break
+
+            hist["data"] = hist["data"][pt_count:]
+            if hist["data"]:
+                # Flush data in hist-dictionary to tracker_data.hist file.
+                self.__history.write(hist["data"])
+
+        return res
 
     # Do cloud event downlink option by controller
     def event_option(self, *args, **kwargs):
@@ -524,6 +550,7 @@ class Tracker(Singleton):
         self.__controller.settings_save()
 
     def low_engery_rtc_option(self, low_energy_method):
+        self.report_history()
         current_settings = self.__controller.settings_get()
         if current_settings["app"]["work_mode"] == default_values_app._work_mode.intelligent:
             speed_info = self.__device_speed_check()
@@ -542,6 +569,7 @@ class Tracker(Singleton):
 
     def update(self, observable, *args, **kwargs):
         if isinstance(observable, LowEnergyRTC):
+            log.debug("Low Energy RTC Method: %s" % args[1])
             self.low_engery_rtc_option(args[1])
 
 
@@ -566,12 +594,13 @@ class DeviceCheck(object):
 
     def location(self):
         # return True if OK
+        current_settings = settings.get()
         retry = 0
         gps_data = None
         sleep_time = 1
 
         while retry < 5:
-            gps_data = self.__locator.read(default_values_app._loc_method.all)
+            gps_data = self.__locator.read(current_settings["app"]["loc_method"])
             if gps_data:
                 break
             else:
@@ -745,7 +774,7 @@ def tracker_main():
     battery = Battery()
     sensor = Sensor()
     locator = Location(current_settings["sys"]["gps_mode"], current_settings["sys"]["locator_init_params"])
-    cloud_init_params = current_settings['sys']['cloud_init_params']
+    cloud_init_params = current_settings["sys"]["cloud_init_params"]
     if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
         cloud = QuecThing(
             cloud_init_params["PK"],
@@ -793,6 +822,7 @@ def tracker_main():
     tracker.set_sensor(sensor)
     tracker.set_locator(locator)
     tracker.set_cloud_om(cloud_om)
+    tracker.set_history(history)
     tracker.init_cloud_object_module(cloud_object_model)
 
     remote_pub.set_cloud(cloud)

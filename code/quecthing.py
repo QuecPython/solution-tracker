@@ -108,7 +108,7 @@ class QuecObjectModel(CloudObjectModel):
     def __del_items_id(self, om_type, om_key):
         if self.items.get(om_type) is not None:
             if self.items[om_type].get(om_key):
-                om_key_id = self.items[om_type][om_key]['id']
+                om_key_id = self.items[om_type][om_key]["id"]
                 self.items_id.pop(om_key_id)
         return True
 
@@ -197,14 +197,14 @@ class QuecThing(CloudObservable):
         # log.debug("k: %s, v: %s" % (k, v))
         k_id = None
         struct_info = {}
-        if self.__object_model.items['event'].get(k):
-            k_id = self.__object_model.items['event'][k]['id']
-            if isinstance(self.__object_model.items['event'][k]["struct_info"], dict):
-                struct_info = self.__object_model.items['event'][k]["struct_info"]
-        elif self.__object_model.items['property'].get(k):
-            k_id = self.__object_model.items['property'][k]['id']
-            if isinstance(self.__object_model.items['property'][k]["struct_info"], dict):
-                struct_info = self.__object_model.items['property'][k]["struct_info"]
+        if self.__object_model.items["event"].get(k):
+            k_id = self.__object_model.items["event"][k]["id"]
+            if isinstance(self.__object_model.items["event"][k]["struct_info"], dict):
+                struct_info = self.__object_model.items["event"][k]["struct_info"]
+        elif self.__object_model.items["property"].get(k):
+            k_id = self.__object_model.items["property"][k]["id"]
+            if isinstance(self.__object_model.items["property"][k]["struct_info"], dict):
+                struct_info = self.__object_model.items["property"][k]["struct_info"]
         else:
             return False
 
@@ -302,6 +302,7 @@ class QuecThing(CloudObservable):
             "[init start] enforce: %s QuecThing Work State: %s, quecIot.getConnmode(): %s"
             % (enforce, quecIot.getWorkState(), quecIot.getConnmode())
         )
+        log.debug("[init start] PK: %s, PS: %s, DK: %s, DS: %s, SERVER: %s" % (self.__pk, self.__ps, self.__dk, self.__ds, self.__server))
         if enforce is False:
             if quecIot.getWorkState() == 8 and quecIot.getConnmode() == 1:
                 return True

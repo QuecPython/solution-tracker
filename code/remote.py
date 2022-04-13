@@ -133,22 +133,3 @@ class RemotePublish(Observable):
             self.notifyObservers(self, *[data])
 
         return res
-
-    # TODO: Remove To Business Module
-    def post_history(self, hist):
-        res = True
-
-        if hist["data"]:
-            pt_count = 0
-            for i, data in enumerate(hist["data"]):
-                pt_count += 1
-                if not self.post_data(data):
-                    res = False
-                    break
-
-            hist["data"] = hist["data"][pt_count:]
-            if hist["data"]:
-                # Flush data in hist-dictionary to tracker_data.hist file.
-                self.notifyObservers(self, *hist["data"])
-
-        return res

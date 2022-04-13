@@ -27,7 +27,7 @@ from usr.common import Observable, Observer
 from usr.remote import RemoteSubcribe, RemotePublish
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, \
     DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
-    quec_object_model, ali_object_model, default_values_sys
+    quec_object_model, ali_object_model, default_values_sys, default_values_app
 
 log = Logger(__name__)
 
@@ -129,7 +129,7 @@ def test_battery():
     voltage = battery.get_voltage()
     timer.stop()
     global run_time
-    print('[test_battery] battery.get_voltage() run_time: %sms' % run_time)
+    print("[test_battery] battery.get_voltage() run_time: %sms" % run_time)
     msg = "[test_battery] %s: battery.get_voltage() %s."
     assert isinstance(voltage, int) and voltage > 0, msg % ("FAILED", voltage)
     print(msg % ("SUCCESS", voltage))
@@ -237,7 +237,7 @@ def test_quecthing():
     tracker.set_cloud_om(quec_om)
     tracker.init_cloud_object_module(quec_object_model)
 
-    gps_mode = 0x2
+    gps_mode = default_values_sys._gps_mode.external
     locator_init_params = current_settings["sys"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
@@ -252,7 +252,7 @@ def test_quecthing():
     res["success"] += 1
 
     msg = "[test_quecthing] %s: tracker.__get_quec_loc_data(%s, %s) %s."
-    loc_method = 0x1
+    loc_method = default_values_app.loc_method.gps
     loc_data = locator.read(loc_method)
     quec_loc_data = tracker.__get_quec_loc_data(loc_method, loc_data.get(loc_method))
     assert quec_loc_data != "", msg % ("FAILED", loc_method, loc_data, quec_loc_data)
@@ -310,7 +310,7 @@ def test_aliyuniot():
     tracker.set_cloud_om(ali_om)
     tracker.init_cloud_object_module(ali_object_model)
 
-    gps_mode = 0x2
+    gps_mode = default_values_sys._gps_mode.external
     locator_init_params = current_settings["sys"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
@@ -325,7 +325,7 @@ def test_aliyuniot():
     res["success"] += 1
 
     msg = "[test_aliyuniot] %s: tracker.__get_ali_loc_data(%s, %s) %s."
-    loc_method = 0x1
+    loc_method = default_values_app.loc_method.gps
     loc_data = locator.read(loc_method)
     ali_loc_data = tracker.__get_ali_loc_data(loc_method, loc_data.get(loc_method))
     assert ali_loc_data != "", msg % ("FAILED", loc_method, loc_data, ali_loc_data)

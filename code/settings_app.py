@@ -41,7 +41,7 @@ class default_values_app(object):
 
     phone_num = ""
 
-    loc_method = _loc_method.all
+    loc_method = _loc_method.gps
 
     work_mode = _work_mode.cycle
 
