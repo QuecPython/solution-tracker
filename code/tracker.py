@@ -76,15 +76,15 @@ def nw_callback(args):
         if net_check_res[0] == 1 and net_check_res[1] != 1:
             log.warn("SIM abnormal!")
             alert_code = 30004
-            alert_info = {"local_time": Tracker().__get_local_time()}
-            alert_data = Tracker().__get_alert_data(alert_code, alert_info)
-            Tracker().device_data_report(event_data=alert_data, msg="sim_abnormal")
+            alert_info = {"local_time": Collector().__get_local_time()}
+            alert_data = Collector().__get_alert_data(alert_code, alert_info)
+            Controller().device_data_report(event_data=alert_data, msg="sim_abnormal")
     else:
         if net_check_res == (3, 1):
             pass
 
 
-class Tracker(Singleton):
+class Collector(Singleton):
     def __init__(self):
         self.__controller = None
         self.__devicecheck = None
@@ -768,7 +768,7 @@ class Controller(Singleton):
 def tracker_main():
     current_settings = settings.get()
 
-    tracker = Tracker()
+    collector = Collector()
     controller = Controller()
     devicecheck = DeviceCheck()
     battery = Battery()
@@ -816,18 +816,18 @@ def tracker_main():
     data_call = dataCall
     ota_file_clear = OTAFileClear()
 
-    tracker.set_controller(controller)
-    tracker.set_devicecheck(devicecheck)
-    tracker.set_battery(battery)
-    tracker.set_sensor(sensor)
-    tracker.set_locator(locator)
-    tracker.set_cloud_om(cloud_om)
-    tracker.set_history(history)
-    tracker.init_cloud_object_module(cloud_object_model)
+    collector.set_controller(controller)
+    collector.set_devicecheck(devicecheck)
+    collector.set_battery(battery)
+    collector.set_sensor(sensor)
+    collector.set_locator(locator)
+    collector.set_cloud_om(cloud_om)
+    collector.set_history(history)
+    collector.init_cloud_object_module(cloud_object_model)
 
     remote_pub.set_cloud(cloud)
     remote_pub.addObserver(history)
-    remote_sub.set_executor(tracker)
+    remote_sub.set_executor(collector)
 
     controller.set_remote_pub(remote_pub)
     controller.set_settings(settings)
@@ -841,8 +841,8 @@ def tracker_main():
 
     work_cycle_period = current_settings["app"]["work_cycle_period"]
     low_energy_rtc.set_period(work_cycle_period)
-    low_energy_rtc.set_low_energy_method(tracker.__get_low_energy_method(work_cycle_period))
-    low_energy_rtc.addObserver(tracker)
+    low_energy_rtc.set_low_energy_method(collector.__get_low_energy_method(work_cycle_period))
+    low_energy_rtc.addObserver(collector)
 
     devicecheck.set_locator(locator)
 
@@ -850,10 +850,10 @@ def tracker_main():
     battery.set_temp(20)
 
     cloud.addObserver(remote_sub)
-    cloud.set_object_model(tracker.cloud_om)
+    cloud.set_object_model(collector.cloud_om)
     cloud.init()
 
     controller.ota_file_clean()
-    tracker.device_status_check()
+    collector.device_status_check()
     controller.low_energy_rtc_init()
     controller.low_energy_rtc_start()
