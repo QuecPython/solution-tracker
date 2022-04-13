@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import utime
+import osTimer
 
 from usr.logging import Logger
-from usr.tracker import Tracker
+from usr.tracker import Tracker, tracker_main
 from usr.battery import Battery
 from usr.history import History
 from usr.location import Location
@@ -105,21 +106,33 @@ def test_settings():
     print("[test_settings] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
+run_time = 0
+
+
+def get_voltage_cb(args):
+    global run_time
+    run_time += 5
+
+
 def test_battery():
     res = {"all": 0, "success": 0, "failed": 0}
     battery = Battery()
 
-    assert battery.get_temp() == 20, "[test_battery] FAILED: battery.get_temp() is not 20."
-    print("[test_battery] SUCCESS: battery.get_temp() is 20.")
+    temp = 30
+    msg = "[test_battery] %s: battery.set_temp(30)."
+    assert battery.set_temp(temp) and battery.__temp == temp, msg % "FAILED"
+    print(msg % "SUCCESS")
     res["success"] += 1
 
-    assert battery.set_temp(30) and battery.get_temp() == 30, "[test_battery] FAILED: battery.set_temp(30)."
-    print("[test_battery] SUCCESS: battery.set_temp(30).")
-    res["success"] += 1
-
+    timer = osTimer()
+    timer.start(5, 1, get_voltage_cb)
     voltage = battery.get_voltage()
-    assert isinstance(voltage, int) and voltage > 0, "[test_battery] FAILED: battery.get_voltage() %s." % voltage
-    print("[test_battery] SUCCESS: battery.get_voltage() is %s." % voltage)
+    timer.stop()
+    global run_time
+    print('[test_battery] battery.get_voltage() run_time: %sms' % run_time)
+    msg = "[test_battery] %s: battery.get_voltage() %s."
+    assert isinstance(voltage, int) and voltage > 0, msg % ("FAILED", voltage)
+    print(msg % ("SUCCESS", voltage))
     res["success"] += 1
 
     energy = battery.get_energy()
@@ -474,7 +487,7 @@ def test_low_energy_rtc():
 
 
 def test_tracker():
-    pass
+    tracker_main()
 
 
 def main():
@@ -484,9 +497,10 @@ def main():
     # test_history()
     # test_location()
     # test_quecthing()
-    test_aliyuniot()
+    # test_aliyuniot()
     # test_remote()
     # test_low_energy_rtc()
+    test_tracker()
 
 
 if __name__ == "__main__":

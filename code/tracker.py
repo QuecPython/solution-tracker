@@ -25,15 +25,17 @@ from usr.led import LED
 from usr.sensor import Sensor
 from usr.battery import Battery
 from usr.ota import OTAFileClear
+from usr.history import History
 from usr.logging import getLogger
 from usr.mpower import LowEnergyRTC
-from usr.remote import RemotePublish
-from usr.aliyunIot import AliObjectModel
-from usr.quecthing import QuecObjectModel
+from usr.remote import RemotePublish, RemoteSubcribe
+from usr.aliyunIot import AliYunIot, AliObjectModel
+from usr.quecthing import QuecThing, QuecObjectModel
 from usr.common import numiter, Singleton
 from usr.location import Location, GPSMatch, GPSParse
-from usr.settings import ALERTCODE, DEVICE_FIRMWARE_NAME, PROJECT_NAME, LOWENERGYMAP, \
-    settings, default_values_app, default_values_sys, Settings
+from usr.settings import ALERTCODE, LOWENERGYMAP, PROJECT_NAME, PROJECT_VERSION, \
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, default_values_app, \
+    default_values_sys, Settings, quec_object_model, ali_object_model
 
 try:
     from misc import USB
@@ -123,9 +125,12 @@ class Tracker(Singleton):
             "current_speed": 0.00
         }
         if current_settings["app"]["sw_over_speed_alert"] is True:
-            if self.locator.gps:
-                gps_data = self.locator.gps.read()
-                speed = GPSParse.GxVTG_speed(GPSMatch().GxVTG(gps_data))
+            if self.__locator.gps:
+                gps_data = self.__locator.gps.read()[1]
+                gps_match = GPSMatch()
+                gps_parse = GPSParse()
+                vtg_data = gps_match.GxVTG(gps_data)
+                speed = gps_parse.GxVTG_speed(vtg_data)
                 if speed and float(speed) >= current_settings["app"]["over_speed_threshold"]:
                     alert_code = 30003
                     alert_info = {"local_time": self.__get_local_time()}
@@ -275,9 +280,9 @@ class Tracker(Singleton):
 
     def get_loc_data(self, loc_method, loc_data):
         current_settings = self.__controller.settings_get()
-        if current_settings['sys']['cloud'] & default_values_sys._cloud.quecIot:
+        if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
             return self.__get_quec_loc_data(loc_method, loc_data)
-        elif current_settings['sys']['cloud'] & default_values_sys._cloud.AliYun:
+        elif current_settings["sys"]["cloud"] & default_values_sys._cloud.AliYun:
             return self.__get_ali_loc_data(loc_method, loc_data)
         return {}
 
@@ -313,9 +318,9 @@ class Tracker(Singleton):
                 (light_status is True or light_status is None) and \
                 (triaxial_status is True or triaxial_status is None) and \
                 (mike_status is True or mike_status is None):
-            self.running_led.period = 0.5
+            self.__controller.running_led_show(0.5)
         else:
-            self.running_led.period = 2
+            self.__controller.running_led_show(2)
             device_status = False
 
         if device_status is False:
@@ -338,11 +343,23 @@ class Tracker(Singleton):
         }
 
         # Get cloud location data
-        loc_info = self.locator.read(current_settings["app"]["loc_method"]) if self.locator else None
+        loc_info = self.__locator.read(current_settings["app"]["loc_method"]) if self.__locator else None
         if loc_info:
             loc_method_dict = {1: "GPS", 2: "CELL", 4: "WIFI"}
-            log.debug("Location Data loc_method: %s" % loc_method_dict.get(loc_info[0], loc_info[0]))
-            device_data.update(loc_info[1])
+            loc_data = None
+            for loc_method in loc_method_dict.keys():
+                if loc_info.get(loc_method):
+                    log.debug("Location Data loc_method: %s" % loc_method_dict[loc_method])
+                    loc_data = loc_info[loc_method]
+                    break
+            if loc_data:
+                report_loc_data = None
+                if current_settings['sys']['cloud'] & default_values_sys._cloud.quecIot:
+                    report_loc_data = self.__get_quec_loc_data(loc_method, loc_data)
+                elif current_settings['sys']['cloud'] & default_values_sys._cloud.AliYun:
+                    report_loc_data = self.__get_ali_loc_data(loc_method, loc_data)
+                if report_loc_data:
+                    device_data.update(report_loc_data)
 
         # Get gps speed
         over_speed_check_res = self.__device_speed_check()
@@ -350,10 +367,10 @@ class Tracker(Singleton):
         device_data.update(over_speed_check_res)
 
         # Get battery energy
-        energy = self.battery.energy()
+        energy = self.__battery.get_energy()
         device_data.update({
             "energy": energy,
-            "voltage": self.battery.voltage(),
+            "voltage": self.__battery.get_voltage(),
         })
         if energy <= current_settings["app"]["low_power_alert_threshold"]:
             alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
@@ -530,24 +547,31 @@ class Tracker(Singleton):
 
 class DeviceCheck(object):
 
+    def __init__(self):
+        self.__locator = None
+
+    def set_locator(self, locator):
+        if isinstance(locator, Location):
+            self.__locator = locator
+            return True
+        return False
+
     def net(self):
         current_settings = settings.get()
-        checknet = checkNet.CheckNetwork(settings.PROJECT_NAME, settings.PROJECT_VERSION)
+        checknet = checkNet.CheckNetwork(PROJECT_NAME, PROJECT_VERSION)
         timeout = current_settings.get("sys", {}).get("checknet_timeout", 60)
         check_res = checknet.wait_network_connected(timeout)
         log.debug("DeviceCheck.net res: %s" % str(check_res))
         return check_res
 
-    def loction(self):
+    def location(self):
         # return True if OK
-        locator = Location()
-
         retry = 0
         gps_data = None
         sleep_time = 1
 
         while retry < 5:
-            gps_data = locator.read()
+            gps_data = self.__locator.read(default_values_app._loc_method.all)
             if gps_data:
                 break
             else:
@@ -555,7 +579,6 @@ class DeviceCheck(object):
                 utime.sleep(sleep_time)
                 sleep_time *= 2
 
-        del locator
         if gps_data:
             return True
 
@@ -580,7 +603,7 @@ class DeviceCheck(object):
 
 class Controller(Singleton):
     def __init__(self):
-        self.__remote = None
+        self.__remote_pub = None
         self.__settings = None
         self.__low_energy_rtc = None
         self.__energy_led = None
@@ -590,9 +613,9 @@ class Controller(Singleton):
         self.__data_call = None
         self.__ota_file_clear = None
 
-    def set_remote(self, remote):
-        if isinstance(remote, RemotePublish):
-            self.__remote = remote
+    def set_remote_pub(self, remote_pub):
+        if isinstance(remote_pub, RemotePublish):
+            self.__remote_pub = remote_pub
             return True
         return False
 
@@ -623,7 +646,8 @@ class Controller(Singleton):
     def set_power_key(self, power_key, power_key_cb):
         if isinstance(power_key, PowerKey):
             self.__power_key = power_key
-            self.__power_key.powerKeyEventRegister(self.power_key_cb)
+            if power_key_cb:
+                self.__power_key.powerKeyEventRegister(power_key_cb)
             return True
         return False
 
@@ -636,7 +660,7 @@ class Controller(Singleton):
         return False
 
     def set_data_call(self, data_call, data_call_cb):
-        if isinstance(data_call, dataCall):
+        if data_call is dataCall:
             self.__data_call = data_call
             if data_call_cb:
                 self.__data_call.setCallback(data_call_cb)
@@ -673,13 +697,13 @@ class Controller(Singleton):
         Power.powerDown()
 
     def remote_post_data(self, data):
-        return self.__remote.post_data(data)
+        return self.__remote_pub.post_data(data)
 
     def remote_ota_check(self):
-        return self.__remote.cloud_ota_check()
+        return self.__remote_pub.cloud_ota_check()
 
     def remote_ota_action(self, action, module):
-        return self.__remote.cloud_ota_action(action, module)
+        return self.__remote_pub.cloud_ota_action(action, module)
 
     def low_energy_rtc_init(self):
         return self.__low_energy_rtc.low_energy_init()
@@ -699,8 +723,107 @@ class Controller(Singleton):
     def ota_file_clean(self):
         self.__ota_file_clear.file_clear()
 
+    def running_led_show(self, period):
+        if self.__running_led:
+            self.__running_led.set_period(period)
+            return self.__running_led.led_timer_start()
+        return False
+
+    def energy_led_show(self, period):
+        if self.__energy_led:
+            self.__energy_led.set_period(period)
+            return self.__energy_led.led_timer_start()
+        return False
+
 
 def tracker_main():
+    current_settings = settings.get()
+
     tracker = Tracker()
+    controller = Controller()
     devicecheck = DeviceCheck()
+    battery = Battery()
+    sensor = Sensor()
+    locator = Location(current_settings["sys"]["gps_mode"], current_settings["sys"]["locator_init_params"])
+    cloud_init_params = current_settings['sys']['cloud_init_params']
+    if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
+        cloud = QuecThing(
+            cloud_init_params["PK"],
+            cloud_init_params["PS"],
+            cloud_init_params["DK"],
+            cloud_init_params["DS"],
+            cloud_init_params["SERVER"],
+            mcu_name=PROJECT_NAME,
+            mcu_version=PROJECT_VERSION
+        )
+        cloud_om = QuecObjectModel()
+        cloud_object_model = quec_object_model
+    elif current_settings["sys"]["cloud"] & default_values_sys._cloud.AliYun:
+        cloud = AliYunIot(
+            cloud_init_params["PK"],
+            cloud_init_params["PS"],
+            cloud_init_params["DK"],
+            cloud_init_params["DS"],
+            cloud_init_params["SERVER"],
+            burning_method=1,
+            mcu_name=PROJECT_NAME,
+            mcu_version=PROJECT_VERSION,
+            firmware_name=DEVICE_FIRMWARE_NAME,
+            firmware_version=DEVICE_FIRMWARE_VERSION
+        )
+        cloud_om = AliObjectModel()
+        cloud_object_model = ali_object_model
+    else:
+        raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
+
+    history = History()
+    remote_pub = RemotePublish()
+    remote_sub = RemoteSubcribe()
+    low_energy_rtc = LowEnergyRTC()
+    # energy_led = LED()
+    # running_led = LED()
+    power_key = PowerKey() if PowerKey is not None else None
+    usb = USB() if USB is not None else None
+    data_call = dataCall
+    ota_file_clear = OTAFileClear()
+
+    tracker.set_controller(controller)
     tracker.set_devicecheck(devicecheck)
+    tracker.set_battery(battery)
+    tracker.set_sensor(sensor)
+    tracker.set_locator(locator)
+    tracker.set_cloud_om(cloud_om)
+    tracker.init_cloud_object_module(cloud_object_model)
+
+    remote_pub.set_cloud(cloud)
+    remote_pub.addObserver(history)
+    remote_sub.set_executor(tracker)
+
+    controller.set_remote_pub(remote_pub)
+    controller.set_settings(settings)
+    controller.set_low_energy_rtc(low_energy_rtc)
+    # controller.set_energy_led(energy_led)
+    # controller.set_running_led(running_led)
+    controller.set_power_key(power_key, pwk_callback)
+    controller.set_usb(usb, usb_callback)
+    controller.set_data_call(data_call, None)
+    controller.set_ota_file_clear(ota_file_clear)
+
+    work_cycle_period = current_settings["app"]["work_cycle_period"]
+    low_energy_rtc.set_period(work_cycle_period)
+    low_energy_rtc.set_low_energy_method(tracker.__get_low_energy_method(work_cycle_period))
+    low_energy_rtc.addObserver(tracker)
+
+    devicecheck.set_locator(locator)
+
+    # TODO: Get tempreture from sensor.
+    battery.set_temp(20)
+
+    cloud.addObserver(remote_sub)
+    cloud.set_object_model(tracker.cloud_om)
+    cloud.init()
+
+    controller.ota_file_clean()
+    tracker.device_status_check()
+    controller.low_energy_rtc_init()
+    controller.low_energy_rtc_start()

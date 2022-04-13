@@ -52,32 +52,35 @@ class _gps_mode(object):
 class GPSMatch(object):
 
     def GxRMC(self, gps_data):
-        rmc_re = ure.search(
-            r"\$G[NP]RMC,\d+\.\d+,[AV],\d+\.\d+,[NS],\d+\.\d+,[EW],\d+\.\d+,\d+\.\d+,\d+,\d*\.*\d*,[EW]*,[ADEN]*,[SCUV]*\**(\d|\w)*",
-            gps_data)
-        if rmc_re:
-            return rmc_re.group(0)
+        if gps_data:
+            rmc_re = ure.search(
+                r"\$G[NP]RMC,\d+\.\d+,[AV],\d+\.\d+,[NS],\d+\.\d+,[EW],\d+\.\d+,\d+\.\d+,\d+,\d*\.*\d*,[EW]*,[ADEN]*,[SCUV]*\**(\d|\w)*",
+                gps_data)
+            if rmc_re:
+                return rmc_re.group(0)
         return ""
 
     def GxGGA(self, gps_data):
-        gga_re = ure.search(
-            r"\$G[BLPN]GGA,\d+\.\d+,\d+\.\d+,[NS],\d+\.\d+,[EW],[0126],\d+,\d+\.\d+,-*\d+\.\d+,M,-*\d+\.\d+,M,\d*,\**(\d|\w)*",
-            gps_data)
-        if gga_re:
-            return gga_re.group(0)
+        if gps_data:
+            gga_re = ure.search(
+                r"\$G[BLPN]GGA,\d+\.\d+,\d+\.\d+,[NS],\d+\.\d+,[EW],[0126],\d+,\d+\.\d+,-*\d+\.\d+,M,-*\d+\.\d+,M,\d*,\**(\d|\w)*",
+                gps_data)
+            if gga_re:
+                return gga_re.group(0)
         return ""
 
     def GxVTG(self, gps_data):
-        vtg_re = ure.search(r"\$G[NP]VTG,\d+\.\d+,T,\d*\.*\d*,M,\d+\.\d+,N,\d+\.\d+,K,[ADEN]*\*(\d|\w)*", gps_data)
-        if vtg_re:
-            return vtg_re.group(0)
+        if gps_data:
+            vtg_re = ure.search(r"\$G[NP]VTG,\d+\.\d+,T,\d*\.*\d*,M,\d+\.\d+,N,\d+\.\d+,K,[ADEN]*\*(\d|\w)*", gps_data)
+            if vtg_re:
+                return vtg_re.group(0)
         return ""
 
     def GxGSV(self, gps_data):
-        gsv_re = ure.search(r"\$G[NP]GSV,\d+,\d+,\d+,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*\**(\d|\w)*", gps_data)
-        if gsv_re:
-            return gsv_re.group(0)
-
+        if gps_data:
+            gsv_re = ure.search(r"\$G[NP]GSV,\d+,\d+,\d+,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*,\d*\**(\d|\w)*", gps_data)
+            if gsv_re:
+                return gsv_re.group(0)
         return ""
 
 

@@ -80,6 +80,7 @@ class RemotePublish(Observable):
         cloud:
             CloudIot Object
         """
+        super().__init__()
         self.__cloud = None
 
     def __cloud_conn(self, enforce=False):
