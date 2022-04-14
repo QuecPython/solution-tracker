@@ -25,7 +25,7 @@ class RemoteSubcribe(CloudObserver):
     def get_executor(self):
         return self.__executor
 
-    def set_executor(self, executor):
+    def add_executor(self, executor):
         if executor:
             self.__executor = executor
             return True
@@ -89,7 +89,7 @@ class RemotePublish(Observable):
     def __cloud_post(self, data):
         return self.__cloud.post_data(data) if self.__cloud else False
 
-    def set_cloud(self, cloud):
+    def add_cloud(self, cloud):
         if hasattr(cloud, "init") and \
                 hasattr(cloud, "post_data") and \
                 hasattr(cloud, "ota_request") and \

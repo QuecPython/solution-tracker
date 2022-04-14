@@ -36,11 +36,9 @@ _gps_read_lock = _thread.allocate_lock()
 
 
 class _loc_method(object):
-    none = 0x0
     gps = 0x1
     cell = 0x2
     wifi = 0x4
-    all = 0x7
 
 
 class _gps_mode(object):
@@ -332,17 +330,17 @@ class GPS(Singleton):
 
 
 class CellLocator(object):
-    def __init__(self, cellLocator_cfg):
-        self.cellLocator_cfg = cellLocator_cfg
+    def __init__(self, cell_cfg):
+        self.cell_cfg = cell_cfg
 
     def read(self):
         res = -1
         loc_data = cellLocator.getLocation(
-            self.cellLocator_cfg["serverAddr"],
-            self.cellLocator_cfg["port"],
-            self.cellLocator_cfg["token"],
-            self.cellLocator_cfg["timeout"],
-            self.cellLocator_cfg["profileIdx"]
+            self.cell_cfg["serverAddr"],
+            self.cell_cfg["port"],
+            self.cell_cfg["token"],
+            self.cell_cfg["timeout"],
+            self.cell_cfg["profileIdx"]
         )
         if isinstance(loc_data, tuple) and len(loc_data) == 3:
             res = 0
@@ -354,8 +352,8 @@ class CellLocator(object):
 
 
 class WiFiLocator(object):
-    def __init__(self, wifiLocator_cfg):
-        self.wifilocator_obj = wifilocator(wifiLocator_cfg["token"])
+    def __init__(self, wifi_cfg):
+        self.wifilocator_obj = wifilocator(wifi_cfg["token"])
 
     def read(self):
         res = -1
@@ -391,8 +389,8 @@ class Location(Singleton):
 
         if loc_method & _loc_method.cell:
             if self.cellLoc is None:
-                if self.locator_init_params.get("cellLocator_cfg"):
-                    self.cellLoc = CellLocator(self.locator_init_params["cellLocator_cfg"])
+                if self.locator_init_params.get("cell_cfg"):
+                    self.cellLoc = CellLocator(self.locator_init_params["cell_cfg"])
                 else:
                     raise ValueError("Invalid cell-locator init parameters.")
         else:
@@ -400,8 +398,8 @@ class Location(Singleton):
 
         if loc_method & _loc_method.wifi:
             if self.wifiLoc is None:
-                if self.locator_init_params.get("wifiLocator_cfg"):
-                    self.wifiLoc = WiFiLocator(self.locator_init_params["wifiLocator_cfg"])
+                if self.locator_init_params.get("wifi_cfg"):
+                    self.wifiLoc = WiFiLocator(self.locator_init_params["wifi_cfg"])
                 else:
                     raise ValueError("Invalid wifi-locator init parameters.")
         else:

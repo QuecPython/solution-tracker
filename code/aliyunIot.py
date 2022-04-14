@@ -14,7 +14,6 @@
 
 import ujson
 import utime
-import modem
 import _thread
 import osTimer
 
@@ -36,7 +35,7 @@ class AliObjectModel(CloudObjectModel):
 
 class AliYunIot(CloudObservable):
 
-    def __init__(self, pk, ps, dk, ds, server, burning_method=0, life_time=120,
+    def __init__(self, pk, ps, dk, ds, server, client_id, burning_method=0, life_time=120,
                  mcu_name="", mcu_version="", firmware_name="", firmware_version=""):
         super().__init__()
         self.__pk = pk
@@ -51,6 +50,7 @@ class AliYunIot(CloudObservable):
         self.__firmware_name = firmware_name
         self.__firmware_version = firmware_version
         self.__object_model = None
+        self.__client_id = client_id
 
         self.__ali = None
         self.__post_res = {}
@@ -246,9 +246,7 @@ class AliYunIot(CloudObservable):
         log.debug("aLiYun init. self.__pk: %s, self.__ps: %s, self.__dk: %s, self.__ds: %s, self.__server: %s" % (self.__pk, self.__ps, self.__dk, self.__ds, self.__server))
         self.__ali = aLiYun(self.__pk, self.__ps, self.__dk, self.__ds, self.__server)
         log.debug("aLiYun setMqtt.")
-        clientId = modem.getDevImei()
-        log.debug("aLiYun clientId(IMEI): %s" % clientId)
-        setMqttres = self.__ali.setMqtt(clientId, clean_session=False, keepAlive=self.__life_time, reconn=True)
+        setMqttres = self.__ali.setMqtt(self.__client_id, clean_session=False, keepAlive=self.__life_time, reconn=True)
         log.debug("aLiYun setMqttres: %s" % setMqttres)
         if setMqttres != -1:
             self.__ali.setCallback(self.__ali_sub_cb)

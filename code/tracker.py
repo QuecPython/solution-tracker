@@ -32,10 +32,10 @@ from usr.remote import RemotePublish, RemoteSubcribe
 from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.quecthing import QuecThing, QuecObjectModel
 from usr.common import numiter, Singleton
-from usr.location import Location, GPSMatch, GPSParse
+from usr.location import Location, GPSMatch, GPSParse, _loc_method
 from usr.settings import ALERTCODE, LOWENERGYMAP, PROJECT_NAME, PROJECT_VERSION, \
-    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, default_values_app, \
-    default_values_sys, Settings, quec_object_model, ali_object_model
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, UserConfig, \
+    SYSConfig, Settings
 
 try:
     from misc import USB
@@ -125,14 +125,14 @@ class Collector(Singleton):
         alert_data = {
             "current_speed": 0.00
         }
-        if current_settings["app"]["sw_over_speed_alert"] is True:
+        if current_settings["user_cfg"]["sw_over_speed_alert"] is True:
             if self.__locator.gps:
                 gps_data = self.__locator.gps.read()[1]
                 gps_match = GPSMatch()
                 gps_parse = GPSParse()
                 vtg_data = gps_match.GxVTG(gps_data)
                 speed = gps_parse.GxVTG_speed(vtg_data)
-                if speed and float(speed) >= current_settings["app"]["over_speed_threshold"]:
+                if speed and float(speed) >= current_settings["user_cfg"]["over_speed_threshold"]:
                     alert_code = 30003
                     alert_info = {"local_time": self.__get_local_time()}
                     alert_data = self.__get_alert_data(alert_code, alert_info)
@@ -148,7 +148,7 @@ class Collector(Singleton):
         current_settings = self.__controller.settings_get() if self.__controller else {}
         alert_data = {}
         if ALERTCODE.get(alert_code):
-            alert_status = current_settings.get("app", {}).get("sw_" + ALERTCODE.get(alert_code))
+            alert_status = current_settings.get("user_cfg", {}).get("sw_" + ALERTCODE.get(alert_code))
             if alert_status:
                 alert_data = {ALERTCODE.get(alert_code): alert_info}
             else:
@@ -164,7 +164,7 @@ class Collector(Singleton):
         support_methds = LOWENERGYMAP.get(device_model, [])
         method = "NULL"
         if support_methds:
-            if period >= current_settings["sys"]["work_mode_timeline"]:
+            if period >= current_settings["user_cfg"]["work_mode_timeline"]:
                 if "PSM" in support_methds:
                     method = "PSM"
                 elif "POWERDOWN" in support_methds:
@@ -243,53 +243,42 @@ class Collector(Singleton):
                         struct_key_struct=om_key_struct[struct_key].get("struct_info")
                     )
 
-    def set_controller(self, controller):
-        if isinstance(controller, Controller):
-            self.__controller = controller
+    def add_module(self, module):
+        if isinstance(module, Controller):
+            self.__controller = module
             return True
-        return False
+        elif isinstance(module, DeviceCheck):
+            self.__devicecheck = module
+            return True
+        elif isinstance(module, Battery):
+            self.__battery = module
+            return True
+        elif isinstance(module, Sensor):
+            self.__sensor = module
+            return True
+        elif isinstance(module, Location):
+            self.__locator = module
+            return True
+        elif isinstance(module, QuecObjectModel):
+            self.cloud_om = module
+            return True
+        elif isinstance(module, AliObjectModel):
+            self.cloud_om = module
+            return True
+        elif isinstance(module, History):
+            self.__history = module
+            return True
+        elif isinstance(module, DeviceCheck):
+            self.__devicecheck = module
+            return True
 
-    def set_devicecheck(self, devicecheck):
-        if isinstance(devicecheck, DeviceCheck):
-            self.__devicecheck = devicecheck
-            return True
-        return False
-
-    def set_battery(self, battery):
-        if isinstance(battery, Battery):
-            self.__battery = battery
-            return True
-        return False
-
-    def set_sensor(self, sensor):
-        if isinstance(sensor, Sensor):
-            self.__sensor = sensor
-            return True
-        return False
-
-    def set_locator(self, locator):
-        if isinstance(locator, Location):
-            self.__locator = locator
-            return True
-        return False
-
-    def set_cloud_om(self, cloud_om):
-        if isinstance(cloud_om, QuecObjectModel) or isinstance(cloud_om, AliObjectModel):
-            self.cloud_om = cloud_om
-            return True
-        return False
-
-    def set_history(self, history):
-        if isinstance(history, History):
-            self.__history = history
-            return True
         return False
 
     def get_loc_data(self, loc_method, loc_data):
         current_settings = self.__controller.settings_get()
-        if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
+        if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
             return self.__get_quec_loc_data(loc_method, loc_data)
-        elif current_settings["sys"]["cloud"] & default_values_sys._cloud.AliYun:
+        elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
             return self.__get_ali_loc_data(loc_method, loc_data)
         return {}
 
@@ -350,9 +339,15 @@ class Collector(Singleton):
         }
 
         # Get cloud location data
-        loc_info = self.__locator.read(current_settings["app"]["loc_method"]) if self.__locator else None
+        if current_settings["user_cfg"].get("loc_method"):
+            cfg_loc_method = current_settings["user_cfg"].get("loc_method")
+        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
+            cfg_loc_method = current_settings["LocConfig"]["loc_method"]
+        else:
+            cfg_loc_method = 7
+        loc_info = self.__locator.read(cfg_loc_method) if self.__locator else None
         if loc_info:
-            loc_method_dict = {1: "GPS", 2: "CELL", 4: "WIFI"}
+            loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
             loc_data = None
             for loc_method in loc_method_dict.keys():
                 if loc_info.get(loc_method):
@@ -361,9 +356,9 @@ class Collector(Singleton):
                     break
             if loc_data:
                 report_loc_data = None
-                if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
+                if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
                     report_loc_data = self.__get_quec_loc_data(loc_method, loc_data)
-                elif current_settings["sys"]["cloud"] & default_values_sys._cloud.AliYun:
+                elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
                     report_loc_data = self.__get_ali_loc_data(loc_method, loc_data)
                 if report_loc_data:
                     device_data.update(report_loc_data)
@@ -379,21 +374,21 @@ class Collector(Singleton):
             "energy": energy,
             "voltage": self.__battery.get_voltage(),
         })
-        if energy <= current_settings["app"]["low_power_alert_threshold"]:
+        if energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
             alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
             device_data.update(alert_data)
 
         # Get ota status & drive behiver code
         device_data.update({
-            "ota_status": current_settings["sys"]["ota_status"],
-            "drive_behavior_code": current_settings["sys"]["drive_behavior_code"],
+            "ota_status": current_settings["user_cfg"]["ota_status"],
+            "drive_behavior_code": current_settings["user_cfg"]["drive_behavior_code"],
         })
 
         # Get app settings info
-        device_data.update(current_settings["app"])
+        device_data.update(current_settings["user_cfg"])
 
         # Format loc method
-        device_data.update({"loc_method": self.__format_loc_method(current_settings["app"]["loc_method"])})
+        device_data.update({"loc_method": self.__format_loc_method(current_settings["user_cfg"]["loc_method"])})
 
         # TODO: Add other machine info.
 
@@ -410,16 +405,16 @@ class Collector(Singleton):
         post_res = self.__controller.remote_post_data(device_data)
 
         # OTA status rst
-        current_settings = settings.get()
-        ota_status_info = current_settings["sys"]["ota_status"]
+        current_settings = self.__controller.settings_get()
+        ota_status_info = current_settings["user_cfg"]["ota_status"]
         if ota_status_info["upgrade_status"] in (3, 4):
             self.ota_status_reset()
 
         return post_res
 
     def ota_status_reset(self):
-        current_settings = self.__controller.get()
-        ota_status_info = current_settings["sys"]["ota_status"]
+        current_settings = self.__controller.settings_get()
+        ota_status_info = current_settings["user_cfg"]["ota_status"]
         ota_info = {}
         ota_info["sys_target_version"] = "--"
         ota_info["app_target_version"] = "--"
@@ -428,7 +423,7 @@ class Collector(Singleton):
         ota_status_info.update(ota_info)
         self.__controller.settings_set("ota_status", ota_status_info)
 
-        if current_settings["sys"]["user_ota_action"] != -1:
+        if current_settings["user_cfg"]["user_ota_action"] != -1:
             self.__controller.settings_set("user_ota_action", -1)
 
     def report_history(self):
@@ -460,7 +455,7 @@ class Collector(Singleton):
             setting_flag = 0
 
             for arg in args:
-                if hasattr(default_values_app, arg[0]):
+                if hasattr(UserConfig, arg[0]):
                     set_res = self.__controller.settings_set(arg[0], arg[1])
                     if set_res and setting_flag == 0:
                         setting_flag = 1
@@ -478,18 +473,18 @@ class Collector(Singleton):
 
     def event_ota_plain(self, *args, **kwargs):
         current_settings = settings.get()
-        if current_settings["app"]["sw_ota"]:
-            if current_settings["app"]["sw_ota_auto_upgrade"] or current_settings["sys"]["user_ota_action"] != -1:
-                if current_settings["app"]["sw_ota_auto_upgrade"]:
+        if current_settings["user_cfg"]["sw_ota"]:
+            if current_settings["user_cfg"]["sw_ota_auto_upgrade"] or current_settings["user_cfg"]["user_ota_action"] != -1:
+                if current_settings["user_cfg"]["sw_ota_auto_upgrade"]:
                     ota_action_val = 1
                 else:
-                    if current_settings["sys"]["user_ota_action"] != -1:
-                        ota_action_val = current_settings["sys"]["user_ota_action"]
+                    if current_settings["user_cfg"]["user_ota_action"] != -1:
+                        ota_action_val = current_settings["user_cfg"]["user_ota_action"]
                     else:
                         return
 
-                if current_settings["sys"]["cloud"] == default_values_sys._cloud.quecIot or \
-                        current_settings["sys"]["cloud"] == default_values_sys._cloud.AliYun:
+                if current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot or \
+                        current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
                     log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
                     self.__controller.remote_ota_action(action=ota_action_val, module=kwargs.get("module"))
                 else:
@@ -506,17 +501,17 @@ class Collector(Singleton):
 
     def user_ota_action(self, action):
         current_settings = self.__controller.settings_get()
-        if current_settings["app"]["sw_ota"] and current_settings["app"]["sw_ota_auto_upgrade"] is False:
-            ota_status_info = current_settings["sys"]["ota_status"]
-            if ota_status_info["upgrade_status"] == 1 and current_settings["sys"]["user_ota_action"] == -1:
+        if current_settings["user_cfg"]["sw_ota"] and current_settings["user_cfg"]["sw_ota_auto_upgrade"] is False:
+            ota_status_info = current_settings["user_cfg"]["ota_status"]
+            if ota_status_info["upgrade_status"] == 1 and current_settings["user_cfg"]["user_ota_action"] == -1:
                 self.__controller.settings_set("user_ota_action", action)
                 self.__controller.settings_save()
                 self.__controller.remote_ota_check()
 
     def ota_status(self, upgrade_info=None):
         current_settings = self.__controller.settings_get()
-        if upgrade_info and current_settings["app"]["sw_ota"]:
-            ota_status_info = current_settings["sys"]["ota_status"]
+        if upgrade_info and current_settings["user_cfg"]["sw_ota"]:
+            ota_status_info = current_settings["user_cfg"]["ota_status"]
             if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
                 ota_info = {}
                 if upgrade_info[0] == DEVICE_FIRMWARE_NAME:
@@ -546,13 +541,13 @@ class Collector(Singleton):
         self.__controller.low_energy_rtc_start()
 
     def cloud_init_params(self, params):
-        self.__controller.settings_set("cloud_init_params", params)
+        self.__controller.settings_set("cloud", params)
         self.__controller.settings_save()
 
     def low_engery_rtc_option(self, low_energy_method):
         self.report_history()
         current_settings = self.__controller.settings_get()
-        if current_settings["app"]["work_mode"] == default_values_app._work_mode.intelligent:
+        if current_settings["user_cfg"]["work_mode"] == UserConfig._work_mode.intelligent:
             speed_info = self.__device_speed_check()
             if speed_info.get("current_speed") > 0:
                 self.device_data_report()
@@ -578,7 +573,7 @@ class DeviceCheck(object):
     def __init__(self):
         self.__locator = None
 
-    def set_locator(self, locator):
+    def add_locator(self, locator):
         if isinstance(locator, Location):
             self.__locator = locator
             return True
@@ -600,7 +595,13 @@ class DeviceCheck(object):
         sleep_time = 1
 
         while retry < 5:
-            gps_data = self.__locator.read(current_settings["app"]["loc_method"])
+            if current_settings["user_cfg"].get("loc_method"):
+                loc_method = current_settings["user_cfg"].get("loc_method")
+            elif current_settings["sys"]["base_cfg"]["LocConfig"]:
+                loc_method = current_settings["LocConfig"].get("loc_method")
+            else:
+                loc_method = 7
+            gps_data = self.__locator.read(loc_method)
             if gps_data:
                 break
             else:
@@ -641,6 +642,44 @@ class Controller(Singleton):
         self.__usb = None
         self.__data_call = None
         self.__ota_file_clear = None
+
+    def add_module(self, module, led_type=None, callback=None):
+        if isinstance(module, RemotePublish):
+            self.__remote_pub = module
+            return True
+        elif isinstance(module, Settings):
+            self.__settings = module
+            return True
+        elif isinstance(module, LowEnergyRTC):
+            self.__low_energy_rtc = module
+            return True
+        elif isinstance(module, OTAFileClear):
+            self.__ota_file_clear = module
+            return True
+        elif isinstance(module, LED):
+            if led_type == "energy":
+                self.__energy_led = module
+                return True
+            elif led_type == "running":
+                self.running_led = module
+                return True
+        elif isinstance(module, PowerKey):
+            self.__power_key = module
+            if callback:
+                self.__power_key.powerKeyEventRegister(callback)
+            return True
+        elif isinstance(module, USB):
+            self.__usb = module
+            if callback:
+                self.__usb.setCallback(callback)
+            return True
+        elif module is dataCall:
+            self.__data_call = module
+            if callback:
+                self.__data_call.setCallback(callback)
+            return True
+
+        return False
 
     def set_remote_pub(self, remote_pub):
         if isinstance(remote_pub, RemotePublish):
@@ -765,7 +804,7 @@ class Controller(Singleton):
         return False
 
 
-def tracker_main():
+def tracker():
     current_settings = settings.get()
 
     collector = Collector()
@@ -773,9 +812,9 @@ def tracker_main():
     devicecheck = DeviceCheck()
     battery = Battery()
     sensor = Sensor()
-    locator = Location(current_settings["sys"]["gps_mode"], current_settings["sys"]["locator_init_params"])
-    cloud_init_params = current_settings["sys"]["cloud_init_params"]
-    if current_settings["sys"]["cloud"] & default_values_sys._cloud.quecIot:
+    locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
+    cloud_init_params = current_settings["cloud"]
+    if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
         cloud = QuecThing(
             cloud_init_params["PK"],
             cloud_init_params["PS"],
@@ -786,14 +825,16 @@ def tracker_main():
             mcu_version=PROJECT_VERSION
         )
         cloud_om = QuecObjectModel()
-        cloud_object_model = quec_object_model
-    elif current_settings["sys"]["cloud"] & default_values_sys._cloud.AliYun:
+        cloud_object_model = current_settings["cloud"]["object_model"]
+    elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
+        client_id = cloud_init_params["DK"] if cloud_init_params["DK"] else modem.getDevImei()
         cloud = AliYunIot(
             cloud_init_params["PK"],
             cloud_init_params["PS"],
             cloud_init_params["DK"],
             cloud_init_params["DS"],
             cloud_init_params["SERVER"],
+            client_id,
             burning_method=1,
             mcu_name=PROJECT_NAME,
             mcu_version=PROJECT_VERSION,
@@ -801,7 +842,7 @@ def tracker_main():
             firmware_version=DEVICE_FIRMWARE_VERSION
         )
         cloud_om = AliObjectModel()
-        cloud_object_model = ali_object_model
+        cloud_object_model = current_settings["cloud"]["object_model"]
     else:
         raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
 
@@ -816,35 +857,35 @@ def tracker_main():
     data_call = dataCall
     ota_file_clear = OTAFileClear()
 
-    collector.set_controller(controller)
-    collector.set_devicecheck(devicecheck)
-    collector.set_battery(battery)
-    collector.set_sensor(sensor)
-    collector.set_locator(locator)
-    collector.set_cloud_om(cloud_om)
-    collector.set_history(history)
+    collector.add_module(controller)
+    collector.add_module(devicecheck)
+    collector.add_module(battery)
+    collector.add_module(sensor)
+    collector.add_module(locator)
+    collector.add_module(cloud_om)
+    collector.add_module(history)
     collector.init_cloud_object_module(cloud_object_model)
 
-    remote_pub.set_cloud(cloud)
+    remote_pub.add_cloud(cloud)
     remote_pub.addObserver(history)
-    remote_sub.set_executor(collector)
+    remote_sub.add_executor(collector)
 
-    controller.set_remote_pub(remote_pub)
-    controller.set_settings(settings)
-    controller.set_low_energy_rtc(low_energy_rtc)
-    # controller.set_energy_led(energy_led)
-    # controller.set_running_led(running_led)
-    controller.set_power_key(power_key, pwk_callback)
-    controller.set_usb(usb, usb_callback)
-    controller.set_data_call(data_call, None)
-    controller.set_ota_file_clear(ota_file_clear)
+    controller.add_module(remote_pub)
+    controller.add_module(settings)
+    controller.add_module(low_energy_rtc)
+    controller.add_module(ota_file_clear)
+    # controller.add_module(energy_led, led_type="energy")
+    # controller.add_module(running_led, led_type="running")
+    controller.add_module(power_key, callback=pwk_callback)
+    controller.add_module(usb, callback=usb_callback)
+    controller.add_module(data_call)
 
-    work_cycle_period = current_settings["app"]["work_cycle_period"]
+    work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
     low_energy_rtc.set_period(work_cycle_period)
     low_energy_rtc.set_low_energy_method(collector.__get_low_energy_method(work_cycle_period))
     low_energy_rtc.addObserver(collector)
 
-    devicecheck.set_locator(locator)
+    devicecheck.add_locator(locator)
 
     # TODO: Get tempreture from sensor.
     battery.set_temp(20)

@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import modem
 import utime
 import osTimer
 
 from usr.logging import Logger
-from usr.tracker import Collector, tracker_main
+from usr.tracker import Collector, tracker
 from usr.battery import Battery
 from usr.history import History
-from usr.location import Location
+from usr.location import Location, _loc_method
 from usr.quecthing import QuecThing, QuecObjectModel
 from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.mpower import LowEnergyRTC
 from usr.common import Observable, Observer
 from usr.remote import RemoteSubcribe, RemotePublish
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, \
-    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
-    quec_object_model, ali_object_model, default_values_sys, default_values_app
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, LocConfig
 
 log = Logger(__name__)
 
@@ -83,16 +83,20 @@ def test_settings():
     print("[test_settings] SUCCESS: Settings.get().")
     res["success"] += 1
 
-    for key, val in current_settings.get("app", {}).items():
+    for key, val in current_settings.get("user_cfg", {}).items():
         val = "18888888888" if key == "phone_num" else val
-        assert settings.set(key, val) is True, "[test_settings] FAILED: APP Settings.set(%s, %s)." % (key, val)
+        if key == "work_mode_timeline":
+            set_res = False
+        else:
+            set_res = True
+        assert settings.set(key, val) is set_res, "[test_settings] FAILED: APP Settings.set(%s, %s)." % (key, val)
         print("[test_settings] SUCCESS: APP Settings.set(%s, %s)." % (key, val))
         res["success"] += 1
-    for key, val in current_settings.get("sys", {}).items():
-        if key in ("sw_log", "ota_status", "cloud_init_params", "user_ota_action"):
-            assert settings.set(key, val) is True, "[test_settings] FAILED: SYS Settings.set(%s, %s)." % (key, val)
-            print("[test_settings] SUCCESS: SYS Settings.set(%s, %s)." % (key, val))
-            res["success"] += 1
+
+    cloud_params = current_settings["cloud"]
+    assert settings.set("cloud", cloud_params) is True, "[test_settings] FAILED: SYS Settings.set(%s, %s)." % ("cloud", str(cloud_params))
+    print("[test_settings] SUCCESS: SYS Settings.set(%s, %s)." % ("cloud", str(cloud_params)))
+    res["success"] += 1
 
     assert settings.save() is True, "[test_settings] FAILED: Settings.save()."
     print("[test_settings] SUCCESS: Settings.save().")
@@ -194,7 +198,7 @@ def test_location():
     settings = Settings()
     current_settings = settings.get()
     gps_mode = 0x2
-    locator_init_params = current_settings["sys"]["locator_init_params"]
+    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
 
     locator = Location(gps_mode, locator_init_params)
     for loc_method in range(1, 8):
@@ -218,7 +222,7 @@ def test_quecthing():
 
     settings = Settings()
     current_settings = settings.get()
-    cloud_init_params = default_values_sys._quecIot
+    cloud_init_params = current_settings["cloud"]
 
     cloud = QuecThing(
         cloud_init_params["PK"],
@@ -234,11 +238,11 @@ def test_quecthing():
 
     collector = Collector()
     quec_om = QuecObjectModel()
-    collector.set_cloud_om(quec_om)
-    collector.init_cloud_object_module(quec_object_model)
+    collector.add_module(quec_om)
+    collector.init_cloud_object_module(cloud_init_params["object_model"])
 
-    gps_mode = default_values_sys._gps_mode.external
-    locator_init_params = current_settings["sys"]["locator_init_params"]
+    gps_mode = LocConfig._gps_mode.external
+    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
     msg = "[test_quecthing] %s: cloud.set_object_model(%s)."
@@ -252,7 +256,7 @@ def test_quecthing():
     res["success"] += 1
 
     msg = "[test_quecthing] %s: collector.__get_quec_loc_data(%s, %s) %s."
-    loc_method = default_values_app.loc_method.gps
+    loc_method = _loc_method.gps
     loc_data = locator.read(loc_method)
     quec_loc_data = collector.__get_quec_loc_data(loc_method, loc_data.get(loc_method))
     assert quec_loc_data != "", msg % ("FAILED", loc_method, loc_data, quec_loc_data)
@@ -288,14 +292,16 @@ def test_aliyuniot():
 
     settings = Settings()
     current_settings = settings.get()
-    cloud_init_params = default_values_sys._AliYun
+    cloud_init_params = current_settings["cloud"]
 
+    client_id = cloud_init_params["DK"] if cloud_init_params["DK"] else modem.getDevImei()
     cloud = AliYunIot(
         cloud_init_params["PK"],
         cloud_init_params["PS"],
         cloud_init_params["DK"],
         cloud_init_params["DS"],
         cloud_init_params["SERVER"],
+        client_id,
         burning_method=1,
         mcu_name=PROJECT_NAME,
         mcu_version=PROJECT_VERSION,
@@ -307,11 +313,11 @@ def test_aliyuniot():
 
     collector = Collector()
     ali_om = AliObjectModel()
-    collector.set_cloud_om(ali_om)
-    collector.init_cloud_object_module(ali_object_model)
+    collector.add_module(ali_om)
+    collector.init_cloud_object_module(cloud_init_params["object_model"])
 
-    gps_mode = default_values_sys._gps_mode.external
-    locator_init_params = current_settings["sys"]["locator_init_params"]
+    gps_mode = LocConfig._gps_mode.external
+    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
     msg = "[test_aliyuniot] %s: cloud.set_object_model(%s)."
@@ -325,7 +331,7 @@ def test_aliyuniot():
     res["success"] += 1
 
     msg = "[test_aliyuniot] %s: collector.__get_ali_loc_data(%s, %s) %s."
-    loc_method = default_values_app.loc_method.gps
+    loc_method = _loc_method.gps
     loc_data = locator.read(loc_method)
     ali_loc_data = collector.__get_ali_loc_data(loc_method, loc_data.get(loc_method))
     assert ali_loc_data != "", msg % ("FAILED", loc_method, loc_data, ali_loc_data)
@@ -366,7 +372,7 @@ def test_remote():
 
     settings = Settings()
     current_settings = settings.get()
-    cloud_init_params = current_settings["sys"]["cloud_init_params"]
+    cloud_init_params = current_settings["cloud"]
 
     cloud = QuecThing(
         cloud_init_params["PK"],
@@ -406,7 +412,7 @@ def test_remote():
     # print(msg % "SUCCESS")
 
     gps_mode = 0x2
-    locator_init_params = current_settings["sys"]["locator_init_params"]
+    locator_init_params = current_settings["user_cfg"]["locator_init_params"]
     locator = Location(gps_mode, locator_init_params)
 
     loc_method = 0x1
@@ -487,7 +493,7 @@ def test_low_energy_rtc():
 
 
 def test_tracker():
-    tracker_main()
+    tracker()
 
 
 def main():
