@@ -31,9 +31,9 @@ from usr.mpower import LowEnergyRTC
 from usr.remote import RemotePublish, RemoteSubcribe
 from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.quecthing import QuecThing, QuecObjectModel
-from usr.common import numiter, Singleton
+from usr.common import numiter, Singleton, LOWENERGYMAP
 from usr.location import Location, GPSMatch, GPSParse, _loc_method
-from usr.settings import ALERTCODE, LOWENERGYMAP, PROJECT_NAME, PROJECT_VERSION, \
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, \
     DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, UserConfig, \
     SYSConfig, Settings
 
@@ -50,6 +50,16 @@ except ImportError:
 log = getLogger(__name__)
 
 sim.setSimDet(1, 0)
+
+ALERTCODE = {
+    20000: "fault_alert",
+    30002: "low_power_alert",
+    30003: "over_speed_alert",
+    30004: "sim_abnormal_alert",
+    30005: "disassemble_alert",
+    40000: "drive_behavior_alert",
+    50001: "sos_alert",
+}
 
 
 def pwk_callback(status):
@@ -121,7 +131,12 @@ class Collector(Singleton):
         return loc_method
 
     def __device_speed_check(self):
-        current_settings = self.__controller.settings_get() if self.__controller else {}
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+        if not self.__locator:
+            raise TypeError("self.__locator is not registered")
+
+        current_settings = self.__controller.settings_get()
         alert_data = {
             "current_speed": 0.00
         }
@@ -145,7 +160,9 @@ class Collector(Singleton):
         return str(utime.mktime(utime.localtime()) * 1000)
 
     def __get_alert_data(self, alert_code, alert_info):
-        current_settings = self.__controller.settings_get() if self.__controller else {}
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+        current_settings = self.__controller.settings_get()
         alert_data = {}
         if ALERTCODE.get(alert_code):
             alert_status = current_settings.get("user_cfg", {}).get("sw_" + ALERTCODE.get(alert_code))
@@ -159,6 +176,8 @@ class Collector(Singleton):
         return alert_data
 
     def __get_low_energy_method(self, period):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
         current_settings = self.__controller.settings_get()
         device_model = modem.getDevModel()
         support_methds = LOWENERGYMAP.get(device_model, [])
@@ -231,6 +250,8 @@ class Collector(Singleton):
             return {"non_gps": []}
 
     def init_cloud_object_module(self, cloud_object_model):
+        if self.cloud_om is None:
+            raise TypeError("self.cloud_om is not registered.")
         for om_type in cloud_object_model.keys():
             for om_key in cloud_object_model[om_type]:
                 om_key_id = cloud_object_model[om_type][om_key].get("id")
@@ -268,13 +289,12 @@ class Collector(Singleton):
         elif isinstance(module, History):
             self.__history = module
             return True
-        elif isinstance(module, DeviceCheck):
-            self.__devicecheck = module
-            return True
 
         return False
 
     def get_loc_data(self, loc_method, loc_data):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
         current_settings = self.__controller.settings_get()
         if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
             return self.__get_quec_loc_data(loc_method, loc_data)
@@ -283,6 +303,11 @@ class Collector(Singleton):
         return {}
 
     def device_status_get(self):
+        if not self.__devicecheck:
+            raise TypeError("self.__devicecheck is not registered.")
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         device_status_data = {}
         device_module_status = {}
         alert_code = 20000
@@ -314,9 +339,10 @@ class Collector(Singleton):
                 (light_status is True or light_status is None) and \
                 (triaxial_status is True or triaxial_status is None) and \
                 (mike_status is True or mike_status is None):
-            self.__controller.running_led_show(0.5)
+            # self.__controller.running_led_show(0.5)
+            device_status = True
         else:
-            self.__controller.running_led_show(2)
+            # self.__controller.running_led_show(2)
             device_status = False
 
         if device_status is False:
@@ -331,7 +357,14 @@ class Collector(Singleton):
         self.device_data_report(event_data=device_status_check_res)
 
     def device_data_get(self, power_switch=True):
-        current_settings = self.__controller.settings_get() if self.__controller else {}
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+        if not self.__battery:
+            raise TypeError("self.__battery is not registered.")
+        if not self.__locator:
+            raise TypeError("self.__locator is not registered.")
+
+        current_settings = self.__controller.settings_get()
 
         device_data = {
             "power_switch": power_switch,
@@ -345,7 +378,7 @@ class Collector(Singleton):
             cfg_loc_method = current_settings["LocConfig"]["loc_method"]
         else:
             cfg_loc_method = 7
-        loc_info = self.__locator.read(cfg_loc_method) if self.__locator else None
+        loc_info = self.__locator.read(cfg_loc_method)
         if loc_info:
             loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
             loc_data = None
@@ -395,6 +428,9 @@ class Collector(Singleton):
         return device_data
 
     def device_data_report(self, power_switch=True, event_data={}, msg=""):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         device_data = self.device_data_get(power_switch)
         if event_data:
             device_data.update(event_data)
@@ -405,7 +441,7 @@ class Collector(Singleton):
         post_res = self.__controller.remote_post_data(device_data)
 
         # OTA status rst
-        current_settings = self.__controller.settings_get()
+        current_settings = self.__controller.settings_get() if self.__controller else {}
         ota_status_info = current_settings["user_cfg"]["ota_status"]
         if ota_status_info["upgrade_status"] in (3, 4):
             self.ota_status_reset()
@@ -413,6 +449,9 @@ class Collector(Singleton):
         return post_res
 
     def ota_status_reset(self):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         current_settings = self.__controller.settings_get()
         ota_status_info = current_settings["user_cfg"]["ota_status"]
         ota_info = {}
@@ -427,8 +466,12 @@ class Collector(Singleton):
             self.__controller.settings_set("user_ota_action", -1)
 
     def report_history(self):
-        res = True
+        if not self.__history:
+            raise TypeError("self.__history is not registered.")
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
 
+        res = True
         hist = self.__history.read()
         if hist["data"]:
             pt_count = 0
@@ -451,6 +494,9 @@ class Collector(Singleton):
         return False
 
     def event_done(self, *args, **kwargs):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         try:
             setting_flag = 0
 
@@ -472,6 +518,9 @@ class Collector(Singleton):
         return self.device_data_report()
 
     def event_ota_plain(self, *args, **kwargs):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         current_settings = settings.get()
         if current_settings["user_cfg"]["sw_ota"]:
             if current_settings["user_cfg"]["sw_ota_auto_upgrade"] or current_settings["user_cfg"]["user_ota_action"] != -1:
@@ -495,11 +544,17 @@ class Collector(Singleton):
         return False
 
     def power_switch(self, flag=None):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         self.event_query(power_switch=flag)
         if flag is False:
             self.__controller.power_down()
 
     def user_ota_action(self, action):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         current_settings = self.__controller.settings_get()
         if current_settings["user_cfg"]["sw_ota"] and current_settings["user_cfg"]["sw_ota_auto_upgrade"] is False:
             ota_status_info = current_settings["user_cfg"]["ota_status"]
@@ -509,6 +564,9 @@ class Collector(Singleton):
                 self.__controller.remote_ota_check()
 
     def ota_status(self, upgrade_info=None):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         current_settings = self.__controller.settings_get()
         if upgrade_info and current_settings["user_cfg"]["sw_ota"]:
             ota_status_info = current_settings["user_cfg"]["ota_status"]
@@ -526,11 +584,17 @@ class Collector(Singleton):
                 self.__controller.settings_save()
 
     def power_restart(self, flag):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         self.event_query(power_switch=False)
         self.__controller.power_restart()
 
     def work_cycle_period(self, period):
         # Reset work_cycle_period & Reset RTC
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         self.__controller.low_energy_rtc_enable(0)
 
         self.__controller.low_energy_rtc_set_period(period)
@@ -541,10 +605,16 @@ class Collector(Singleton):
         self.__controller.low_energy_rtc_start()
 
     def cloud_init_params(self, params):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         self.__controller.settings_set("cloud", params)
         self.__controller.settings_save()
 
     def low_engery_rtc_option(self, low_energy_method):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
         self.report_history()
         current_settings = self.__controller.settings_get()
         if current_settings["user_cfg"]["work_mode"] == UserConfig._work_mode.intelligent:
@@ -589,6 +659,9 @@ class DeviceCheck(object):
 
     def location(self):
         # return True if OK
+        if not self.__locator:
+            raise TypeError("self.__locator is not registered")
+
         current_settings = settings.get()
         retry = 0
         gps_data = None
@@ -601,6 +674,7 @@ class DeviceCheck(object):
                 loc_method = current_settings["LocConfig"].get("loc_method")
             else:
                 loc_method = 7
+
             gps_data = self.__locator.read(loc_method)
             if gps_data:
                 break
@@ -742,9 +816,13 @@ class Controller(Singleton):
         return False
 
     def settings_get(self):
+        if not self.__settings:
+            raise TypeError("self.__settings is not registered.")
         return self.__settings.get()
 
     def settings_set(self, key, value):
+        if not self.__settings:
+            raise TypeError("self.__settings is not registered.")
         if key == "loc_method":
             v = "0b"
             v += str(int(value.get(3, 0)))
@@ -756,6 +834,8 @@ class Controller(Singleton):
         return set_res
 
     def settings_save(self):
+        if not self.__settings:
+            raise TypeError("self.__settings is not registered.")
         return self.__settings.save()
 
     def power_restart(self):
@@ -765,43 +845,61 @@ class Controller(Singleton):
         Power.powerDown()
 
     def remote_post_data(self, data):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.post_data(data)
 
     def remote_ota_check(self):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.cloud_ota_check()
 
     def remote_ota_action(self, action, module):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.cloud_ota_action(action, module)
 
     def low_energy_rtc_init(self):
+        if not self.__low_energy_rtc:
+            raise TypeError("self.__low_energy_rtc is not registered.")
         return self.__low_energy_rtc.low_energy_init()
 
     def low_energy_rtc_start(self):
+        if not self.__low_energy_rtc:
+            raise TypeError("self.__low_energy_rtc is not registered.")
         return self.__low_energy_rtc.start_rtc()
 
     def low_energy_rtc_enable(self, enable):
+        if not self.__low_energy_rtc:
+            raise TypeError("self.__low_energy_rtc is not registered.")
         return self.__low_energy_rtc.enable_alarm(enable)
 
     def low_energy_rtc_set_period(self, period):
+        if not self.__low_energy_rtc:
+            raise TypeError("self.__low_energy_rtc is not registered.")
         return self.__low_energy_rtc.set_period(period)
 
     def low_energy_rtc_set_method(self, method):
+        if not self.__low_energy_rtc:
+            raise TypeError("self.__low_energy_rtc is not registered.")
         return self.__low_energy_rtc.set_low_energy_method(method)
 
     def ota_file_clean(self):
+        if not self.__ota_file_clear:
+            raise TypeError("self.__ota_file_clear is not registered.")
         self.__ota_file_clear.file_clear()
 
     def running_led_show(self, period):
-        if self.__running_led:
-            self.__running_led.set_period(period)
-            return self.__running_led.led_timer_start()
-        return False
+        if not self.__running_led:
+            raise TypeError("self.__running_led is not registered.")
+        self.__running_led.set_period(period)
+        return self.__running_led.led_timer_start()
 
     def energy_led_show(self, period):
-        if self.__energy_led:
-            self.__energy_led.set_period(period)
-            return self.__energy_led.led_timer_start()
-        return False
+        if not self.energy_led_show:
+            raise TypeError("self.energy_led_show is not registered.")
+        self.__energy_led.set_period(period)
+        return self.__energy_led.led_timer_start()
 
 
 def tracker():

@@ -14,6 +14,23 @@
 
 import _thread
 
+LOWENERGYMAP = {
+    "EC200U": [
+        "POWERDOWN",
+        "PM",
+    ],
+    "EC200U": [
+        "POWERDOWN",
+        "PM",
+    ],
+    "EC600N": [
+        "PM",
+    ],
+    "EC800G": [
+        "PM"
+    ],
+}
+
 
 def numiter(num=99999):
     for i in range(num):

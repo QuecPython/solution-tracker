@@ -329,11 +329,6 @@ class QuecThing(CloudObservable):
                 if dkds:
                     self.__dk, self.__ds = dkds
                     log.debug("dk: %s, ds: %s" % dkds)
-                    res_data = (
-                        "object_model",
-                        [("init_params", {"PK": self.__pk, "PS": self.__ps, "DK": self.__dk, "DS": self.__ds, "SERVER": self.__server})]
-                    )
-                    self.notifyObservers(self, *res_data)
                     break
                 count += 1
                 utime.sleep(count)

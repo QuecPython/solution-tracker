@@ -1,0 +1,335 @@
+# Copyright (c) Quectel Wireless Solution, Co., Ltd.All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+class QuecCloudConfig(object):
+    """
+    object model data format:
+
+    object_model = {
+        "event": {
+            "event_key": {
+                "id": 1,
+                "perm": "",
+                "struct_info": {
+                    "struct_key": {
+                        "id": 1
+                    }
+                }
+            }
+        },
+        "property": {
+            "property_key": {
+                "id": 1,
+                "perm": "",
+                "struct_info": {
+                    "struct_key": {
+                        "id": 1
+                    }
+                }
+            }
+        }
+    }
+    """
+
+    # trackdev0304 (PROENV)
+    PK = "p11275"
+    PS = "Q0ZQQndaN3pCUFd6"
+    DK = "trackdev0304"
+    DS = ""
+
+    # # trackerdemo0326 (PROENV)
+    # "PK": "p11275",
+    # "PS": "Q0ZQQndaN3pCUFd6",
+    # "DK": "trackerdemo0326",
+    # "DS": "",
+
+    # # IMEI (PROENV)
+    # "PK": "p11275",
+    # "PS": "Q0ZQQndaN3pCUFd6",
+    # "DK": "",
+    # "DS": "",
+
+    # # TrackerDevEC600NCNLC (TESTENV)
+    # "PK": "p119v2",
+    # "PS": "TXRPdVVhdkY3bU5s",
+    # "DK": "TrackerDevEC600NCNLC",
+    # "DS": "",
+
+    # # IMEI (TESTENV)
+    # "PK": "p119v2",
+    # "PS": "TXRPdVVhdkY3bU5s",
+    # "DK": "",
+    # "DS": "",
+
+    SERVER = "iot-south.quectel.com:1883"
+    life_time = 120
+
+    object_model = {
+        "event": {
+            "sos_alert": {
+                "id": 6,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+            "fault_alert": {
+                "id": 14,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+            "low_power_alert": {
+                "id": 17,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+            "sim_abnormal_alert": {
+                "id": 18,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+            "disassemble_alert": {
+                "id": 20,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+            "drive_behavior_alert": {
+                "id": 22,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+            "over_speed_alert": {
+                "id": 35,
+                "perm": "r",
+                "struct_info": {
+                    "local_time": {
+                        "id": 19
+                    }
+                }
+            },
+        },
+        "property": {
+            "power_switch": {
+                "id": 9,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "energy": {
+                "id": 4,
+                "perm": "r",
+                "struct_info": {}
+            },
+            "phone_num": {
+                "id": 23,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "loc_method": {
+                "id": 24,
+                "perm": "rw",
+                "struct_info": {
+                    "gps": {
+                        "id": 1
+                    },
+                    "cell": {
+                        "id": 2
+                    },
+                    "wifi": {
+                        "id": 3
+                    },
+                },
+            },
+            "work_mode": {
+                "id": 25,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "work_cycle_period": {
+                "id": 26,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "local_time": {
+                "id": 19,
+                "perm": "r",
+                "struct_info": {}
+            },
+            "low_power_alert_threshold": {
+                "id": 15,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "low_power_shutdown_threshold": {
+                "id": 16,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_ota": {
+                "id": 12,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_ota_auto_upgrade": {
+                "id": 13,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_voice_listen": {
+                "id": 10,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_voice_record": {
+                "id": 11,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_fault_alert": {
+                "id": 27,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_low_power_alert": {
+                "id": 28,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_over_speed_alert": {
+                "id": 29,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_sim_abnormal_alert": {
+                "id": 30,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_disassemble_alert": {
+                "id": 31,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "sw_drive_behavior_alert": {
+                "id": 32,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "drive_behavior_code": {
+                "id": 21,
+                "perm": "r",
+                "struct_info": {}
+            },
+            "power_restart": {
+                "id": 33,
+                "perm": "w",
+                "struct_info": {}
+            },
+            "over_speed_threshold": {
+                "id": 34,
+                "perm": "rw",
+                "struct_info": {}
+            },
+            "device_module_status": {
+                "id": 36,
+                "perm": "r",
+                "struct_info": {
+                    "net": {
+                        "id": 1
+                    },
+                    "location": {
+                        "id": 2
+                    },
+                    "temp_sensor": {
+                        "id": 3
+                    },
+                    "light_sensor": {
+                        "id": 4
+                    },
+                    "move_sensor": {
+                        "id": 5
+                    },
+                    "mike": {
+                        "id": 6
+                    },
+                }
+            },
+            "gps_mode": {
+                "id": 37,
+                "perm": "r",
+                "struct_info": {}
+            },
+            "user_ota_action": {
+                "id": 38,
+                "perm": "w",
+                "struct_info": {}
+            },
+            "voltage": {
+                "id": 41,
+                "perm": "r",
+                "struct_info": {}
+            },
+            "ota_status": {
+                "id": 42,
+                "perm": "r",
+                "struct_info": {
+                    "sys_current_version": {
+                        "id": 1
+                    },
+                    "sys_target_version": {
+                        "id": 2
+                    },
+                    "app_current_version": {
+                        "id": 3
+                    },
+                    "app_target_version": {
+                        "id": 4
+                    },
+                    "upgrade_module": {
+                        "id": 5
+                    },
+                    "upgrade_status": {
+                        "id": 6
+                    },
+                },
+            },
+            "current_speed": {
+                "id": 43,
+                "perm": "r",
+                "struct_info": {}
+            }
+        }
+    }
