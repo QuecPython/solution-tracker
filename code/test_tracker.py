@@ -302,7 +302,7 @@ def test_aliyuniot():
         cloud_init_params["DS"],
         cloud_init_params["SERVER"],
         client_id,
-        burning_method=1,
+        burning_method=cloud_init_params["burning_method"],
         mcu_name=PROJECT_NAME,
         mcu_version=PROJECT_VERSION,
         firmware_name=DEVICE_FIRMWARE_NAME,
