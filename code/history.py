@@ -27,8 +27,8 @@ _history_lock = _thread.allocate_lock()
 
 class History(Singleton):
 
-    def __init__(self, max_hist_num=100):
-        self.__history = "/usr/tracker_data.hist"
+    def __init__(self, history_file="/usr/tracker_data.hist", max_hist_num=100):
+        self.__history = history_file
         self.__max_hist_num = max_hist_num
 
     def __read_hist(self):
