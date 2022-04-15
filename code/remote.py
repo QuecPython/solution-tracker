@@ -18,7 +18,7 @@ from usr.common import Observable, CloudObserver
 log = getLogger(__name__)
 
 
-class RemoteSubcribe(CloudObserver):
+class RemoteSubscribe(CloudObserver):
     def __init__(self):
         self.__executor = None
 
@@ -69,7 +69,7 @@ class RemoteSubcribe(CloudObserver):
             option_fun = getattr(self, opt_attr)
             return option_fun(*opt_args, **opt_kwargs)
         else:
-            log.error("RemoteSubcribe Has No Attribute [%s]." % opt_attr)
+            log.error("RemoteSubscribe Has No Attribute [%s]." % opt_attr)
             return False
 
 

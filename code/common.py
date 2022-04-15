@@ -33,11 +33,13 @@ LOWENERGYMAP = {
 
 
 def numiter(num=99999):
+    """Number generation iterator"""
     for i in range(num):
         yield i
 
 
 def option_lock(thread_lock):
+    """Function thread lock decorator"""
     def function_lock(func):
         def wrapperd_fun(*args, **kwargs):
             with thread_lock:
@@ -47,6 +49,7 @@ def option_lock(thread_lock):
 
 
 class BaseError(Exception):
+    """Exception base class"""
 
     def __init__(self, value):
         self.value = value
@@ -56,6 +59,7 @@ class BaseError(Exception):
 
 
 class Singleton(object):
+    """Singleton base class"""
     _instance_lock = _thread.allocate_lock()
 
     def __init__(self, *args, **kwargs):
@@ -74,17 +78,20 @@ class Singleton(object):
 
 
 class Observer(object):
+    """Observer base class"""
 
     def update(self, observable, *args, **kwargs):
         pass
 
 
 class Observable(Singleton):
+    """Observable base class"""
 
     def __init__(self):
         self.__observers = []
 
     def addObserver(self, observer):
+        """Add observer"""
         try:
             self.__observers.append(observer)
             return True
@@ -92,6 +99,7 @@ class Observable(Singleton):
             return False
 
     def delObserver(self, observer):
+        """Delete observer"""
         try:
             self.__observers.remove(observer)
             return True
@@ -99,48 +107,90 @@ class Observable(Singleton):
             return False
 
     def notifyObservers(self, *args, **kwargs):
+        """Notify observer"""
         for o in self.__observers:
             o.update(self, *args, **kwargs)
 
 
 class CloudObserver(object):
+    """Cloud observer base class"""
 
     def execute(self, observable, *args, **kwargs):
         pass
 
 
 class CloudObservable(Singleton):
+    """Cloud observable base class"""
 
     def __init__(self):
         self.__observers = []
 
     def addObserver(self, observer):
+        """Add observer"""
         self.__observers.append(observer)
 
     def delObserver(self, observer):
+        """Delete observer"""
         self.__observers.remove(observer)
 
     def notifyObservers(self, *args, **kwargs):
+        """Notify observer"""
         for o in self.__observers:
             o.execute(self, *args, **kwargs)
 
     def init(self, enforce=False):
+        """Cloud init"""
         pass
 
     def close(self):
+        """Cloud disconnect"""
         pass
 
     def post_data(self, data):
+        """Cloud publish data"""
         pass
 
     def ota_request(self, *args, **kwargs):
+        """Cloud publish ota plain request"""
         pass
 
     def ota_action(self, action, module=None):
+        """Cloud publish ota upgrade or not request"""
         pass
 
 
 class CloudObjectModel(Singleton):
+    """This is a cloud object model base class
+
+    Attribute:
+        items: object model dictionary, default two keys
+            event: object model event
+            property: object model property
+
+        items data format:
+        {
+            "event": {
+                "name": "event",
+                "id": "",
+                "perm": "rw",
+                "struct_info": {
+                    "name": "struct",
+                    "id": "",
+                    "struct_info": {
+                        "key": {
+                            "name": "key"
+                        }
+                    },
+                },
+            },
+            "property": {
+                "name": "event",
+                "id": "",
+                "perm": "rw",
+                "struct_info": {}
+            }
+        }
+    """
 
     def __init__(self):
         self.items = {
@@ -149,6 +199,24 @@ class CloudObjectModel(Singleton):
         }
 
     def set_item(self, om_type, om_key, om_key_id=None, om_key_perm=None):
+        """ Set object model item
+
+        Parameter:
+            om_type: object model type
+                - e.g.: `event`, `property`
+
+            om_key: object model code
+                - e.g.: `local_time`, `speed`, `GeoLocation`
+
+            om_key_id: object model id, not necessary, necessary for quecthing.
+
+            om_key_perm: object model permission, not necessary
+                - e.g.: `rw`, `w`, `r`
+
+        Return:
+            True: Success
+            False: Failed
+        """
         om_data = {
             "name": om_key,
             "id": om_key_id,
@@ -161,6 +229,16 @@ class CloudObjectModel(Singleton):
         return False
 
     def del_item(self, om_type, om_key):
+        """Delete object model item
+
+        Parameter:
+            om_type: object model type
+            om_key: object model code
+
+        Return:
+            True: Success
+            False: Failed
+        """
         if self.items.get(om_type) is not None:
             if self.items[om_type].get(om_key) is not None:
                 self.items[om_type].pop(om_key)
@@ -168,6 +246,19 @@ class CloudObjectModel(Singleton):
         return False
 
     def set_item_struct(self, om_type, om_key, struct_key, struct_key_id=None, struct_key_struct=None):
+        """Set object model item struct
+
+        Parameter:
+            om_type: object model type
+            om_key: object model code
+            struct_key: object model item struct key name
+            struct_key_id: object model item struct key id, not necessary
+            struct_key_struct: object model item struct key struct, not necessary
+
+        Return:
+            True: Success
+            False: Failed
+        """
         if self.items.get(om_type) is not None:
             if self.items[om_type].get(om_key) is not None:
                 if self.items[om_type][om_key].get("struct_info") is None:

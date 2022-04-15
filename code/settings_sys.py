@@ -26,7 +26,7 @@ class SYSConfig(object):
 
     log_level = "DEBUG"
 
-    cloud = _cloud.quecIot
+    cloud = _cloud.AliYun
 
     checknet_timeout = 60
 

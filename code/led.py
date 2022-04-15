@@ -21,7 +21,7 @@ log = getLogger(__name__)
 
 
 class LED(object):
-    def __init__(self, GPIOn, direction, pullMode, level):
+    def __init__(self, GPIOn, direction=Pin.OUT, pullMode=Pin.PULL_DISABLE, level=0):
         self.__gpio = Pin(GPIOn, direction, pullMode, level)
         self.__period = 0
         self.__led_timer = osTimer()

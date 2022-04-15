@@ -36,11 +36,16 @@ BATTERY_OCV_TABLE = {
 
 
 class Battery(object):
+    """This class is for battery info.
+
+    This class can get battery voltage and energy.
+    """
     def __init__(self):
         self.__energy = 100
         self.__temp = 20
 
     def __get_soc_from_dict(self, key, volt_arg):
+        """Get battery energy from map"""
         if key in BATTERY_OCV_TABLE["nix_coy_mnzo2"]:
             volts = sorted(BATTERY_OCV_TABLE["nix_coy_mnzo2"][key].keys(), reverse=True)
             pre_volt = 0
@@ -61,6 +66,7 @@ class Battery(object):
                 return soc2 - (soc2 - soc1) * (pre_volt - volt_arg) // (pre_volt - volt)
 
     def __get_soc(self, temp, volt_arg, bat_type="nix_coy_mnzo2"):
+        """Get battery energy by temperature and voltage"""
         if bat_type == "nix_coy_mnzo2":
             if temp > 30:
                 return self.__get_soc_from_dict(55, volt_arg)
@@ -70,17 +76,19 @@ class Battery(object):
                 return self.__get_soc_from_dict(20, volt_arg)
 
     def set_temp(self, temp):
-        # Set now temperature.
+        """Set now temperature."""
         if isinstance(temp, int) or isinstance(temp, float):
             self.__temp = temp
             return True
         return False
 
     def get_voltage(self):
+        """Get battery voltage"""
         # Get voltage from vbat
         # TODO: Get voltage by ADC
         return int(sum([Power.getVbatt() for i in range(100)]) / 100)
 
     def get_energy(self):
+        """Get battery energy"""
         self.__energy = self.__get_soc(self.__temp, self.get_voltage())
         return self.__energy

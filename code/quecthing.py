@@ -96,16 +96,75 @@ EVENT_CODE = {
 
 
 class QuecObjectModel(CloudObjectModel):
+    """This class is queccloud object model
+
+    This class extend CloudObjectModel
+
+    Attribute:
+        items:
+            - object model dictionary
+            - data format:
+            {
+                "event": {
+                    "name": "event",
+                    "id": "",
+                    "perm": "",
+                    "struct_info": {
+                        "name": "struct",
+                        "id": "",
+                        "struct_info": {
+                            "key": {
+                                "name": "key"
+                            }
+                        },
+                    },
+                },
+                "property": {
+                    "name": "event",
+                    "id": "",
+                    "perm": "",
+                    "struct_info": {}
+                }
+            }
+        items_id:
+            - queccloud object model id and name map
+            - data format
+            {
+                4: "energy",
+                9: "power_switch",
+                23: "phone_num",
+            }
+    """
 
     def __init__(self):
         super().__init__()
         self.items_id = {}
 
-    def __init_items_id(self, om_key, om_key_id):
+    def __set_items_id(self, om_key, om_key_id):
+        """Set object model id, name to items_id
+
+        Parameter:
+            om_key: object model name
+            om_key_id: object model id
+
+        Return:
+            True: Success
+            False: Falied
+        """
         self.items_id[om_key_id] = om_key
         return True
 
     def __del_items_id(self, om_type, om_key):
+        """Delete object model id, name from items_id
+
+        Parameter:
+            om_type: object model type, `event` or `property`
+            om_key: object model name
+
+        Return:
+            True: Success
+            False: Falied
+        """
         if self.items.get(om_type) is not None:
             if self.items[om_type].get(om_key):
                 om_key_id = self.items[om_type][om_key]["id"]
@@ -113,18 +172,56 @@ class QuecObjectModel(CloudObjectModel):
         return True
 
     def set_item(self, om_type, om_key, om_key_id, om_key_perm):
+        """Set object model item to items
+        This function extend CloudObjectModel.set_item and add __set_items_id function
+
+        Return:
+            True: Success
+            False: Falied
+        """
         if super().set_item(om_type, om_key, om_key_id=om_key_id, om_key_perm=om_key_perm):
-            self.__init_items_id(om_key, om_key_id)
+            self.__set_items_id(om_key, om_key_id)
             return True
         return False
 
     def del_item(self, om_type, om_key):
-        self.__del_items_id(om_type, om_key)
-        return super().del_item(om_type, om_key)
+        """Delete object model item from items
+        This function extend CloudObjectModel.del_item and add __del_items_id function
+
+        Return:
+            True: Success
+            False: Falied
+        """
+        if super().del_item(om_type, om_key):
+            self.__del_items_id(om_type, om_key)
+            return True
+        return False
 
 
 class QuecThing(CloudObservable):
+    """This is a class for queccloud iot.
+
+    This class extend CloudObservable.
+
+    This class has the following functions:
+        1. Cloud connect and disconnect
+        2. Publish data to cloud
+        3. Monitor data from cloud by event callback
+
+    Run step:
+        1. cloud = QuecThing(pk, ps, dk, ds, server)
+        2. cloud.addObserver(RemoteSubscribe)
+        3. cloud.set_object_model(QuecObjectModel)
+        4. cloud.init()
+        5. cloud.post_data(data)
+        6. cloud.close()
+    """
+
     def __init__(self, pk, ps, dk, ds, server, life_time=120, mcu_name="", mcu_version=""):
+        """
+        1. Init parent class CloudObservable
+        2. Init cloud connect params
+        """
         super().__init__()
         self.__pk = pk
         self.__ps = ps
@@ -142,20 +239,24 @@ class QuecThing(CloudObservable):
         self.__quec_timer = osTimer()
 
     def __rm_empty_data(self, data):
+        """Remove post success data item from data"""
         for k, v in data.items():
             if not v:
                 del data[k]
 
     def __quec_timer_cb(self, args):
+        """osTimer callback to break waiting of get publish result"""
         self.__put_post_res(False)
 
     def __get_post_res(self):
+        """Get publish result"""
         self.__quec_timer.start(1000 * 10, 0, self.__quec_timer_cb)
         res = self.__post_result_wait_queue.get()
         self.__quec_timer.stop()
         return res
 
     def __put_post_res(self, res):
+        """Save publish result to queue"""
         if self.__post_result_wait_queue.size() >= 16:
             self.__post_result_wait_queue.get()
         self.__post_result_wait_queue.put(res)
@@ -194,6 +295,31 @@ class QuecThing(CloudObservable):
         self.notifyObservers(self, *res_data)
 
     def __data_format(self, k, v):
+        """Publish data format by AliObjectModel
+
+        Parameter:
+            k: object model name
+            v: object model value
+
+        return:
+            {
+                "object_model_id": object_model_value
+            }
+
+        e.g.:
+        k:
+            "sos_alert"
+
+        v:
+            {"local_time": 1649995898000}
+
+        return data:
+            {
+                6: {
+                    19: 1649995898000
+                }
+            }
+        """
         # log.debug("k: %s, v: %s" % (k, v))
         k_id = None
         struct_info = {}
@@ -220,6 +346,15 @@ class QuecThing(CloudObservable):
         return {k_id: v}
 
     def __event_cb(self, data):
+        """Queccloud downlink message callback
+
+        Parameter:
+            data: response dictionary info, all event info see `EVENT_CODE`
+            data format: (`event_code`, `errcode`, `event_data`)
+                - `event_code`: event code
+                - `errcode`: detail code
+                - `event_data`: event data info, data type: bytes or dict
+        """
         res_data = ()
         event = data[0]
         errcode = data[1]
@@ -292,12 +427,24 @@ class QuecThing(CloudObservable):
             self.__sota_upgrade_start(int(file_info[2]), int(file_info[3]))
 
     def set_object_model(self, object_model):
+        """Register QuecObjectModel to this class"""
         if object_model and isinstance(object_model, QuecObjectModel):
             self.__object_model = object_model
             return True
         return False
 
     def init(self, enforce=False):
+        """queccloud connect
+
+        Parameter:
+            enforce:
+                True: enfore cloud connect
+                False: check connect status, return True if cloud connected
+
+        Return:
+            Ture: Success
+            False: Failed
+        """
         log.debug(
             "[init start] enforce: %s QuecThing Work State: %s, quecIot.getConnmode(): %s"
             % (enforce, quecIot.getWorkState(), quecIot.getConnmode())
@@ -340,9 +487,28 @@ class QuecThing(CloudObservable):
             return False
 
     def close(self):
+        """queccloud disconnect"""
         return quecIot.setConnmode(0)
 
     def post_data(self, data):
+        """Publish object model property, event
+
+        Parameter:
+            data format:
+            {
+                "phone_num": "123456789",
+                "energy": 100,
+                "gps": [
+                    "$GNGGA,XXX"
+                    "$GNVTG,XXX"
+                    "$GNRMC,XXX"
+                ],
+            }
+
+        Return:
+            Ture: Success
+            False: Failed
+        """
         res = True
         # log.debug("post_data: %s" % str(data))
         for k, v in data.items():
@@ -380,7 +546,26 @@ class QuecThing(CloudObservable):
         return res
 
     def ota_request(self, mp_mode=0):
+        """Publish mcu and firmware ota plain request
+
+        Return:
+            Ture: Success
+            False: Failed
+        """
         return quecIot.otaRequest(mp_mode) if mp_mode in (0, 1) else False
 
     def ota_action(self, action=1, module=None):
+        """Publish ota upgrade start or cancel ota upgrade
+
+        Parameter:
+            action: confirm or cancel upgrade
+                - 0: cancel upgrade
+                - 1: confirm upgrade
+
+            module: useless
+
+        Return:
+            Ture: Success
+            False: Failed
+        """
         return quecIot.otaAction(action) if action in (0, 1, 2, 3) else False

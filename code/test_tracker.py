@@ -23,9 +23,9 @@ from usr.history import History
 from usr.location import Location, _loc_method
 from usr.quecthing import QuecThing, QuecObjectModel
 from usr.aliyunIot import AliYunIot, AliObjectModel
-from usr.mpower import LowEnergyRTC
+from usr.mpower import LowEnergyManage
 from usr.common import Observable, Observer
-from usr.remote import RemoteSubcribe, RemotePublish
+from usr.remote import RemoteSubscribe, RemotePublish
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, \
     DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, LocConfig
 
@@ -233,7 +233,7 @@ def test_quecthing():
         mcu_name=PROJECT_NAME,
         mcu_version=PROJECT_VERSION
     )
-    remote_sub = RemoteSubcribe()
+    remote_sub = RemoteSubscribe()
     cloud.addObserver(remote_sub)
 
     collector = Collector()
@@ -294,7 +294,7 @@ def test_aliyuniot():
     current_settings = settings.get()
     cloud_init_params = current_settings["cloud"]
 
-    client_id = cloud_init_params["DK"] if cloud_init_params["DK"] else modem.getDevImei()
+    client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
     cloud = AliYunIot(
         cloud_init_params["PK"],
         cloud_init_params["PS"],
@@ -308,7 +308,7 @@ def test_aliyuniot():
         firmware_name=DEVICE_FIRMWARE_NAME,
         firmware_version=DEVICE_FIRMWARE_VERSION
     )
-    remote_sub = RemoteSubcribe()
+    remote_sub = RemoteSubscribe()
     cloud.addObserver(remote_sub)
 
     collector = Collector()
@@ -383,7 +383,7 @@ def test_remote():
         mcu_name=PROJECT_NAME,
         mcu_version=PROJECT_VERSION
     )
-    remote_sub = RemoteSubcribe()
+    remote_sub = RemoteSubscribe()
     cloud.addObserver(remote_sub)
     remote_pub = RemotePublish()
 
@@ -428,68 +428,68 @@ def test_remote():
     print("[test_remote] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
-class TestRTCObserver(Observer):
+class TestLEMObserver(Observer):
 
     def update(self, observable, *args, **kwargs):
         log.debug("observable: %s" % observable)
         log.debug("args: %s" % str(args))
         log.debug("kwargs: %s" % str(kwargs))
-        observable.start_rtc()
+        observable.start()
         return True
 
 
-def test_low_energy_rtc():
+def test_low_energy_manage():
     res = {"all": 0, "success": 0, "failed": 0}
 
-    low_energy_rtc = LowEnergyRTC()
-    test_rtc_obs = TestRTCObserver()
-    low_energy_rtc.addObserver(test_rtc_obs)
+    low_energy_manage = LowEnergyManage()
+    test_lem_obs = TestLEMObserver()
+    low_energy_manage.addObserver(test_lem_obs)
 
     period = 5
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_period(%s)."
-    assert low_energy_rtc.set_period(period), msg % ("FAILED", period)
+    msg = "[test_low_energy_manage] %s: low_energy_manage.set_period(%s)."
+    assert low_energy_manage.set_period(period), msg % ("FAILED", period)
     print(msg % ("SUCCESS", period))
     res["success"] += 1
 
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_period()."
-    assert low_energy_rtc.get_period() == period, msg % "FAILED"
+    msg = "[test_low_energy_manage] %s: low_energy_manage.get_period()."
+    assert low_energy_manage.get_period() == period, msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
     low_energy_method = "PM"
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.set_low_energy_method(%s)."
-    assert low_energy_rtc.set_low_energy_method(low_energy_method), msg % ("FAILED", low_energy_method)
+    msg = "[test_low_energy_manage] %s: low_energy_manage.set_low_energy_method(%s)."
+    assert low_energy_manage.set_low_energy_method(low_energy_method), msg % ("FAILED", low_energy_method)
     print(msg % ("SUCCESS", low_energy_method))
     res["success"] += 1
 
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_low_energy_method()."
-    assert low_energy_rtc.get_low_energy_method() == low_energy_method, msg % "FAILED"
+    msg = "[test_low_energy_manage] %s: low_energy_manage.get_low_energy_method()."
+    assert low_energy_manage.get_low_energy_method() == low_energy_method, msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.low_energy_init()."
-    assert low_energy_rtc.low_energy_init(), msg % "FAILED"
+    msg = "[test_low_energy_manage] %s: low_energy_manage.low_energy_init()."
+    assert low_energy_manage.low_energy_init(), msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.get_lpm_fd()."
-    assert low_energy_rtc.get_lpm_fd() is not None, msg % "FAILED"
+    msg = "[test_low_energy_manage] %s: low_energy_manage.get_lpm_fd()."
+    assert low_energy_manage.get_lpm_fd() is not None, msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.start_rtc()."
-    assert low_energy_rtc.start_rtc(), msg % "FAILED"
+    msg = "[test_low_energy_manage] %s: low_energy_manage.start()."
+    assert low_energy_manage.start(), msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
     utime.sleep(period * 3 + 1)
-    msg = "[test_low_energy_rtc] %s: low_energy_rtc.enable_rtc(0)."
-    assert low_energy_rtc.enable_rtc(0), msg % "FAILED"
+    msg = "[test_low_energy_manage] %s: low_energy_manage.stop()."
+    assert low_energy_manage.stop(), msg % "FAILED"
     print(msg % "SUCCESS")
     res["success"] += 1
 
     res["all"] = res["success"] + res["failed"]
-    print("[test_low_energy_rtc] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
+    print("[test_low_energy_manage] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
 def test_tracker():
@@ -505,7 +505,7 @@ def main():
     # test_quecthing()
     # test_aliyuniot()
     # test_remote()
-    # test_low_energy_rtc()
+    # test_low_energy_manage()
     test_tracker()
 
 

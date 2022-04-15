@@ -62,7 +62,7 @@ class OTA(object):
             log.error("OTA Type %s Is FOTA Or SOTA Error!" % self.ota_type)
             return False
 
-    def fota_cb(self, args):
+    def __fota_callback(self, args):
         down_status = args[0]
         down_process = args[1]
         if down_status in (0, 1):
@@ -74,6 +74,7 @@ class OTA(object):
         else:
             log.error("Down Failed. Error Code [%s] %s" % (down_process, FOTA_ERROR_CODE.get(down_process, down_process)))
             self.fota_queue.put(False)
+
         if self.ota_cb:
             self.ota_cb(args)
 
@@ -81,7 +82,7 @@ class OTA(object):
         fota_obj = fota()
         url1 = self.file_info[0]["url"]
         url2 = self.file_info[1]["url"] if len(self.file_info) > 1 else ""
-        res = fota_obj.httpDownload(url1=url1, url2=url2, callback=self.fota_cb)
+        res = fota_obj.httpDownload(url1=url1, url2=url2, callback=self.__fota_callback)
         if res == 0:
             fota_res = self.fota_queue.get()
             return fota_res
@@ -112,6 +113,19 @@ class SOTA(object):
         self.parent_dir = parent_dir
         self.hash_obj = None
 
+    def __get_file_size(self, data):
+        size = data.decode("ascii")
+        size = size.rstrip("\0")
+        if (len(size) == 0):
+            return 0
+        size = int(size, 8)
+        return size
+
+    def __get_file_name(self, name):
+        fileName = name.decode("ascii")
+        fileName = fileName.rstrip("\0")
+        return fileName
+
     def write_update_data(self, data):
         with open(self.fp_file, "wb+") as fp:
             fp.write(data)
@@ -129,19 +143,6 @@ class SOTA(object):
             return True
         else:
             return False
-
-    def __get_file_size(self, data):
-        size = data.decode("ascii")
-        size = size.rstrip("\0")
-        if (len(size) == 0):
-            return 0
-        size = int(size, 8)
-        return size
-
-    def __get_file_name(self, name):
-        fileName = name.decode("ascii")
-        fileName = fileName.rstrip("\0")
-        return fileName
 
     def check_md5(self, cloud_md5):
         file_md5 = ubinascii.hexlify(self.hash_obj.digest())

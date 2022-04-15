@@ -26,12 +26,30 @@ _history_lock = _thread.allocate_lock()
 
 
 class History(Singleton):
+    """This class is for manage history file."""
 
     def __init__(self, history_file="/usr/tracker_data.hist", max_hist_num=100):
+        """
+        Parameter:
+            history_file: filename include full path
+            max_hist_num: history data list max size
+        """
         self.__history = history_file
         self.__max_hist_num = max_hist_num
 
     def __read_hist(self):
+        """Read history file info
+
+        Return:
+            data format:
+            {
+                "data": [
+                    {
+                        "xxx": "wwww"
+                    }
+                ]
+            }
+        """
         res = {"data": []}
         if ql_fs.path_exists(self.__history):
             with open(self.__history, "r") as f:
@@ -44,6 +62,22 @@ class History(Singleton):
         return res
 
     def __write_hist(self, data):
+        """Write data to history file
+
+        Parameter:
+        data format:
+            {
+                "data": [
+                    {
+                        "xxx": "wwww"
+                    }
+                ]
+            }
+
+        Return:
+            True: Success
+            False: Falied
+        """
         try:
             with open(self.__history, "w") as f:
                 ujson.dump(data, f)
@@ -53,23 +87,24 @@ class History(Singleton):
 
     @option_lock(_history_lock)
     def read(self):
-        """
-        Data Format From Read History:
+        """Read history info
 
-        {
-            "data": [
-                {
-                    "switch": True,
-                    "energy": 100,
-                    "gps": ["$GPRMCx,x,x,x", "$GPGGAx,x,x,x"],
-                },
-                {
-                    "switch": True,
-                    "energy": 100,
-                    "non_gps": ["LBS"],
-                },
-            ],
-        }
+        Return:
+            data format:
+            {
+                "data": [
+                    {
+                        "switch": True,
+                        "energy": 100,
+                        "gps": ["$GPRMCx,x,x,x", "$GPGGAx,x,x,x"],
+                    },
+                    {
+                        "switch": True,
+                        "energy": 100,
+                        "non_gps": ["LBS"],
+                    },
+                ],
+            }
         """
         res = self.__read_hist()
         self.__write_hist({"data": []})

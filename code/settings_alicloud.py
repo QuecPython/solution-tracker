@@ -53,6 +53,7 @@ class AliCloudConfig(object):
     DS = "bfdfcca5075715e8309eff8597663c4b"
 
     SERVER = "a1q1kmZPwU2.iot-as-mqtt.cn-shanghai.aliyuncs.com"
+    client_id = ""
     life_time = 120
     burning_method = _burning_method.one_machine_one_density
 
@@ -242,7 +243,20 @@ class AliCloudConfig(object):
             },
             "GeoLocation": {
                 "id": "",
-                "struct_info": {}
+                "struct_info": {
+                    "Longtitude": {
+                        "id": 1
+                    },
+                    "Latitude": {
+                        "id": 2
+                    },
+                    "Altitude": {
+                        "id": 3
+                    },
+                    "CoordinateSystem": {
+                        "id": 4
+                    }
+                }
             },
             "voltage": {
                 "id": "",

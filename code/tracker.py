@@ -27,8 +27,8 @@ from usr.battery import Battery
 from usr.ota import OTAFileClear
 from usr.history import History
 from usr.logging import getLogger
-from usr.mpower import LowEnergyRTC
-from usr.remote import RemotePublish, RemoteSubcribe
+from usr.mpower import LowEnergyManage
+from usr.remote import RemotePublish, RemoteSubscribe
 from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.quecthing import QuecThing, QuecObjectModel
 from usr.common import numiter, Singleton, LOWENERGYMAP
@@ -103,7 +103,8 @@ class Collector(Singleton):
         self.__locator = None
         self.__history = None
         self.cloud_om = None
-
+        self.__gps_match = GPSMatch()
+        self.__gps_parse = GPSParse()
         self.num_iter = numiter()
         self.num_lock = _thread.allocate_lock()
 
@@ -143,10 +144,8 @@ class Collector(Singleton):
         if current_settings["user_cfg"]["sw_over_speed_alert"] is True:
             if self.__locator.gps:
                 gps_data = self.__locator.gps.read()[1]
-                gps_match = GPSMatch()
-                gps_parse = GPSParse()
-                vtg_data = gps_match.GxVTG(gps_data)
-                speed = gps_parse.GxVTG_speed(vtg_data)
+                vtg_data = self.__gps_match.GxVTG(gps_data)
+                speed = self.__gps_parse.GxVTG_speed(vtg_data)
                 if speed and float(speed) >= current_settings["user_cfg"]["over_speed_threshold"]:
                     alert_code = 30003
                     alert_info = {"local_time": self.__get_local_time()}
@@ -200,18 +199,16 @@ class Collector(Singleton):
         res = {"GeoLocation": {}}
 
         if loc_method == 0x1:
-            gps_match = GPSMatch()
-            gps_parse = GPSParse()
-            gga_data = gps_match.GxGGA(loc_data)
+            gga_data = self.__gps_match.GxGGA(loc_data)
             data = {}
             if gga_data:
-                Latitude = gps_parse.GxGGA_latitude(gga_data)
+                Latitude = self.__gps_parse.GxGGA_latitude(gga_data)
                 if Latitude:
                     data["Latitude"] = float("%.2f" % float(Latitude))
-                Longtitude = gps_parse.GxGGA_longtitude(gga_data)
+                Longtitude = self.__gps_parse.GxGGA_longtitude(gga_data)
                 if Longtitude:
                     data["Longtitude"] = float("%.2f" % float(Longtitude))
-                Altitude = gps_parse.GxGGA_altitude(gga_data)
+                Altitude = self.__gps_parse.GxGGA_altitude(gga_data)
                 if Altitude:
                     data["Altitude"] = float("%.2f" % float(Altitude))
                 if data:
@@ -231,16 +228,15 @@ class Collector(Singleton):
     def __get_quec_loc_data(self, loc_method, loc_data):
         if loc_method == 0x1:
             res = {"gps": []}
-            gps_match = GPSMatch()
-            r = gps_match.GxRMC(loc_data)
+            r = self.__gps_match.GxRMC(loc_data)
             if r:
                 res["gps"].append(r)
 
-            r = gps_match.GxGGA(loc_data)
+            r = self.__gps_match.GxGGA(loc_data)
             if r:
                 res["gps"].append(r)
 
-            r = gps_match.GxVTG(loc_data)
+            r = self.__gps_match.GxVTG(loc_data)
             if r:
                 res["gps"].append(r)
             return res
@@ -386,6 +382,12 @@ class Collector(Singleton):
                 if loc_info.get(loc_method):
                     log.debug("Location Data loc_method: %s" % loc_method_dict[loc_method])
                     loc_data = loc_info[loc_method]
+
+                    if loc_method == _loc_method.gps:
+                        gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(loc_data))
+                        log.debug("GxGGA Satellite Num %s" % gga_satellite)
+                        gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(loc_data))
+                        log.debug("GxGSV Satellite Num %s" % gsv_satellite)
                     break
             if loc_data:
                 report_loc_data = None
@@ -438,6 +440,7 @@ class Collector(Singleton):
         num = self.__get_num()
         topic = num + "/" + msg if msg else num
         log.debug("[x] post data topic [%s]" % topic)
+        log.debug('device_data_report device_data: %s' % device_data)
         post_res = self.__controller.remote_post_data(device_data)
 
         # OTA status rst
@@ -595,14 +598,14 @@ class Collector(Singleton):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        self.__controller.low_energy_rtc_enable(0)
+        self.__controller.low_energy_stop()
 
-        self.__controller.low_energy_rtc_set_period(period)
+        self.__controller.low_energy_set_period(period)
         method = self.__get_low_energy_method(period)
-        self.__controller.low_energy_rtc_set_method(method)
+        self.__controller.low_energy_set_method(method)
 
-        self.__controller.low_energy_rtc_init()
-        self.__controller.low_energy_rtc_start()
+        self.__controller.low_energy_init()
+        self.__controller.low_energy_start()
 
     def cloud_init_params(self, params):
         if not self.__controller:
@@ -611,7 +614,7 @@ class Collector(Singleton):
         self.__controller.settings_set("cloud", params)
         self.__controller.settings_save()
 
-    def low_engery_rtc_option(self, low_energy_method):
+    def low_engery_option(self, low_energy_method):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -624,7 +627,7 @@ class Collector(Singleton):
         else:
             self.device_data_report()
 
-        self.__controller.low_energy_rtc_start()
+        self.__controller.low_energy_start()
 
         if low_energy_method == "PSM":
             # TODO: PSM option.
@@ -633,9 +636,9 @@ class Collector(Singleton):
             self.__controller.power_down()
 
     def update(self, observable, *args, **kwargs):
-        if isinstance(observable, LowEnergyRTC):
+        if isinstance(observable, LowEnergyManage):
             log.debug("Low Energy RTC Method: %s" % args[1])
-            self.low_engery_rtc_option(args[1])
+            self.low_engery_option(args[1])
 
 
 class DeviceCheck(object):
@@ -709,7 +712,7 @@ class Controller(Singleton):
     def __init__(self):
         self.__remote_pub = None
         self.__settings = None
-        self.__low_energy_rtc = None
+        self.__low_energy = None
         self.__energy_led = None
         self.__running_led = None
         self.__power_key = None
@@ -724,8 +727,8 @@ class Controller(Singleton):
         elif isinstance(module, Settings):
             self.__settings = module
             return True
-        elif isinstance(module, LowEnergyRTC):
-            self.__low_energy_rtc = module
+        elif isinstance(module, LowEnergyManage):
+            self.__low_energy = module
             return True
         elif isinstance(module, OTAFileClear):
             self.__ota_file_clear = module
@@ -767,9 +770,9 @@ class Controller(Singleton):
             return True
         return False
 
-    def set_low_energy_rtc(self, low_energy_rtc):
-        if isinstance(low_energy_rtc, LowEnergyRTC):
-            self.__low_energy_rtc = low_energy_rtc
+    def set_low_energy(self, low_energy_manage):
+        if isinstance(low_energy_manage, LowEnergyManage):
+            self.__low_energy = low_energy_manage
             return True
         return False
 
@@ -859,30 +862,30 @@ class Controller(Singleton):
             raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.cloud_ota_action(action, module)
 
-    def low_energy_rtc_init(self):
-        if not self.__low_energy_rtc:
-            raise TypeError("self.__low_energy_rtc is not registered.")
-        return self.__low_energy_rtc.low_energy_init()
+    def low_energy_set_period(self, period):
+        if not self.__low_energy:
+            raise TypeError("self.__low_energy is not registered.")
+        return self.__low_energy.set_period(period)
 
-    def low_energy_rtc_start(self):
-        if not self.__low_energy_rtc:
-            raise TypeError("self.__low_energy_rtc is not registered.")
-        return self.__low_energy_rtc.start_rtc()
+    def low_energy_set_method(self, method):
+        if not self.__low_energy:
+            raise TypeError("self.__low_energy is not registered.")
+        return self.__low_energy.set_low_energy_method(method)
 
-    def low_energy_rtc_enable(self, enable):
-        if not self.__low_energy_rtc:
-            raise TypeError("self.__low_energy_rtc is not registered.")
-        return self.__low_energy_rtc.enable_alarm(enable)
+    def low_energy_init(self):
+        if not self.__low_energy:
+            raise TypeError("self.__low_energy is not registered.")
+        return self.__low_energy.low_energy_init()
 
-    def low_energy_rtc_set_period(self, period):
-        if not self.__low_energy_rtc:
-            raise TypeError("self.__low_energy_rtc is not registered.")
-        return self.__low_energy_rtc.set_period(period)
+    def low_energy_start(self):
+        if not self.__low_energy:
+            raise TypeError("self.__low_energy is not registered.")
+        return self.__low_energy.start()
 
-    def low_energy_rtc_set_method(self, method):
-        if not self.__low_energy_rtc:
-            raise TypeError("self.__low_energy_rtc is not registered.")
-        return self.__low_energy_rtc.set_low_energy_method(method)
+    def low_energy_stop(self):
+        if not self.__low_energy:
+            raise TypeError("self.__low_energy is not registered.")
+        return self.__low_energy.stop()
 
     def ota_file_clean(self):
         if not self.__ota_file_clear:
@@ -925,7 +928,7 @@ def tracker():
         cloud_om = QuecObjectModel()
         cloud_object_model = current_settings["cloud"]["object_model"]
     elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
-        client_id = cloud_init_params["DK"] if cloud_init_params["DK"] else modem.getDevImei()
+        client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
         cloud = AliYunIot(
             cloud_init_params["PK"],
             cloud_init_params["PS"],
@@ -946,8 +949,8 @@ def tracker():
 
     history = History()
     remote_pub = RemotePublish()
-    remote_sub = RemoteSubcribe()
-    low_energy_rtc = LowEnergyRTC()
+    remote_sub = RemoteSubscribe()
+    low_energy = LowEnergyManage()
     # energy_led = LED()
     # running_led = LED()
     power_key = PowerKey() if PowerKey is not None else None
@@ -970,7 +973,7 @@ def tracker():
 
     controller.add_module(remote_pub)
     controller.add_module(settings)
-    controller.add_module(low_energy_rtc)
+    controller.add_module(low_energy)
     controller.add_module(ota_file_clear)
     # controller.add_module(energy_led, led_type="energy")
     # controller.add_module(running_led, led_type="running")
@@ -979,9 +982,9 @@ def tracker():
     controller.add_module(data_call)
 
     work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
-    low_energy_rtc.set_period(work_cycle_period)
-    low_energy_rtc.set_low_energy_method(collector.__get_low_energy_method(work_cycle_period))
-    low_energy_rtc.addObserver(collector)
+    low_energy.set_period(work_cycle_period)
+    low_energy.set_low_energy_method(collector.__get_low_energy_method(work_cycle_period))
+    low_energy.addObserver(collector)
 
     devicecheck.add_locator(locator)
 
@@ -994,5 +997,5 @@ def tracker():
 
     controller.ota_file_clean()
     collector.device_status_check()
-    controller.low_energy_rtc_init()
-    controller.low_energy_rtc_start()
+    controller.low_energy_init()
+    controller.low_energy_start()
