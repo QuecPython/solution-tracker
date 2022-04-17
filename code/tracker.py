@@ -139,6 +139,7 @@ class Collector(Singleton):
                 if speed:
                     alert_data["current_speed"] = float(speed)
 
+        log.debug("__device_speed_check: %s" % str(alert_data))
         return alert_data
 
     def __get_local_time(self):
@@ -231,6 +232,71 @@ class Collector(Singleton):
         elif loc_method == 0x4:
             return {"non_gps": []}
 
+    def __get_loc_data(self, loc_method, loc_data):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+        current_settings = self.__controller.settings_get()
+        if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
+            return self.__get_quec_loc_data(loc_method, loc_data)
+        elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
+            return self.__get_ali_loc_data(loc_method, loc_data)
+        return {}
+
+    def __read_battery(self):
+        if not self.__battery:
+            raise TypeError("self.__battery is not registered.")
+
+        res = {}
+        self.__battery.set_temp(20)
+        energy = self.__battery.get_energy()
+        res = {
+            "energy": energy,
+            "voltage": self.__battery.get_voltage(),
+        }
+
+        current_settings = self.__controller.settings_get()
+        if energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
+            alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
+            res.update(alert_data)
+
+        return res
+
+    def __read_sensor(self):
+        return {}
+
+    def __read_location(self):
+        if not self.__locator:
+            raise TypeError("self.__locator is not registered.")
+
+        res = {}
+        current_settings = self.__controller.settings_get()
+        # Get cloud location data
+        if current_settings["user_cfg"].get("loc_method"):
+            cfg_loc_method = current_settings["user_cfg"].get("loc_method")
+        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
+            cfg_loc_method = current_settings["LocConfig"]["loc_method"]
+        else:
+            cfg_loc_method = 7
+        loc_info = self.__locator.read(cfg_loc_method)
+        if loc_info:
+            loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
+            loc_data = None
+            for loc_method in loc_method_dict.keys():
+                if loc_info.get(loc_method):
+                    log.debug("Location Data loc_method: %s" % loc_method_dict[loc_method])
+                    loc_data = loc_info[loc_method]
+
+                    if loc_method == _loc_method.gps:
+                        gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(loc_data))
+                        log.debug("GxGGA Satellite Num %s" % gga_satellite)
+                        gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(loc_data))
+                        log.debug("GxGSV Satellite Num %s" % gsv_satellite)
+                    break
+            if loc_data:
+                res = self.__get_loc_data(loc_method, loc_data)
+
+        return res
+
     def add_module(self, module):
         if isinstance(module, Controller):
             self.__controller = module
@@ -253,15 +319,15 @@ class Collector(Singleton):
 
         return False
 
-    def get_loc_data(self, loc_method, loc_data):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-        current_settings = self.__controller.settings_get()
-        if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
-            return self.__get_quec_loc_data(loc_method, loc_data)
-        elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
-            return self.__get_ali_loc_data(loc_method, loc_data)
-        return {}
+    def read_module_data(self, module):
+        if module == "Battery":
+            return self.__read_battery()
+        elif module == "Sensor":
+            return self.__read_sensor()
+        elif module == "Location":
+            return self.__read_location()
+        elif module == "History":
+            return self.__read_history()
 
     def device_status_get(self):
         if not self.__devicecheck:
@@ -320,10 +386,6 @@ class Collector(Singleton):
     def device_data_get(self, power_switch=True):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
-        if not self.__battery:
-            raise TypeError("self.__battery is not registered.")
-        if not self.__locator:
-            raise TypeError("self.__locator is not registered.")
 
         current_settings = self.__controller.settings_get()
 
@@ -332,65 +394,26 @@ class Collector(Singleton):
             "local_time": self.__get_local_time(),
         }
 
-        # Get cloud location data
-        if current_settings["user_cfg"].get("loc_method"):
-            cfg_loc_method = current_settings["user_cfg"].get("loc_method")
-        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
-            cfg_loc_method = current_settings["LocConfig"]["loc_method"]
-        else:
-            cfg_loc_method = 7
-        loc_info = self.__locator.read(cfg_loc_method)
-        if loc_info:
-            loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
-            loc_data = None
-            for loc_method in loc_method_dict.keys():
-                if loc_info.get(loc_method):
-                    log.debug("Location Data loc_method: %s" % loc_method_dict[loc_method])
-                    loc_data = loc_info[loc_method]
-
-                    if loc_method == _loc_method.gps:
-                        gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(loc_data))
-                        log.debug("GxGGA Satellite Num %s" % gga_satellite)
-                        gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(loc_data))
-                        log.debug("GxGSV Satellite Num %s" % gsv_satellite)
-                    break
-            if loc_data:
-                report_loc_data = None
-                if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
-                    report_loc_data = self.__get_quec_loc_data(loc_method, loc_data)
-                elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
-                    report_loc_data = self.__get_ali_loc_data(loc_method, loc_data)
-                if report_loc_data:
-                    device_data.update(report_loc_data)
-
-        # Get gps speed
-        over_speed_check_res = self.__device_speed_check()
-        log.debug("over_speed_check_res: %s" % str(over_speed_check_res))
-        device_data.update(over_speed_check_res)
-
-        # Get battery energy
-        # TODO: Get tempreture from sensor.
-        self.__battery.set_temp(20)
-        energy = self.__battery.get_energy()
-        device_data.update({
-            "energy": energy,
-            "voltage": self.__battery.get_voltage(),
-        })
-        if energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
-            alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
-            device_data.update(alert_data)
-
         # Get ota status & drive behiver code
         device_data.update({
             "ota_status": current_settings["user_cfg"]["ota_status"],
             "drive_behavior_code": current_settings["user_cfg"]["drive_behavior_code"],
         })
 
-        # Get app settings info
+        # Get user settings info
         device_data.update(current_settings["user_cfg"])
 
         # Format loc method
         device_data.update({"loc_method": self.__format_loc_method(current_settings["user_cfg"]["loc_method"])})
+
+        # Get cloud location data
+        device_data.update(self.__read_location())
+
+        # Get gps speed
+        device_data.update(self.__device_speed_check())
+
+        # Get battery energy
+        device_data.update(self.__read_battery())
 
         # TODO: Add other machine info.
 
