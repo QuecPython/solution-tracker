@@ -15,7 +15,6 @@
 import sim
 import utime
 import modem
-import _thread
 import checkNet
 import dataCall
 
@@ -31,7 +30,7 @@ from usr.mpower import LowEnergyManage
 from usr.remote import RemotePublish, RemoteSubscribe
 from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.quecthing import QuecThing, QuecObjectModel
-from usr.common import numiter, Singleton, LOWENERGYMAP
+from usr.common import Singleton, LOWENERGYMAP
 from usr.location import Location, GPSMatch, GPSParse, _loc_method
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, \
     DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, UserConfig, \
@@ -104,18 +103,6 @@ class Collector(Singleton):
         self.__history = None
         self.__gps_match = GPSMatch()
         self.__gps_parse = GPSParse()
-        self.num_iter = numiter()
-        self.num_lock = _thread.allocate_lock()
-
-    def __get_num(self):
-        with self.num_lock:
-            try:
-                num = next(self.num_iter)
-            except StopIteration:
-                self.num_iter = numiter()
-                num = next(self.num_iter)
-
-        return str(num)
 
     def __format_loc_method(self, data):
         loc_method = "%04d" % int(bin(data)[2:])
@@ -173,7 +160,7 @@ class Collector(Singleton):
 
         return alert_data
 
-    def __get_low_energy_method(self, period):
+    def __init_low_energy_method(self, period):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
         current_settings = self.__controller.settings_get()
@@ -191,7 +178,7 @@ class Collector(Singleton):
             else:
                 if "PM" in support_methds:
                     method = "PM"
-        log.debug("__get_low_energy_method: %s" % method)
+        log.debug("__init_low_energy_method: %s" % method)
         return method
 
     def __get_ali_loc_data(self, loc_method, loc_data):
@@ -382,6 +369,8 @@ class Collector(Singleton):
         device_data.update(over_speed_check_res)
 
         # Get battery energy
+        # TODO: Get tempreture from sensor.
+        self.__battery.set_temp(20)
         energy = self.__battery.get_energy()
         device_data.update({
             "energy": energy,
@@ -408,6 +397,7 @@ class Collector(Singleton):
         return device_data
 
     def device_data_report(self, power_switch=True, event_data={}, msg=""):
+        # TODO: msg to mark post data source
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -415,10 +405,6 @@ class Collector(Singleton):
         if event_data:
             device_data.update(event_data)
 
-        num = self.__get_num()
-        topic = num + "/" + msg if msg else num
-        log.debug("[x] post data topic [%s]" % topic)
-        log.debug('device_data_report device_data: %s' % device_data)
         post_res = self.__controller.remote_post_data(device_data)
 
         # OTA status rst
@@ -579,7 +565,7 @@ class Collector(Singleton):
         self.__controller.low_energy_stop()
 
         self.__controller.low_energy_set_period(period)
-        method = self.__get_low_energy_method(period)
+        method = self.__init_low_energy_method(period)
         self.__controller.low_energy_set_method(method)
 
         self.__controller.low_energy_init()
@@ -623,10 +609,14 @@ class DeviceCheck(object):
 
     def __init__(self):
         self.__locator = None
+        self.__sensor = None
 
-    def add_locator(self, locator):
-        if isinstance(locator, Location):
-            self.__locator = locator
+    def add_module(self, module):
+        if isinstance(module, Location):
+            self.__locator = module
+            return True
+        elif isinstance(module, Sensor):
+            self.__sensor = module
             return True
         return False
 
@@ -886,22 +876,25 @@ class Controller(Singleton):
 def tracker():
     current_settings = settings.get()
 
+    # All device modules initialization
     # energy_led = LED()
     # running_led = LED()
     sensor = Sensor()
-    # TODO: Get tempreture from sensor.
-    battery = Battery()
-    battery.set_temp(20)
     history = History()
-    devicecheck = DeviceCheck()
-    low_energy = LowEnergyManage()
-    locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
-    devicecheck.add_locator(locator)
+    battery = Battery()
     data_call = dataCall
+    low_energy = LowEnergyManage()
     ota_file_clear = OTAFileClear()
-    power_key = PowerKey() if PowerKey is not None else None
     usb = USB() if USB is not None else None
+    power_key = PowerKey() if PowerKey is not None else None
+    locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
 
+    # DeviceCheck initialization
+    devicecheck = DeviceCheck()
+    devicecheck.add_module(locator)
+    devicecheck.add_module(sensor)
+
+    # Cloud initialization
     cloud_init_params = current_settings["cloud"]
     if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
         cloud = QuecThing(
@@ -914,6 +907,7 @@ def tracker():
             mcu_version=PROJECT_VERSION
         )
         cloud_om = QuecObjectModel()
+        cloud.set_object_model(cloud_om)
     elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
         client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
         cloud = AliYunIot(
@@ -930,22 +924,17 @@ def tracker():
             firmware_version=DEVICE_FIRMWARE_VERSION
         )
         cloud_om = AliObjectModel()
+        cloud.set_object_model(cloud_om)
     else:
         raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
 
-    collector = Collector()
-    controller = Controller()
-    collector.add_module(controller)
-    collector.add_module(devicecheck)
-    collector.add_module(battery)
-    collector.add_module(sensor)
-    collector.add_module(locator)
-    collector.add_module(history)
-
+    # RemotePublish initialization
     remote_pub = RemotePublish()
-    remote_pub.add_cloud(cloud)
     remote_pub.addObserver(history)
+    remote_pub.add_cloud(cloud)
 
+    # Controller initialization
+    controller = Controller()
     controller.add_module(remote_pub)
     controller.add_module(settings)
     controller.add_module(low_energy)
@@ -956,19 +945,34 @@ def tracker():
     controller.add_module(usb, callback=usb_callback)
     controller.add_module(data_call)
 
+    # Collector initialization
+    collector = Collector()
+    collector.add_module(controller)
+    collector.add_module(devicecheck)
+    collector.add_module(battery)
+    collector.add_module(sensor)
+    collector.add_module(locator)
+    collector.add_module(history)
+
+    # LowEnergyManage initialization
     work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
     low_energy.set_period(work_cycle_period)
-    low_energy.set_low_energy_method(collector.__get_low_energy_method(work_cycle_period))
+    low_energy.set_low_energy_method(collector.__init_low_energy_method(work_cycle_period))
     low_energy.addObserver(collector)
 
+    # RemoteSubscribe initialization
     remote_sub = RemoteSubscribe()
     remote_sub.add_executor(collector)
-
     cloud.addObserver(remote_sub)
-    cloud.set_object_model(cloud_om)
-    cloud.init()
 
+    # Business start
+    # Cloud start
+    cloud.init()
+    # OTA upgrade file clean
     controller.ota_file_clean()
+    # Device modules status check
     collector.device_status_check()
+    # Low energy init
     controller.low_energy_init()
+    # Low energy start
     controller.low_energy_start()
