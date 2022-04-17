@@ -908,12 +908,22 @@ class Controller(Singleton):
 def tracker():
     current_settings = settings.get()
 
-    collector = Collector()
-    controller = Controller()
-    devicecheck = DeviceCheck()
-    battery = Battery()
+    # energy_led = LED()
+    # running_led = LED()
     sensor = Sensor()
+    # TODO: Get tempreture from sensor.
+    battery = Battery()
+    battery.set_temp(20)
+    history = History()
+    devicecheck = DeviceCheck()
+    low_energy = LowEnergyManage()
     locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
+    devicecheck.add_locator(locator)
+    data_call = dataCall
+    ota_file_clear = OTAFileClear()
+    power_key = PowerKey() if PowerKey is not None else None
+    usb = USB() if USB is not None else None
+
     cloud_init_params = current_settings["cloud"]
     if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
         cloud = QuecThing(
@@ -947,17 +957,8 @@ def tracker():
     else:
         raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
 
-    history = History()
-    remote_pub = RemotePublish()
-    remote_sub = RemoteSubscribe()
-    low_energy = LowEnergyManage()
-    # energy_led = LED()
-    # running_led = LED()
-    power_key = PowerKey() if PowerKey is not None else None
-    usb = USB() if USB is not None else None
-    data_call = dataCall
-    ota_file_clear = OTAFileClear()
-
+    collector = Collector()
+    controller = Controller()
     collector.add_module(controller)
     collector.add_module(devicecheck)
     collector.add_module(battery)
@@ -965,11 +966,10 @@ def tracker():
     collector.add_module(locator)
     collector.add_module(cloud_om)
     collector.add_module(history)
-    collector.init_cloud_object_module(cloud_object_model)
 
+    remote_pub = RemotePublish()
     remote_pub.add_cloud(cloud)
     remote_pub.addObserver(history)
-    remote_sub.add_executor(collector)
 
     controller.add_module(remote_pub)
     controller.add_module(settings)
@@ -986,12 +986,11 @@ def tracker():
     low_energy.set_low_energy_method(collector.__get_low_energy_method(work_cycle_period))
     low_energy.addObserver(collector)
 
-    devicecheck.add_locator(locator)
-
-    # TODO: Get tempreture from sensor.
-    battery.set_temp(20)
+    remote_sub = RemoteSubscribe()
+    remote_sub.add_executor(collector)
 
     cloud.addObserver(remote_sub)
+    collector.init_cloud_object_module(cloud_object_model)
     cloud.set_object_model(collector.cloud_om)
     cloud.init()
 

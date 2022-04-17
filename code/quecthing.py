@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import ujson
 import utime
 import osTimer
 import quecIot
@@ -136,9 +136,56 @@ class QuecObjectModel(CloudObjectModel):
             }
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, om_file="/usr/quec_object_model.json"):
+        super().__init__(om_file)
         self.items_id = {}
+        self.init()
+
+    def init(self):
+        with open(self.om_file, "rb") as f:
+            cloud_object_model = ujson.load(f)
+            for om_type in cloud_object_model.keys():
+                if om_type not in ("events", "properties"):
+                    continue
+                for om_item in cloud_object_model[om_type]:
+                    om_key = om_item["code"]
+                    om_key_id = om_item["id"]
+                    om_key_perm = om_item["subType"].lower()
+                    self.set_item(om_type, om_key, om_key_id, om_key_perm)
+
+                    struct_info_list = []
+                    event_out_put = []
+                    if om_type == "properties":
+                        if om_item["dataType"] == "STRUCT":
+                            struct_info_list = om_item["specs"]
+                    elif om_type == "events":
+                        if om_item.get("outputData"):
+                            event_out_put = [int(struct_item.get("$ref", "").split("/")[-1]) for struct_item in om_item["outputData"]]
+
+                    for struct_info in struct_info_list:
+                        struct_key = struct_info["code"]
+                        struct_key_id = struct_info["id"]
+                        struct_key_struct = {}
+                        if struct_info["dataType"] == "STRUCT":
+                            for struct_key_struct_key in struct_info["dataType"]["specs"]:
+                                struct_key_struct[struct_key_struct_key["identifier"]] = {
+                                    "name": struct_key_struct_key["identifier"]
+                                }
+                        self.set_item_struct(
+                            om_type, om_key, struct_key,
+                            struct_key_id=struct_key_id,
+                            struct_key_struct=struct_key_struct
+                        )
+
+                    for property_id in event_out_put:
+                        struct_key = self.items_id.get(property_id, "")
+                        struct_key_id = property_id
+                        struct_key_struct = self.items.get(struct_key, {}).get("struct_info", {})
+                        self.set_item_struct(
+                            om_type, om_key, struct_key,
+                            struct_key_id=struct_key_id,
+                            struct_key_struct=struct_key_struct
+                        )
 
     def __set_items_id(self, om_key, om_key_id):
         """Set object model id, name to items_id
@@ -323,14 +370,14 @@ class QuecThing(CloudObservable):
         # log.debug("k: %s, v: %s" % (k, v))
         k_id = None
         struct_info = {}
-        if self.__object_model.items["event"].get(k):
-            k_id = self.__object_model.items["event"][k]["id"]
-            if isinstance(self.__object_model.items["event"][k]["struct_info"], dict):
-                struct_info = self.__object_model.items["event"][k]["struct_info"]
-        elif self.__object_model.items["property"].get(k):
-            k_id = self.__object_model.items["property"][k]["id"]
-            if isinstance(self.__object_model.items["property"][k]["struct_info"], dict):
-                struct_info = self.__object_model.items["property"][k]["struct_info"]
+        if self.__object_model.items["events"].get(k):
+            k_id = self.__object_model.items["events"][k]["id"]
+            if isinstance(self.__object_model.items["events"][k]["struct_info"], dict):
+                struct_info = self.__object_model.items["events"][k]["struct_info"]
+        elif self.__object_model.items["properties"].get(k):
+            k_id = self.__object_model.items["properties"][k]["id"]
+            if isinstance(self.__object_model.items["properties"][k]["struct_info"], dict):
+                struct_info = self.__object_model.items["properties"][k]["struct_info"]
         else:
             return False
 

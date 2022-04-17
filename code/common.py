@@ -164,13 +164,13 @@ class CloudObjectModel(Singleton):
 
     Attribute:
         items: object model dictionary, default two keys
-            event: object model event
+            events: object model events
             property: object model property
 
         items data format:
         {
-            "event": {
-                "name": "event",
+            "events": {
+                "name": "events",
                 "id": "",
                 "perm": "rw",
                 "struct_info": {
@@ -192,18 +192,22 @@ class CloudObjectModel(Singleton):
         }
     """
 
-    def __init__(self):
+    def __init__(self, om_file):
         self.items = {
-            "event": {},
-            "property": {},
+            "events": {},
+            "properties": {},
         }
+        self.om_file = om_file
+
+    def init(self):
+        pass
 
     def set_item(self, om_type, om_key, om_key_id=None, om_key_perm=None):
         """ Set object model item
 
         Parameter:
             om_type: object model type
-                - e.g.: `event`, `property`
+                - e.g.: `events`, `properties`
 
             om_key: object model code
                 - e.g.: `local_time`, `speed`, `GeoLocation`

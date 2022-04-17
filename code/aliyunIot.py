@@ -37,8 +37,8 @@ class AliObjectModel(CloudObjectModel):
             - object model dictionary
             - data format:
             {
-                "event": {
-                    "name": "event",
+                "events": {
+                    "name": "events",
                     "id": "",
                     "perm": "",
                     "struct_info": {
@@ -51,7 +51,7 @@ class AliObjectModel(CloudObjectModel):
                         },
                     },
                 },
-                "property": {
+                "properties": {
                     "name": "event",
                     "id": "",
                     "perm": "",
@@ -60,8 +60,44 @@ class AliObjectModel(CloudObjectModel):
             }
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, om_file="/usr/aliyun_object_model.json"):
+        super().__init__(om_file)
+        self.init()
+
+    def init(self):
+        with open(self.om_file, "rb") as f:
+            cloud_object_model = ujson.load(f)
+            for om_type in cloud_object_model.keys():
+                if om_type not in ("events", "properties"):
+                    continue
+                for om_item in cloud_object_model[om_type]:
+                    om_key = om_item["identifier"]
+                    om_key_id = ""
+                    om_key_perm = ""
+                    self.set_item(om_type, om_key, om_key_id, om_key_perm)
+
+                    struct_info_list = []
+                    if om_type == "properties":
+                        if om_item["dataType"]["type"] == "struct":
+                            struct_info_list = om_item["dataType"]["specs"]
+                    elif om_type == "events":
+                        if om_item.get("outputData"):
+                            struct_info_list = om_item["outputData"]
+
+                    for struct_info in struct_info_list:
+                        struct_key = struct_info["identifier"]
+                        struct_key_id = ""
+                        struct_key_struct = {}
+                        if struct_info["dataType"]["type"] == "struct":
+                            for struct_key_struct_key in struct_info["dataType"]["specs"]:
+                                struct_key_struct[struct_key_struct_key["identifier"]] = {
+                                    "name": struct_key_struct_key["identifier"]
+                                }
+                        self.set_item_struct(
+                            om_type, om_key, struct_key,
+                            struct_key_id=struct_key_id,
+                            struct_key_struct=struct_key_struct
+                        )
 
 
 class AliYunIot(CloudObservable):
@@ -209,7 +245,7 @@ class AliYunIot(CloudObservable):
             log.error("Topic [%s] Subscribe Falied." % self.ica_topic_property_post_reply)
         if self.__ali.subscribe(self.ica_topic_property_set, qos=0) == -1:
             log.error("Topic [%s] Subscribe Falied." % self.ica_topic_property_set)
-        for tsl_event_identifier in self.__object_model.items["event"].keys():
+        for tsl_event_identifier in self.__object_model.items["events"].keys():
             post_topic = self.ica_topic_event_post.format(tsl_event_identifier)
             if self.__ali.subscribe(post_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % post_topic)
@@ -334,12 +370,12 @@ class AliYunIot(CloudObservable):
         event_params = {}
         # Format Publish Params.
         for k, v in data.items():
-            if k in self.__object_model.items["property"].keys():
+            if k in self.__object_model.items["properties"].keys():
                 property_params[k] = {
                     "value": v,
                     "time": utime.mktime(utime.localtime()) * 1000
                 }
-            elif k in self.__object_model.items["event"].keys():
+            elif k in self.__object_model.items["events"].keys():
                 event_params[k] = {
                     "value": {},
                     "time": utime.mktime(utime.localtime()) * 1000

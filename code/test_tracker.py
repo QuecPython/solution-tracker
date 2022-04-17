@@ -17,17 +17,18 @@ import utime
 import osTimer
 
 from usr.logging import Logger
-from usr.tracker import Collector, tracker
+from usr.tracker import tracker
 from usr.battery import Battery
 from usr.history import History
-from usr.location import Location, _loc_method
+from usr.location import Location, _loc_method, GPSMatch, GPSParse
 from usr.quecthing import QuecThing, QuecObjectModel
 from usr.aliyunIot import AliYunIot, AliObjectModel
 from usr.mpower import LowEnergyManage
 from usr.common import Observable, Observer
 from usr.remote import RemoteSubscribe, RemotePublish
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, \
-    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, LocConfig
+    DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, LocConfig, \
+    AliCloudConfig, QuecCloudConfig
 
 log = Logger(__name__)
 
@@ -217,13 +218,36 @@ def test_location():
     print("[test_location] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
+def get_quec_loc_data(loc_method, loc_data):
+    __gps_match = GPSMatch()
+
+    if loc_method == 0x1:
+        res = {"gps": []}
+        r = __gps_match.GxRMC(loc_data)
+        if r:
+            res["gps"].append(r)
+
+        r = __gps_match.GxGGA(loc_data)
+        if r:
+            res["gps"].append(r)
+
+        r = __gps_match.GxVTG(loc_data)
+        if r:
+            res["gps"].append(r)
+        return res
+    elif loc_method == 0x2:
+        return {"non_gps": ["LBS"]}
+    elif loc_method == 0x4:
+        return {"non_gps": []}
+
+
 def test_quecthing():
     res = {"all": 0, "success": 0, "failed": 0}
 
     settings = Settings()
     current_settings = settings.get()
-    cloud_init_params = current_settings["cloud"]
 
+    cloud_init_params = QuecCloudConfig.__dict__
     cloud = QuecThing(
         cloud_init_params["PK"],
         cloud_init_params["PS"],
@@ -236,18 +260,10 @@ def test_quecthing():
     remote_sub = RemoteSubscribe()
     cloud.addObserver(remote_sub)
 
-    collector = Collector()
     quec_om = QuecObjectModel()
-    collector.add_module(quec_om)
-    collector.init_cloud_object_module(cloud_init_params["object_model"])
-
-    gps_mode = LocConfig._gps_mode.external
-    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
-    locator = Location(gps_mode, locator_init_params)
-
     msg = "[test_quecthing] %s: cloud.set_object_model(%s)."
-    assert cloud.set_object_model(collector.cloud_om), msg % ("FAILED", collector.cloud_om)
-    print(msg % ("SUCCESS", collector.cloud_om))
+    assert cloud.set_object_model(quec_om), msg % ("FAILED", quec_om)
+    print(msg % ("SUCCESS", quec_om))
     res["success"] += 1
 
     msg = "[test_quecthing] %s: cloud.init()."
@@ -255,10 +271,14 @@ def test_quecthing():
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    msg = "[test_quecthing] %s: collector.__get_quec_loc_data(%s, %s) %s."
+    msg = "[test_quecthing] %s: get_quec_loc_data(%s, %s) %s."
     loc_method = _loc_method.gps
+    gps_mode = LocConfig._gps_mode.external
+    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
+
+    locator = Location(gps_mode, locator_init_params)
     loc_data = locator.read(loc_method)
-    quec_loc_data = collector.__get_quec_loc_data(loc_method, loc_data.get(loc_method))
+    quec_loc_data = get_quec_loc_data(loc_method, loc_data.get(loc_method))
     assert quec_loc_data != "", msg % ("FAILED", loc_method, loc_data, quec_loc_data)
     print(msg % ("SUCCESS", loc_method, loc_data, quec_loc_data))
     res["success"] += 1
@@ -287,13 +307,47 @@ def test_quecthing():
     print("[test_quecthing] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
+def get_ali_loc_data(loc_method, loc_data):
+    res = {"GeoLocation": {}}
+
+    __gps_match = GPSMatch()
+    __gps_parse = GPSParse()
+
+    if loc_method == 0x1:
+        gga_data = __gps_match.GxGGA(loc_data)
+        data = {}
+        if gga_data:
+            Latitude = __gps_parse.GxGGA_latitude(gga_data)
+            if Latitude:
+                data["Latitude"] = float("%.2f" % float(Latitude))
+            Longtitude = __gps_parse.GxGGA_longtitude(gga_data)
+            if Longtitude:
+                data["Longtitude"] = float("%.2f" % float(Longtitude))
+            Altitude = __gps_parse.GxGGA_altitude(gga_data)
+            if Altitude:
+                data["Altitude"] = float("%.2f" % float(Altitude))
+            if data:
+                data["CoordinateSystem"] = 1
+        res = {"GeoLocation": data}
+    elif loc_method in (0x2, 0x4):
+        if loc_data:
+            res["GeoLocation"] = {
+                "Longtitude": round(loc_data[0], 2),
+                "Latitude": round(loc_data[1], 2),
+                # "Altitude": 0.0,
+                "CoordinateSystem": 1
+            }
+
+    return res
+
+
 def test_aliyuniot():
     res = {"all": 0, "success": 0, "failed": 0}
 
     settings = Settings()
     current_settings = settings.get()
-    cloud_init_params = current_settings["cloud"]
 
+    cloud_init_params = AliCloudConfig.__dict__
     client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
     cloud = AliYunIot(
         cloud_init_params["PK"],
@@ -311,18 +365,10 @@ def test_aliyuniot():
     remote_sub = RemoteSubscribe()
     cloud.addObserver(remote_sub)
 
-    collector = Collector()
     ali_om = AliObjectModel()
-    collector.add_module(ali_om)
-    collector.init_cloud_object_module(cloud_init_params["object_model"])
-
-    gps_mode = LocConfig._gps_mode.external
-    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
-    locator = Location(gps_mode, locator_init_params)
-
     msg = "[test_aliyuniot] %s: cloud.set_object_model(%s)."
-    assert cloud.set_object_model(collector.cloud_om), msg % ("FAILED", collector.cloud_om)
-    print(msg % ("SUCCESS", collector.cloud_om))
+    assert cloud.set_object_model(ali_om), msg % ("FAILED", ali_om)
+    print(msg % ("SUCCESS", ali_om))
     res["success"] += 1
 
     msg = "[test_aliyuniot] %s: cloud.init()."
@@ -330,11 +376,15 @@ def test_aliyuniot():
     print(msg % "SUCCESS")
     res["success"] += 1
 
-    msg = "[test_aliyuniot] %s: collector.__get_ali_loc_data(%s, %s) %s."
+    msg = "[test_aliyuniot] %s: get_ali_loc_data(%s, %s) %s."
     loc_method = _loc_method.gps
+    gps_mode = LocConfig._gps_mode.external
+    locator_init_params = current_settings["LocConfig"]["locator_init_params"]
+
+    locator = Location(gps_mode, locator_init_params)
     loc_data = locator.read(loc_method)
-    ali_loc_data = collector.__get_ali_loc_data(loc_method, loc_data.get(loc_method))
-    assert ali_loc_data != "", msg % ("FAILED", loc_method, loc_data, ali_loc_data)
+    ali_loc_data = get_ali_loc_data(loc_method, loc_data.get(loc_method))
+    assert ali_loc_data["GeoLocation"] != {}, msg % ("FAILED", loc_method, loc_data, ali_loc_data)
     print(msg % ("SUCCESS", loc_method, loc_data, ali_loc_data))
     res["success"] += 1
 
@@ -503,10 +553,10 @@ def main():
     # test_history()
     # test_location()
     # test_quecthing()
-    # test_aliyuniot()
+    test_aliyuniot()
     # test_remote()
     # test_low_energy_manage()
-    test_tracker()
+    # test_tracker()
 
 
 if __name__ == "__main__":

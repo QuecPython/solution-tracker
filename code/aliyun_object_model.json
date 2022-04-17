@@ -1,0 +1,330 @@
+{
+  "properties": [
+    {
+      "identifier": "GeoLocation",
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "Longitude",
+            "dataType": {
+              "type": "double"
+            }
+          },
+          {
+            "identifier": "Latitude",
+            "dataType": {
+              "type": "double"
+            }
+          },
+          {
+            "identifier": "Altitude",
+            "dataType": {
+              "type": "double"
+            }
+          },
+          {
+            "identifier": "CoordinateSystem",
+            "dataType": {
+              "type": "enum"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "power_switch",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "energy",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "phone_num",
+      "dataType": {
+        "type": "text"
+      }
+    },
+    {
+      "identifier": "loc_method",
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "gps",
+            "dataType": {
+              "type": "bool"
+            }
+          },
+          {
+            "identifier": "cell",
+            "dataType": {
+              "type": "bool"
+            }
+          },
+          {
+            "identifier": "wifi",
+            "dataType": {
+              "type": "bool"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "work_mode",
+      "dataType": {
+        "type": "enum"
+      }
+    },
+    {
+      "identifier": "work_cycle_period",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "local_time",
+      "dataType": {
+        "type": "date"
+      }
+    },
+    {
+      "identifier": "low_power_alert_threshold",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "low_power_shutdown_threshold",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "sw_ota",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_ota_auto_upgrade",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_voice_listen",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_voice_record",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_fault_alert",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_low_power_alert",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_over_speed_alert",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_sim_abnormal_alert",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_disassemble_alert",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "sw_drive_behavior_alert",
+      "dataType": {
+        "type": "bool"
+      }
+    },
+    {
+      "identifier": "drive_behavior_code",
+      "dataType": {
+        "type": "enum"
+      }
+    },
+    {
+      "identifier": "power_restart",
+      "dataType": {
+        "type": "enum"
+      }
+    },
+    {
+      "identifier": "over_speed_threshold",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "device_module_status",
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "net",
+            "dataType": {
+              "type": "enum"
+            }
+          },
+          {
+            "identifier": "location",
+            "dataType": {
+              "type": "enum"
+            }
+          },
+          {
+            "identifier": "temp_sensor",
+            "dataType": {
+              "type": "enum"
+            }
+          },
+          {
+            "identifier": "light_sensor",
+            "dataType": {
+              "type": "enum"
+            }
+          },
+          {
+            "identifier": "move_sensor",
+            "dataType": {
+              "type": "enum"
+            }
+          },
+          {
+            "identifier": "mike",
+            "dataType": {
+              "type": "enum"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "gps_mode",
+      "dataType": {
+        "type": "enum"
+      }
+    },
+    {
+      "identifier": "user_ota_action",
+      "dataType": {
+        "type": "enum"
+      }
+    },
+    {
+      "identifier": "ota_status",
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "sys_current_version",
+            "dataType": {
+              "type": "text"
+            }
+          },
+          {
+            "identifier": "sys_target_version",
+            "dataType": {
+              "type": "text"
+            }
+          },
+          {
+            "identifier": "app_current_version",
+            "dataType": {
+              "type": "text"
+            }
+          },
+          {
+            "identifier": "app_target_version",
+            "dataType": {
+              "type": "text"
+            }
+          },
+          {
+            "identifier": "upgrade_module",
+            "dataType": {
+              "type": "enum"
+            }
+          },
+          {
+            "identifier": "upgrade_status",
+            "dataType": {
+              "type": "enum"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "voltage",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "current_speed",
+      "dataType": {
+        "type": "float"
+      }
+    }
+  ],
+  "events": [
+    {
+      "identifier": "sos_alert",
+      "type": "alert"
+    },
+    {
+      "identifier": "fault_alert",
+      "type": "error"
+    },
+    {
+      "identifier": "low_power_alert",
+      "type": "alert"
+    },
+    {
+      "identifier": "sim_abnormal_alert",
+      "type": "alert"
+    },
+    {
+      "identifier": "drive_behavior_alert",
+      "type": "alert"
+    },
+    {
+      "identifier": "disassemble_alert",
+      "type": "alert"
+    },
+    {
+      "identifier": "over_speed_alert",
+      "type": "alert"
+    }
+  ]
+}
