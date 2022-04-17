@@ -553,10 +553,10 @@ def main():
     # test_history()
     # test_location()
     # test_quecthing()
-    test_aliyuniot()
+    # test_aliyuniot()
     # test_remote()
     # test_low_energy_manage()
-    # test_tracker()
+    test_tracker()
 
 
 if __name__ == "__main__":

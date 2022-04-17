@@ -102,7 +102,6 @@ class Collector(Singleton):
         self.__sensor = None
         self.__locator = None
         self.__history = None
-        self.cloud_om = None
         self.__gps_match = GPSMatch()
         self.__gps_parse = GPSParse()
         self.num_iter = numiter()
@@ -245,21 +244,6 @@ class Collector(Singleton):
         elif loc_method == 0x4:
             return {"non_gps": []}
 
-    def init_cloud_object_module(self, cloud_object_model):
-        if self.cloud_om is None:
-            raise TypeError("self.cloud_om is not registered.")
-        for om_type in cloud_object_model.keys():
-            for om_key in cloud_object_model[om_type]:
-                om_key_id = cloud_object_model[om_type][om_key].get("id")
-                om_key_perm = cloud_object_model[om_type][om_key].get("perm")
-                self.cloud_om.set_item(om_type, om_key, om_key_id, om_key_perm)
-                om_key_struct = cloud_object_model[om_type][om_key].get("struct_info", {})
-                for struct_key in om_key_struct.keys():
-                    self.cloud_om.set_item_struct(
-                        om_type, om_key, struct_key, struct_key_id=om_key_struct[struct_key].get("id"),
-                        struct_key_struct=om_key_struct[struct_key].get("struct_info")
-                    )
-
     def add_module(self, module):
         if isinstance(module, Controller):
             self.__controller = module
@@ -275,12 +259,6 @@ class Collector(Singleton):
             return True
         elif isinstance(module, Location):
             self.__locator = module
-            return True
-        elif isinstance(module, QuecObjectModel):
-            self.cloud_om = module
-            return True
-        elif isinstance(module, AliObjectModel):
-            self.cloud_om = module
             return True
         elif isinstance(module, History):
             self.__history = module
@@ -936,7 +914,6 @@ def tracker():
             mcu_version=PROJECT_VERSION
         )
         cloud_om = QuecObjectModel()
-        cloud_object_model = current_settings["cloud"]["object_model"]
     elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
         client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
         cloud = AliYunIot(
@@ -953,7 +930,6 @@ def tracker():
             firmware_version=DEVICE_FIRMWARE_VERSION
         )
         cloud_om = AliObjectModel()
-        cloud_object_model = current_settings["cloud"]["object_model"]
     else:
         raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
 
@@ -964,7 +940,6 @@ def tracker():
     collector.add_module(battery)
     collector.add_module(sensor)
     collector.add_module(locator)
-    collector.add_module(cloud_om)
     collector.add_module(history)
 
     remote_pub = RemotePublish()
@@ -990,8 +965,7 @@ def tracker():
     remote_sub.add_executor(collector)
 
     cloud.addObserver(remote_sub)
-    collector.init_cloud_object_module(cloud_object_model)
-    cloud.set_object_model(collector.cloud_om)
+    cloud.set_object_model(cloud_om)
     cloud.init()
 
     controller.ota_file_clean()
