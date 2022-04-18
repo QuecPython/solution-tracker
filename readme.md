@@ -3,6 +3,7 @@
 | Version | **Date**   | **Author** | **Change expression** |
 | :------ | ---------- | ---------- | --------------------- |
 | 1.0.0   | 2022-03-15 | 孙健       | 初始版本               |
+| 1.0.1   | 2022-04-18 | 孙健       | 添加拉取完整代码工程    |
 
 ## Tracker介绍
 
@@ -107,3 +108,39 @@ QPYCom的使用文档，参见安装目录下的`docs`文件夹。
 ### 远程控制
 
 ![](./docs/media/tracker_remote_control.png)
+
+## 拉取完整代码工程
+
+### 说明
+
+本项目包含有一个`modules`子项目, 拉取代码时需将子项目一并拉去下来进行使用。
+
+### 拉取步骤
+
+1 拉取主项目代码
+
+- `git clone https://gitee.com/qpy-solutions/tracker-v2.0-internal.git`
+
+2 进入项目根目录
+
+- `cd tracker-v2.0-internal/`
+
+3 切换对应的主项目分支
+
+- `git checkout master`
+
+4 子项目初始化
+
+- `git submodule init`
+
+5 子项目代码拉取
+
+- `git submodule update`
+
+6 进入子项目目录
+
+- `cd code/modules/`
+
+7 切换对应的子项目分支
+
+- `git checkout master`
