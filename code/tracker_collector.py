@@ -15,13 +15,13 @@
 import utime
 import modem
 
-from usr.moudles.sensor import Sensor
-from usr.moudles.battery import Battery
-from usr.moudles.history import History
-from usr.moudles.logging import getLogger
-from usr.moudles.mpower import LowEnergyManage
-from usr.moudles.common import Singleton, LOWENERGYMAP
-from usr.moudles.location import Location, GPSMatch, GPSParse, _loc_method
+from usr.modules.sensor import Sensor
+from usr.modules.battery import Battery
+from usr.modules.history import History
+from usr.modules.logging import getLogger
+from usr.modules.mpower import LowEnergyManage
+from usr.modules.common import Singleton, LOWENERGYMAP
+from usr.modules.location import Location, GPSMatch, GPSParse, _loc_method
 from usr.settings import PROJECT_NAME, DEVICE_FIRMWARE_NAME, settings, UserConfig, SYSConfig
 from usr.tracker_controller import Controller
 from usr.tracker_devicecheck import DeviceCheck

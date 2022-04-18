@@ -16,12 +16,12 @@ import dataCall
 
 from misc import Power
 
-from usr.moudles.led import LED
-from usr.moudles.ota import OTAFileClear
-from usr.moudles.logging import getLogger
-from usr.moudles.mpower import LowEnergyManage
-from usr.moudles.remote import RemotePublish
-from usr.moudles.common import Singleton
+from usr.modules.led import LED
+from usr.modules.ota import OTAFileClear
+from usr.modules.logging import getLogger
+from usr.modules.mpower import LowEnergyManage
+from usr.modules.remote import RemotePublish
+from usr.modules.common import Singleton
 from usr.settings import Settings
 
 try:
