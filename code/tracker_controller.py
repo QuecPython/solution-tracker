@@ -86,11 +86,6 @@ class Controller(Singleton):
 
         return False
 
-    def settings_get(self):
-        if not self.__settings:
-            raise TypeError("self.__settings is not registered.")
-        return self.__settings.get()
-
     def settings_set(self, key, value):
         if not self.__settings:
             raise TypeError("self.__settings is not registered.")

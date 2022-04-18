@@ -64,38 +64,11 @@ class Collector(Singleton):
         }
         return loc_method
 
-    def __device_speed_check(self):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-        if not self.__locator:
-            raise TypeError("self.__locator is not registered")
-
-        current_settings = self.__controller.settings_get()
-        alert_data = {
-            "current_speed": 0.00
-        }
-        if current_settings["user_cfg"]["sw_over_speed_alert"] is True:
-            if self.__locator.gps:
-                gps_data = self.__locator.gps.read()[1]
-                vtg_data = self.__gps_match.GxVTG(gps_data)
-                speed = self.__gps_parse.GxVTG_speed(vtg_data)
-                if speed and float(speed) >= current_settings["user_cfg"]["over_speed_threshold"]:
-                    alert_code = 30003
-                    alert_info = {"local_time": self.__get_local_time()}
-                    alert_data = self.__get_alert_data(alert_code, alert_info)
-                if speed:
-                    alert_data["current_speed"] = float(speed)
-
-        log.debug("__device_speed_check: %s" % str(alert_data))
-        return alert_data
-
     def __get_local_time(self):
         return str(utime.mktime(utime.localtime()) * 1000)
 
     def __get_alert_data(self, alert_code, alert_info):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         alert_data = {}
         if ALERTCODE.get(alert_code):
             alert_status = current_settings.get("user_cfg", {}).get("sw_" + ALERTCODE.get(alert_code))
@@ -109,9 +82,7 @@ class Collector(Singleton):
         return alert_data
 
     def __init_low_energy_method(self, period):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         device_model = modem.getDevModel()
         support_methds = LOWENERGYMAP.get(device_model, [])
         method = "NULL"
@@ -128,6 +99,78 @@ class Collector(Singleton):
                     method = "PM"
         log.debug("__init_low_energy_method: %s" % method)
         return method
+
+    def __read_battery(self):
+        if not self.__battery:
+            raise TypeError("self.__battery is not registered.")
+
+        res = {}
+        self.__battery.set_temp(20)
+        energy = self.__battery.get_energy()
+        res = {
+            "energy": energy,
+            "voltage": self.__battery.get_voltage(),
+        }
+
+        return res
+
+    def __check_battery_energy(self, energy):
+        alert_data = {}
+        current_settings = settings.get()
+        if energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
+            alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
+
+        return alert_data
+
+    def __read_sensor(self):
+        return {}
+
+    def __read_location(self):
+        if not self.__locator:
+            raise TypeError("self.__locator is not registered.")
+
+        current_settings = settings.get()
+        # Get cloud location data
+        if current_settings["user_cfg"].get("loc_method"):
+            cfg_loc_method = current_settings["user_cfg"].get("loc_method")
+        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
+            cfg_loc_method = current_settings["LocConfig"]["loc_method"]
+        else:
+            cfg_loc_method = 7
+        loc_info = self.__locator.read(cfg_loc_method)
+        return loc_info
+
+    def __read_cloud_location(self, loc_info):
+        res = {}
+        loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
+        for loc_method in loc_method_dict.keys():
+            if loc_info.get(loc_method):
+                log.debug("Location Data loc_method: %s" % loc_method_dict[loc_method])
+                res = self.__get_loc_data(loc_method, loc_info[loc_method])
+                break
+        return res
+
+    def __check_speed(self, gps_data):
+        if not self.__locator:
+            raise TypeError("self.__locator is not registered")
+
+        current_settings = settings.get()
+        alert_data = {
+            "current_speed": 0.00
+        }
+        if current_settings["user_cfg"]["sw_over_speed_alert"] is True:
+            if self.__locator.gps:
+                vtg_data = self.__gps_match.GxVTG(gps_data)
+                speed = self.__gps_parse.GxVTG_speed(vtg_data)
+                if speed and float(speed) >= current_settings["user_cfg"]["over_speed_threshold"]:
+                    alert_code = 30003
+                    alert_info = {"local_time": self.__get_local_time()}
+                    alert_data = self.__get_alert_data(alert_code, alert_info)
+                if speed:
+                    alert_data["current_speed"] = float(speed)
+
+        log.debug("__check_speed: %s" % str(alert_data))
+        return alert_data
 
     def __get_ali_loc_data(self, loc_method, loc_data):
         res = {"GeoLocation": {}}
@@ -180,69 +223,13 @@ class Collector(Singleton):
             return {"non_gps": []}
 
     def __get_loc_data(self, loc_method, loc_data):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
             return self.__get_quec_loc_data(loc_method, loc_data)
         elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
             return self.__get_ali_loc_data(loc_method, loc_data)
+
         return {}
-
-    def __read_battery(self):
-        if not self.__battery:
-            raise TypeError("self.__battery is not registered.")
-
-        res = {}
-        self.__battery.set_temp(20)
-        energy = self.__battery.get_energy()
-        res = {
-            "energy": energy,
-            "voltage": self.__battery.get_voltage(),
-        }
-
-        current_settings = self.__controller.settings_get()
-        if energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
-            alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
-            res.update(alert_data)
-
-        return res
-
-    def __read_sensor(self):
-        return {}
-
-    def __read_location(self):
-        if not self.__locator:
-            raise TypeError("self.__locator is not registered.")
-
-        res = {}
-        current_settings = self.__controller.settings_get()
-        # Get cloud location data
-        if current_settings["user_cfg"].get("loc_method"):
-            cfg_loc_method = current_settings["user_cfg"].get("loc_method")
-        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
-            cfg_loc_method = current_settings["LocConfig"]["loc_method"]
-        else:
-            cfg_loc_method = 7
-        loc_info = self.__locator.read(cfg_loc_method)
-        if loc_info:
-            loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
-            loc_data = None
-            for loc_method in loc_method_dict.keys():
-                if loc_info.get(loc_method):
-                    log.debug("Location Data loc_method: %s" % loc_method_dict[loc_method])
-                    loc_data = loc_info[loc_method]
-
-                    if loc_method == _loc_method.gps:
-                        gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(loc_data))
-                        log.debug("GxGGA Satellite Num %s" % gga_satellite)
-                        gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(loc_data))
-                        log.debug("GxGSV Satellite Num %s" % gsv_satellite)
-                    break
-            if loc_data:
-                res = self.__get_loc_data(loc_method, loc_data)
-
-        return res
 
     def add_module(self, module):
         if isinstance(module, Controller):
@@ -265,16 +252,6 @@ class Collector(Singleton):
             return True
 
         return False
-
-    def read_module_data(self, module):
-        if module == "Battery":
-            return self.__read_battery()
-        elif module == "Sensor":
-            return self.__read_sensor()
-        elif module == "Location":
-            return self.__read_location()
-        elif module == "History":
-            return self.__read_history()
 
     def device_status_get(self):
         if not self.__devicecheck:
@@ -331,10 +308,7 @@ class Collector(Singleton):
         self.device_data_report(event_data=device_status_check_res)
 
     def device_data_get(self, power_switch=True):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
 
         device_data = {
             "power_switch": power_switch,
@@ -354,13 +328,26 @@ class Collector(Singleton):
         device_data.update({"loc_method": self.__format_loc_method(current_settings["user_cfg"]["loc_method"])})
 
         # Get cloud location data
-        device_data.update(self.__read_location())
+        loc_info = self.__read_location()
+        cloud_loc = self.__read_cloud_location(loc_info)
+        device_data.update(cloud_loc)
+        gps_data = loc_info.get(_loc_method.gps)
+        if gps_data:
+            gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(gps_data))
+            log.debug("GxGGA Satellite Num %s" % gga_satellite)
+            gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(gps_data))
+            log.debug("GxGSV Satellite Num %s" % gsv_satellite)
+            device_data.update(self.__check_speed(gps_data))
 
         # Get gps speed
-        device_data.update(self.__device_speed_check())
+        device_data.update(self.__check_speed())
 
         # Get battery energy
-        device_data.update(self.__read_battery())
+        battery_data = self.__read_battery()
+        device_data.update(battery_data)
+        if battery_data.get("energy") is not None:
+            check_battery_energy = self.__check_battery_energy(battery_data.get("energy"))
+            device_data.update(check_battery_energy)
 
         # TODO: Add other machine info.
 
@@ -378,7 +365,7 @@ class Collector(Singleton):
         post_res = self.__controller.remote_post_data(device_data)
 
         # OTA status rst
-        current_settings = self.__controller.settings_get() if self.__controller else {}
+        current_settings = settings.get() if self.__controller else {}
         ota_status_info = current_settings["user_cfg"]["ota_status"]
         if ota_status_info["upgrade_status"] in (3, 4):
             self.ota_status_reset()
@@ -389,7 +376,7 @@ class Collector(Singleton):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         ota_status_info = current_settings["user_cfg"]["ota_status"]
         ota_info = {}
         ota_info["sys_target_version"] = "--"
@@ -492,7 +479,7 @@ class Collector(Singleton):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         if current_settings["user_cfg"]["sw_ota"] and current_settings["user_cfg"]["sw_ota_auto_upgrade"] is False:
             ota_status_info = current_settings["user_cfg"]["ota_status"]
             if ota_status_info["upgrade_status"] == 1 and current_settings["user_cfg"]["user_ota_action"] == -1:
@@ -504,7 +491,7 @@ class Collector(Singleton):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         if upgrade_info and current_settings["user_cfg"]["sw_ota"]:
             ota_status_info = current_settings["user_cfg"]["ota_status"]
             if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
@@ -553,9 +540,9 @@ class Collector(Singleton):
             raise TypeError("self.__controller is not registered.")
 
         self.report_history()
-        current_settings = self.__controller.settings_get()
+        current_settings = settings.get()
         if current_settings["user_cfg"]["work_mode"] == UserConfig._work_mode.intelligent:
-            speed_info = self.__device_speed_check()
+            speed_info = self.__check_speed()
             if speed_info.get("current_speed") > 0:
                 self.device_data_report()
         else:
