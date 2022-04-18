@@ -19,8 +19,8 @@ import ujson
 import modem
 import _thread
 
-from usr.common import Singleton
-from usr.common import option_lock
+from usr.moudles.common import Singleton
+from usr.moudles.common import option_lock
 from usr.settings_sys import SYSConfig
 from usr.settings_loc import LocConfig
 from usr.settings_alicloud import AliCloudConfig
