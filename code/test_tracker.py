@@ -61,8 +61,10 @@ def test_tracker():
 
 
 def main():
-    # test_settings()
-    test_tracker()
+    test_funs = ["test_settings", "test_tracker"]
+    for test_fun in test_funs:
+        if callable(locals().get(test_fun)):
+            locals()[test_fun]()
 
 
 if __name__ == "__main__":
