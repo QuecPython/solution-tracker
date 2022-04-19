@@ -44,15 +44,15 @@ class AliCloudConfig(object):
     """
 
     class _burning_method(object):
-        one_type_one_density = 0x0
-        one_machine_one_density = 0x1
+        one_type_one_secret = 0x0
+        one_machine_one_secret = 0x1
 
-    PK = "a1q1kmZPwU2"
-    PS = "HQraBqtV8WsfCEuy"
-    DK = "tracker_dev_jack"
-    DS = "bfdfcca5075715e8309eff8597663c4b"
+    PK = "h3nqn03lil0"
+    PS = "UH9muaJIoAlpvnqE"
+    DK = "TrackerDevJack"
+    DS = "2980b4b86fb011375739a150c23bc252"
 
-    SERVER = "a1q1kmZPwU2.iot-as-mqtt.cn-shanghai.aliyuncs.com"
+    SERVER = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % PK
     client_id = ""
     life_time = 120
-    burning_method = _burning_method.one_machine_one_density
+    burning_method = _burning_method.one_machine_one_secret
