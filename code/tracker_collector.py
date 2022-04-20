@@ -337,10 +337,8 @@ class Collector(Singleton):
             log.debug("GxGGA Satellite Num %s" % gga_satellite)
             gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(gps_data))
             log.debug("GxGSV Satellite Num %s" % gsv_satellite)
+            # Get gps speed
             device_data.update(self.__check_speed(gps_data))
-
-        # Get gps speed
-        device_data.update(self.__check_speed())
 
         # Get battery energy
         battery_data = self.__read_battery()

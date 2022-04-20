@@ -15,9 +15,9 @@
 import utime
 import checkNet
 
-from usr.moudules.sensor import Sensor
-from usr.moudules.logging import getLogger
-from usr.moudules.location import Location
+from usr.modules.sensor import Sensor
+from usr.modules.logging import getLogger
+from usr.modules.location import Location
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, settings
 
 log = getLogger(__name__)

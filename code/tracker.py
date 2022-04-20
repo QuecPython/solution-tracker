@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import sim
+import net
 import modem
+import utime
 import dataCall
 
 from usr.modules.sensor import Sensor
@@ -68,12 +70,17 @@ def usb_callback(status):
 def nw_callback(args):
     net_check_res = DeviceCheck().net()
     if args[1] != 1:
-        if net_check_res[0] == 1 and net_check_res[1] != 1:
-            log.warn("SIM abnormal!")
-            alert_code = 30004
-            alert_info = {"local_time": Collector().__get_local_time()}
-            alert_data = Collector().__get_alert_data(alert_code, alert_info)
-            Controller().device_data_report(event_data=alert_data, msg="sim_abnormal")
+        net.setModemFun(0)
+        utime.sleep(3)
+        net.setModemFun(1)
+        utime.sleep(3)
+        net_check_res = DeviceCheck().net()
+        # if net_check_res[0] == 1 and net_check_res[1] != 1:
+        #     log.warn("SIM abnormal!")
+        #     alert_code = 30004
+        #     alert_info = {"local_time": Collector().__get_local_time()}
+        #     alert_data = Collector().__get_alert_data(alert_code, alert_info)
+        #     Controller().device_data_report(event_data=alert_data, msg="sim_abnormal")
     else:
         if net_check_res == (3, 1):
             pass

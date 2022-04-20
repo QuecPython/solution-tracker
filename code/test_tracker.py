@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import net
+import utime
+import dataCall
+
 from usr.tracker import tracker
 from usr.settings import Settings
+from usr.modules.logging import getLogger
+from usr.tracker_devicecheck import DeviceCheck
+
+log = getLogger(__name__)
 
 
 def test_settings():
@@ -56,15 +64,44 @@ def test_settings():
     print("[test_settings] ALL: %s SUCCESS: %s, FAILED: %s." % (res["all"], res["success"], res["failed"]))
 
 
+def nw_callback(args):
+    log.debug("[nw_callback][args] %s" % str(args))
+    if args[1] != 1:
+        res = net.setModemFun(0)
+        log.debug("net.setModemFun(0): %s" % res)
+        DeviceCheck().net()
+        utime.sleep(3)
+        DeviceCheck().net()
+        res = net.setModemFun(1)
+        log.debug("net.setModemFun(1): %s" % res)
+        DeviceCheck().net()
+        utime.sleep(3)
+        DeviceCheck().net()
+    else:
+        DeviceCheck().net()
+
+
+def test_net():
+    log.debug("[test_net] Start")
+    dataCall.setCallback(nw_callback)
+    res = net.setModemFun(0)
+    log.debug("net.setModemFun(0): %s" % res)
+    DeviceCheck().net()
+    utime.sleep(10)
+    log.debug("[test_net] End")
+
+
 def test_tracker():
     tracker()
 
 
-def main():
-    test_funs = ["test_settings", "test_tracker"]
-    for test_fun in test_funs:
-        if callable(locals().get(test_fun)):
-            locals()[test_fun]()
+def main(test_fun="test_net"):
+    test_funs = ["test_settings", "test_tracker", "test_net"]
+    if test_fun not in test_funs and callable(locals().get(test_fun)):
+        print("test_fun[%s] is not exists." % test_fun)
+        return
+
+    locals()[test_fun]()
 
 
 if __name__ == "__main__":

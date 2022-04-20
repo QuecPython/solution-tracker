@@ -119,11 +119,11 @@ QPYCom的使用文档，参见安装目录下的`docs`文件夹。
 
 1 拉取主项目代码
 
-- `git clone https://gitee.com/qpy-solutions/tracker-v2.0-internal.git`
+- `git clone https://gitee.com/qpy-solutions/tracker-v2.git`
 
 2 进入项目根目录
 
-- `cd tracker-v2.0-internal/`
+- `cd tracker-v2/`
 
 3 切换对应的主项目分支
 
