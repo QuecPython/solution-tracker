@@ -37,7 +37,6 @@ DEVICE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
 
 DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
 
-
 _settings_lock = _thread.allocate_lock()
 
 
@@ -80,7 +79,6 @@ class Settings(Singleton):
                 self.current_settings["user_cfg"] = {k: v for k, v in UserConfig.__dict__.items() if not k.startswith("_")}
                 self.current_settings["user_cfg"]["ota_status"]["sys_current_version"] = DEVICE_FIRMWARE_VERSION
                 self.current_settings["user_cfg"]["ota_status"]["app_current_version"] = PROJECT_VERSION
-
             with open(self.settings_file, "w") as f:
                 ujson.dump(self.current_settings, f)
 

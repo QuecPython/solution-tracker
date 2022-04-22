@@ -22,7 +22,7 @@ from usr.modules.logging import getLogger
 from usr.modules.mpower import LowEnergyManage
 from usr.modules.common import Singleton, LOWENERGYMAP
 from usr.modules.location import Location, GPSMatch, GPSParse, _loc_method
-from usr.settings import PROJECT_NAME, DEVICE_FIRMWARE_NAME, settings, UserConfig, SYSConfig
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, UserConfig, SYSConfig
 from usr.tracker_controller import Controller
 from usr.tracker_devicecheck import DeviceCheck
 
@@ -376,16 +376,45 @@ class Collector(Singleton):
 
         current_settings = settings.get()
         ota_status_info = current_settings["user_cfg"]["ota_status"]
-        ota_info = {}
-        ota_info["sys_target_version"] = "--"
-        ota_info["app_target_version"] = "--"
-        ota_info["upgrade_module"] = 0
-        ota_info["upgrade_status"] = 0
+        ota_info = {
+            "sys_current_version": DEVICE_FIRMWARE_VERSION,
+            "sys_target_version": "--",
+            "app_current_version": PROJECT_VERSION,
+            "app_target_version": "--",
+            "upgrade_module": 0,
+            "upgrade_status": 0,
+        }
         ota_status_info.update(ota_info)
         self.__controller.settings_set("ota_status", ota_status_info)
 
         if current_settings["user_cfg"]["user_ota_action"] != -1:
             self.__controller.settings_set("user_ota_action", -1)
+        self.__controller.settings_save()
+
+    def ota_status_init(self):
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+
+        current_settings = settings.get()
+        ota_status = current_settings["user_cfg"]["ota_status"]
+        log.debug("ota_status_init ota_status: %s" % str(ota_status))
+        if ota_status["sys_target_version"] != "--":
+            if ota_status["sys_target_version"] == DEVICE_FIRMWARE_VERSION:
+                if ota_status["upgrade_status"] != 3:
+                    ota_status["upgrade_status"] = 3
+            else:
+                if ota_status["upgrade_status"] != 4:
+                    ota_status["upgrade_status"] = 4
+        if ota_status["app_target_version"] != "--":
+            if ota_status["app_target_version"] == PROJECT_VERSION:
+                if ota_status["upgrade_status"] != 3:
+                    ota_status["upgrade_status"] = 3
+            else:
+                if ota_status["upgrade_status"] != 4:
+                    ota_status["upgrade_status"] = 4
+
+        self.__controller.settings_set("ota_status", ota_status)
+        self.__controller.settings_save()
 
     def report_history(self):
         if not self.__history:
@@ -424,9 +453,10 @@ class Collector(Singleton):
 
             for arg in args:
                 if hasattr(UserConfig, arg[0]):
-                    set_res = self.__controller.settings_set(arg[0], arg[1])
-                    if set_res and setting_flag == 0:
-                        setting_flag = 1
+                    if arg[0] != "ota_status":
+                        set_res = self.__controller.settings_set(arg[0], arg[1])
+                        if set_res and setting_flag == 0:
+                            setting_flag = 1
                 if hasattr(self, arg[0]):
                     getattr(self, arg[0])(arg[1])
 
@@ -440,6 +470,7 @@ class Collector(Singleton):
         return self.device_data_report()
 
     def event_ota_plain(self, *args, **kwargs):
+        log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -454,10 +485,28 @@ class Collector(Singleton):
                     else:
                         return
 
-                if current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot or \
-                        current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
-                    log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
-                    self.__controller.remote_ota_action(action=ota_action_val, module=kwargs.get("module"))
+                if current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot:
+                    if args and args[0]:
+                        if args[0][0] == "ota_cfg":
+                            module = args[0][1].get("componentNo")
+                            target_version = args[0][1].get("targetVersion")
+                            upgrade_module = 1 if module == DEVICE_FIRMWARE_NAME else 2
+                            source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                            if current_settings['user_cfg']['ota_status']['upgrade_module'] == upgrade_module and \
+                                    current_settings['user_cfg']['ota_status']['upgrade_status'] <= 1 and \
+                                    target_version != source_version:
+                                self.__controller.remote_ota_action(action=ota_action_val, module=module)
+                elif current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
+                    if args and args[0]:
+                        if args[0][0] == "ota_cfg":
+                            module = args[0][1].get("module")
+                            target_version = args[0][1].get("version")
+                            upgrade_module = 1 if module == DEVICE_FIRMWARE_NAME else 2
+                            source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                            if current_settings['user_cfg']['ota_status']['upgrade_module'] == upgrade_module and \
+                                    current_settings['user_cfg']['ota_status']['upgrade_status'] <= 1 and \
+                                    target_version != source_version:
+                                self.__controller.remote_ota_action(action=ota_action_val, module=module)
                 else:
                     log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])
 
@@ -492,18 +541,26 @@ class Collector(Singleton):
         current_settings = settings.get()
         if upgrade_info and current_settings["user_cfg"]["sw_ota"]:
             ota_status_info = current_settings["user_cfg"]["ota_status"]
+            ota_info = {}
+            pass_flag = False
             if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
-                ota_info = {}
                 if upgrade_info[0] == DEVICE_FIRMWARE_NAME:
-                    ota_info["upgrade_module"] = 1
-                    ota_info["sys_target_version"] = upgrade_info[2]
+                    if upgrade_info[2] != DEVICE_FIRMWARE_VERSION:
+                        ota_info["upgrade_module"] = 1
+                        ota_info["sys_target_version"] = upgrade_info[2]
+                    else:
+                        pass_flag = True
                 elif upgrade_info[0] == PROJECT_NAME:
-                    ota_info["upgrade_module"] = 2
-                    ota_info["app_target_version"] = upgrade_info[2]
+                    if upgrade_info[2] != PROJECT_VERSION:
+                        ota_info["upgrade_module"] = 2
+                        ota_info["app_target_version"] = upgrade_info[2]
+                    else:
+                        pass_flag = True
+            if pass_flag is False:
                 ota_info["upgrade_status"] = upgrade_info[1]
-                ota_status_info.update(ota_info)
-                self.__controller.settings_set("ota_status", ota_status_info)
-                self.__controller.settings_save()
+            ota_status_info.update(ota_info)
+            self.__controller.settings_set("ota_status", ota_status_info)
+            self.__controller.settings_save()
 
     def power_restart(self, flag):
         if not self.__controller:
@@ -538,6 +595,8 @@ class Collector(Singleton):
             raise TypeError("self.__controller is not registered.")
 
         self.report_history()
+        self.__controller.remote_device_report()
+        self.__controller.remote_ota_check()
         current_settings = settings.get()
         if current_settings["user_cfg"]["work_mode"] == UserConfig._work_mode.intelligent:
             speed_info = self.__check_speed()

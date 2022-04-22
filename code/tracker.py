@@ -20,7 +20,6 @@ import dataCall
 
 from usr.modules.sensor import Sensor
 from usr.modules.battery import Battery
-from usr.modules.ota import OTAFileClear
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.modules.mpower import LowEnergyManage
@@ -87,6 +86,9 @@ def nw_callback(args):
 
 
 def tracker():
+    log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
+    log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
+
     current_settings = settings.get()
 
     # All device modules initialization
@@ -97,7 +99,6 @@ def tracker():
     battery = Battery()
     data_call = dataCall
     low_energy = LowEnergyManage()
-    ota_file_clear = OTAFileClear()
     usb = USB() if USB is not None else None
     power_key = PowerKey() if PowerKey is not None else None
     locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
@@ -151,7 +152,6 @@ def tracker():
     controller.add_module(remote_pub)
     controller.add_module(settings)
     controller.add_module(low_energy)
-    controller.add_module(ota_file_clear)
     # controller.add_module(energy_led, led_type="energy")
     # controller.add_module(running_led, led_type="running")
     controller.add_module(power_key, callback=pwk_callback)
@@ -181,10 +181,14 @@ def tracker():
     # Business start
     # Cloud start
     cloud.init()
-    # OTA upgrade file clean
-    controller.ota_file_clean()
+    # OTA status init
+    collector.ota_status_init()
     # Device modules status check
     collector.device_status_check()
+    # Device info report to cloud
+    controller.remote_device_report()
+    # OTA plain check
+    controller.remote_ota_check()
     # Low energy init
     controller.low_energy_init()
     # Low energy start

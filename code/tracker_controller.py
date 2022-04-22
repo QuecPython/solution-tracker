@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uos
 import dataCall
 
 from misc import Power
 
 from usr.modules.led import LED
-from usr.modules.ota import OTAFileClear
 from usr.modules.logging import getLogger
 from usr.modules.mpower import LowEnergyManage
 from usr.modules.remote import RemotePublish
@@ -34,6 +34,32 @@ except ImportError:
     PowerKey = None
 
 log = getLogger(__name__)
+
+
+# TODO: DELETE THIS MODULE
+class OTAFileClear(object):
+    def __init__(self):
+        self.usrList = uos.ilistdir("/usr/")
+
+    def __remove_updater_dir(self, path):
+        dirList = uos.ilistdir(path)
+        for fileInfo in dirList:
+            if fileInfo[1] == 0x4000:
+                self.__remove_updater_dir("%s/%s" % (path, fileInfo[0]))
+            else:
+                log.debug("remove file name: %s/%s" % (path, fileInfo[0]))
+                uos.remove("%s/%s" % (path, fileInfo[0]))
+
+        log.debug("remove dir name: %s" % path)
+        uos.remove(path)
+
+    def file_clear(self):
+        for fileInfo in self.usrList:
+            if fileInfo[0] == ".updater":
+                self.__remove_updater_dir("/usr/.updater")
+            elif fileInfo[0] == "sotaFile.tar.gz":
+                log.debug("remove update file sotaFile.tar.gz")
+                uos.remove("/usr/sotaFile.tar.gz")
 
 
 class Controller(Singleton):
@@ -124,6 +150,11 @@ class Controller(Singleton):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.cloud_ota_action(action, module)
+
+    def remote_device_report(self):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
+        return self.__remote_pub.cloud_device_report()
 
     def low_energy_set_period(self, period):
         if not self.__low_energy:
