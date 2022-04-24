@@ -117,10 +117,17 @@ class Collector(Singleton):
     def __check_battery_energy(self, energy):
         alert_data = {}
         current_settings = settings.get()
-        if energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
+        if current_settings["user_cfg"]["sw_low_power_alert"] is True and \
+                energy <= current_settings["user_cfg"]["low_power_alert_threshold"]:
             alert_data = self.__get_alert_data(30002, {"local_time": self.__get_local_time()})
 
         return alert_data
+
+    def __check_battery_low_energy_power_down(self):
+        battery_data = self.__read_battery()
+        current_settings = settings.get()
+        if battery_data["energy"] <= current_settings["user_cfg"]["low_power_shutdown_threshold"]:
+            self.__controller.power_down()
 
     def __read_sensor(self):
         return {}
@@ -632,6 +639,9 @@ class Collector(Singleton):
                 self.device_data_report()
         else:
             self.device_data_report()
+
+        # Check battery low enery power down.
+        self.__check_battery_low_energy_power_down()
 
         self.__controller.low_energy_start()
 
