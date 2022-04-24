@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220402191608542"
+		"version":"20220424114613693"
 	},
 	"properties":[
 		{
@@ -679,7 +679,7 @@
 			"name":"电池电压",
 			"subType":"R",
 			"id":41,
-			"sort":33,
+			"sort":32,
 			"type":"PROPERTY",
 			"desc":""
 		},
@@ -692,16 +692,18 @@
 					"code":"sys_current_version",
 					"dataType":"TEXT",
 					"name":"系统当前版本",
-					"id":1
+					"id":1,
+					"desc":""
 				},
 				{
 					"specs":{
 						"length":"1024"
 					},
-					"code":"sys_tartget_version",
+					"code":"sys_target_version",
 					"dataType":"TEXT",
 					"name":"系统目标版本",
-					"id":2
+					"id":2,
+					"desc":""
 				},
 				{
 					"specs":{
@@ -710,7 +712,8 @@
 					"code":"app_current_version",
 					"dataType":"TEXT",
 					"name":"应用当前版本",
-					"id":3
+					"id":3,
+					"desc":""
 				},
 				{
 					"specs":{
@@ -719,7 +722,8 @@
 					"code":"app_target_version",
 					"dataType":"TEXT",
 					"name":"应用目标版本",
-					"id":4
+					"id":4,
+					"desc":""
 				},
 				{
 					"specs":[
@@ -784,7 +788,7 @@
 			"name":"OTA升级",
 			"subType":"R",
 			"id":42,
-			"sort":34,
+			"sort":33,
 			"type":"PROPERTY",
 			"desc":""
 		},
@@ -800,7 +804,7 @@
 			"name":"当前时速",
 			"subType":"R",
 			"id":43,
-			"sort":35,
+			"sort":34,
 			"type":"PROPERTY",
 			"desc":""
 		}

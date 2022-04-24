@@ -29,6 +29,10 @@ class LocConfig(object):
         wifi = 0x4
         all = 0x7
 
+    class _map_coordinate_system(object):
+        WGS84 = "WGS84"
+        GCJ02 = "GCJ02"
+
     profile_idx = 1
 
     _gps_cfg = {
@@ -55,6 +59,8 @@ class LocConfig(object):
     gps_mode = _gps_mode.external
 
     loc_method = _loc_method.gps
+
+    map_coordinate_system = _map_coordinate_system.WGS84
 
     locator_init_params = {
         "gps_cfg": _gps_cfg,

@@ -115,12 +115,6 @@ class Controller(Singleton):
     def settings_set(self, key, value):
         if not self.__settings:
             raise TypeError("self.__settings is not registered.")
-        if key == "loc_method":
-            v = "0b"
-            v += str(int(value.get(3, 0)))
-            v += str(int(value.get(2, 0)))
-            v += str(int(value.get(1, 0)))
-            value = int(v, 2)
         set_res = self.__settings.set(key, value)
         log.debug("__settings_set key: %s, val: %s, set_res: %s" % (key, value, set_res))
         return set_res

@@ -175,29 +175,33 @@ class Collector(Singleton):
     def __get_ali_loc_data(self, loc_method, loc_data):
         res = {"GeoLocation": {}}
 
+        current_settings = settings.get()
+        map_coordinate_system = current_settings["LocConfig"]["map_coordinate_system"]
         if loc_method == 0x1:
             gga_data = self.__gps_match.GxGGA(loc_data)
             data = {}
             if gga_data:
-                Latitude = self.__gps_parse.GxGGA_latitude(gga_data)
+                Longtitude, Latitude, Altitude = self.__locator.gps.read_coordinates(loc_data, map_coordinate_system=map_coordinate_system)
                 if Latitude:
-                    data["Latitude"] = float("%.2f" % float(Latitude))
-                Longtitude = self.__gps_parse.GxGGA_longtitude(gga_data)
+                    data["Latitude"] = float(Latitude)
                 if Longtitude:
-                    data["Longtitude"] = float("%.2f" % float(Longtitude))
-                Altitude = self.__gps_parse.GxGGA_altitude(gga_data)
+                    data["Longtitude"] = float(Longtitude)
                 if Altitude:
-                    data["Altitude"] = float("%.2f" % float(Altitude))
+                    data["Altitude"] = float(Altitude)
                 if data:
-                    data["CoordinateSystem"] = 1
+                    data["CoordinateSystem"] = 1 if map_coordinate_system == "WGS84" else 2
             res = {"GeoLocation": data}
         elif loc_method in (0x2, 0x4):
             if loc_data:
+                Longtitude = loc_data[0]
+                Latitude = loc_data[1]
+                if map_coordinate_system == "GCJ02":
+                    Longtitude, Latitude = self.__locator.wgs84togcj02(Longtitude, Latitude)
                 res["GeoLocation"] = {
-                    "Longtitude": round(loc_data[0], 2),
-                    "Latitude": round(loc_data[1], 2),
+                    "Longtitude": Longtitude,
+                    "Latitude": Latitude,
                     # "Altitude": 0.0,
-                    "CoordinateSystem": 1
+                    "CoordinateSystem": (1 if map_coordinate_system == "WGS84" else 2)
                 }
 
         return res
@@ -398,23 +402,28 @@ class Collector(Singleton):
         current_settings = settings.get()
         ota_status = current_settings["user_cfg"]["ota_status"]
         log.debug("ota_status_init ota_status: %s" % str(ota_status))
+        save_flag = False
         if ota_status["sys_target_version"] != "--":
             if ota_status["sys_target_version"] == DEVICE_FIRMWARE_VERSION:
                 if ota_status["upgrade_status"] != 3:
                     ota_status["upgrade_status"] = 3
+                    save_flag = True
             else:
                 if ota_status["upgrade_status"] != 4:
                     ota_status["upgrade_status"] = 4
+                    save_flag = True
         if ota_status["app_target_version"] != "--":
             if ota_status["app_target_version"] == PROJECT_VERSION:
                 if ota_status["upgrade_status"] != 3:
                     ota_status["upgrade_status"] = 3
+                    save_flag = True
             else:
                 if ota_status["upgrade_status"] != 4:
                     ota_status["upgrade_status"] = 4
-
-        self.__controller.settings_set("ota_status", ota_status)
-        self.__controller.settings_save()
+                    save_flag = True
+        if save_flag:
+            self.__controller.settings_set("ota_status", ota_status)
+            self.__controller.settings_save()
 
     def report_history(self):
         if not self.__history:
@@ -452,13 +461,17 @@ class Collector(Singleton):
             setting_flag = 0
 
             for arg in args:
+                log.debug("arg: %s" % str(arg))
                 if hasattr(UserConfig, arg[0]):
-                    if arg[0] != "ota_status":
+                    log.debug("UserConfig %s" % arg[0])
+                    if arg[0] not in ("ota_status", "loc_method"):
                         set_res = self.__controller.settings_set(arg[0], arg[1])
                         if set_res and setting_flag == 0:
                             setting_flag = 1
                 if hasattr(self, arg[0]):
                     getattr(self, arg[0])(arg[1])
+                    if arg[0] in ("ota_status", "loc_method") and setting_flag == 0:
+                        setting_flag = 1
 
             if setting_flag:
                 self.__controller.settings_save()
@@ -560,7 +573,22 @@ class Collector(Singleton):
                 ota_info["upgrade_status"] = upgrade_info[1]
             ota_status_info.update(ota_info)
             self.__controller.settings_set("ota_status", ota_status_info)
-            self.__controller.settings_save()
+
+    def loc_method(self, method):
+        log.debug("loc_method: %s" % str(method))
+        current_settings = settings.get()
+        v = '0b'
+        if current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot:
+            v += str(int(method.get(3, 0)))
+            v += str(int(method.get(2, 0)))
+            v += str(int(method.get(1, 0)))
+        elif current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
+            v += str(int(method.get("wifi", 0)))
+            v += str(int(method.get("cell", 0)))
+            v += str(int(method.get("gps", 0)))
+        value = int(v, 2)
+        log.debug("loc_method value: %s" % value)
+        return self.__controller.settings_set("loc_method", value)
 
     def power_restart(self, flag):
         if not self.__controller:
