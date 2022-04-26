@@ -150,6 +150,11 @@ class Controller(Singleton):
             raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.cloud_device_report()
 
+    def remote_rrpc_response(self, message_id, data):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
+        return self.__remote_pub.cloud_rrpc_response(message_id, data)
+
     def low_energy_set_period(self, period):
         if not self.__low_energy:
             raise TypeError("self.__low_energy is not registered.")

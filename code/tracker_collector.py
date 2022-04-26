@@ -534,6 +534,13 @@ class Collector(Singleton):
         # OAT MQTT File Download Is Not Supported Yet.
         return False
 
+    def event_rrpc_request(self, *args, **kwargs):
+        message_id = kwargs["message_id"]
+        data = kwargs["data"]
+        log.debug("RRPC message_id: %s" % message_id)
+        log.debug("RRPC data: %s" % data)
+        self.__controller.remote_rrpc_response(message_id, data)
+
     def power_switch(self, flag=None):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
