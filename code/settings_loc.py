@@ -42,6 +42,9 @@ class LocConfig(object):
         "parity": 0,
         "stopbits": 1,
         "flowctl": 0,
+        "PowerPin": None,
+        "StandbyPin": None,
+        "BackupPin": None
     }
 
     _cell_cfg = {
