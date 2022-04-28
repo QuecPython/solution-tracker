@@ -188,7 +188,9 @@ class Collector(Singleton):
             gga_data = self.__gps_match.GxGGA(loc_data)
             data = {}
             if gga_data:
-                Longtitude, Latitude, Altitude = self.__locator.gps.read_coordinates(loc_data, map_coordinate_system=map_coordinate_system)
+                Longtitude, Latitude, Altitude = self.__locator.gps.read_coordinates(loc_data)
+                if map_coordinate_system == "GCJ02":
+                    Longtitude, Latitude = self.__locator.wgs84togcj02(Longtitude, Latitude)
                 if Latitude:
                     data["Latitude"] = float(Latitude)
                 if Longtitude:
@@ -200,16 +202,17 @@ class Collector(Singleton):
             res = {"GeoLocation": data}
         elif loc_method in (0x2, 0x4):
             if loc_data:
-                Longtitude = loc_data[0]
-                Latitude = loc_data[1]
-                if map_coordinate_system == "GCJ02":
-                    Longtitude, Latitude = self.__locator.wgs84togcj02(Longtitude, Latitude)
-                res["GeoLocation"] = {
-                    "Longtitude": Longtitude,
-                    "Latitude": Latitude,
-                    # "Altitude": 0.0,
-                    "CoordinateSystem": (1 if map_coordinate_system == "WGS84" else 2)
-                }
+                if loc_data[0]:
+                    Longtitude = loc_data[0][0]
+                    Latitude = loc_data[0][1]
+                    if map_coordinate_system == "GCJ02":
+                        Longtitude, Latitude = self.__locator.wgs84togcj02(Longtitude, Latitude)
+                    res["GeoLocation"] = {
+                        "Longtitude": Longtitude,
+                        "Latitude": Latitude,
+                        # "Altitude": 0.0,
+                        "CoordinateSystem": (1 if map_coordinate_system == "WGS84" else 2)
+                    }
 
         return res
 
