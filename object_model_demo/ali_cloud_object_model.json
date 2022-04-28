@@ -608,6 +608,39 @@
           "step": "0.01"
         }
       }
+    },
+    {
+      "identifier": "work_mode_timeline",
+      "name": "休眠策略参考时间",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "0",
+          "max": "2147483647",
+          "unit": "s",
+          "unitName": "秒",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "loc_gps_read_timeout",
+      "name": "GPS信息读取超时时间",
+      "accessMode": "rw",
+      "desc": "-1：一直等待直到读取到数据才进行返回\n0：不等待，读取接口返回数据后立即返回\n>0: 等待超时时间，单位秒",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "-1",
+          "max": "2147483647",
+          "unit": "s",
+          "unitName": "秒",
+          "step": "1"
+        }
+      }
     }
   ],
   "events": [
@@ -1163,6 +1196,34 @@
               "step": "0.01"
             }
           }
+        },
+        {
+          "identifier": "work_mode_timeline",
+          "name": "休眠策略参考时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "loc_gps_read_timeout",
+          "name": "GPS信息读取超时时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "-1",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
         }
       ]
     },
@@ -1488,6 +1549,34 @@
               "1": "确认升级"
             }
           }
+        },
+        {
+          "identifier": "work_mode_timeline",
+          "name": "休眠策略参考时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "loc_gps_read_timeout",
+          "name": "GPS信息读取超时时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "-1",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
         }
       ],
       "outputData": []
@@ -1528,7 +1617,9 @@
         "user_ota_action",
         "ota_status",
         "voltage",
-        "current_speed"
+        "current_speed",
+        "work_mode_timeline",
+        "loc_gps_read_timeout"
       ],
       "outputData": [
         {
@@ -2073,6 +2164,34 @@
               "unit": "km/h",
               "unitName": "千米每小时",
               "step": "0.01"
+            }
+          }
+        },
+        {
+          "identifier": "work_mode_timeline",
+          "name": "休眠策略参考时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "loc_gps_read_timeout",
+          "name": "GPS信息读取超时时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "-1",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
             }
           }
         }

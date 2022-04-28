@@ -72,6 +72,8 @@ class UserConfig(object):
 
     loc_method = LocConfig._loc_method.gps
 
+    loc_gps_read_timeout = 300
+
     work_mode = _work_mode.cycle
 
     work_mode_timeline = 3600

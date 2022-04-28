@@ -295,6 +295,18 @@
       "dataType": {
         "type": "float"
       }
+    },
+    {
+      "identifier": "work_mode_timeline",
+      "dataType": {
+        "type": "int"
+      }
+    },
+    {
+      "identifier": "loc_gps_read_timeout",
+      "dataType": {
+        "type": "int"
+      }
     }
   ],
   "events": [

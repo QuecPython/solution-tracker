@@ -2,7 +2,7 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220424114613693"
+		"version":"20220428155940369"
 	},
 	"properties":[
 		{
@@ -807,6 +807,38 @@
 			"sort":34,
 			"type":"PROPERTY",
 			"desc":""
+		},
+		{
+			"specs":{
+				"unit":"s",
+				"min":"0",
+				"max":"2147483647",
+				"step":"1"
+			},
+			"code":"work_mode_timeline",
+			"dataType":"INT",
+			"name":"休眠策略参考时间",
+			"subType":"RW",
+			"id":44,
+			"sort":35,
+			"type":"PROPERTY",
+			"desc":""
+		},
+		{
+			"specs":{
+				"unit":"s",
+				"min":"-1",
+				"max":"2147483647",
+				"step":"1"
+			},
+			"code":"loc_gps_read_timeout",
+			"dataType":"INT",
+			"name":"GPS信息读取超时时间",
+			"subType":"RW",
+			"id":45,
+			"sort":36,
+			"type":"PROPERTY",
+			"desc":"-1：一直等待直到读取到数据才进行返回\n0：不等待，读取接口返回数据后立即返回\n>0: 等待超时时间，单位秒"
 		}
 	],
 	"events":[

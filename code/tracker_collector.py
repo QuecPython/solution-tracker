@@ -14,6 +14,7 @@
 
 import utime
 import modem
+import osTimer
 
 from usr.modules.sensor import Sensor
 from usr.modules.battery import Battery
@@ -22,7 +23,8 @@ from usr.modules.logging import getLogger
 from usr.modules.mpower import LowEnergyManage
 from usr.modules.common import Singleton, LOWENERGYMAP
 from usr.modules.location import Location, GPSMatch, GPSParse, _loc_method
-from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, UserConfig, SYSConfig
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
+    settings, UserConfig, SYSConfig, LocConfig
 from usr.tracker_controller import Controller
 from usr.tracker_devicecheck import DeviceCheck
 
@@ -132,6 +134,9 @@ class Collector(Singleton):
     def __read_sensor(self):
         return {}
 
+    def __gps_read_timeout_cb(self, args):
+        self.__gps_read_break = True
+
     def __read_location(self):
         if not self.__locator:
             raise TypeError("self.__locator is not registered.")
@@ -144,8 +149,35 @@ class Collector(Singleton):
             cfg_loc_method = current_settings["LocConfig"]["loc_method"]
         else:
             cfg_loc_method = 7
-        loc_info = self.__locator.read(cfg_loc_method)
+        self.__locator_gps_hibernation_strategy(1)
+
+        loc_gps_read_timeout = current_settings["user_cfg"]["loc_gps_read_timeout"]
+        self.__gps_read_break = False
+        _gps_read_timer = osTimer()
+        if loc_gps_read_timeout > 0:
+            timeout = 5 if loc_gps_read_timeout == 0 else loc_gps_read_timeout
+            _gps_read_timer.start(timeout, 0, self.__gps_read_timeout_cb)
+        while self.__gps_read_break is False:
+            loc_info = self.__locator.read(cfg_loc_method)
+            for k, v in loc_info.items():
+                if v:
+                    self.__gps_read_break = True
+        _gps_read_timer.stop()
+        self.__gps_read_break = False
+
+        self.__locator_gps_hibernation_strategy(0)
         return loc_info
+
+    def __locator_gps_hibernation_strategy(self, onoff):
+        current_settings = settings.get()
+        gps_sleep_mode = current_settings["LocConfig"]["gps_sleep_mode"]
+        if self.__locator.gps:
+            if gps_sleep_mode == LocConfig._gps_sleep_mode.pull_off:
+                self.__locator.gps.power_switch(onoff)
+            elif gps_sleep_mode == LocConfig._gps_sleep_mode.backup:
+                self.__locator.gps.backup(onoff)
+            elif gps_sleep_mode == LocConfig._gps_sleep_mode.standby:
+                self.__locator.gps.standby(onoff)
 
     def __read_cloud_location(self, loc_info):
         res = {}

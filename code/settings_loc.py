@@ -33,6 +33,12 @@ class LocConfig(object):
         WGS84 = "WGS84"
         GCJ02 = "GCJ02"
 
+    class _gps_sleep_mode(object):
+        none = 0x0
+        pull_off = 0x1
+        backup = 0x2
+        standby = 0x3
+
     profile_idx = 1
 
     _gps_cfg = {
@@ -64,6 +70,8 @@ class LocConfig(object):
     loc_method = _loc_method.gps
 
     map_coordinate_system = _map_coordinate_system.WGS84
+
+    gps_sleep_mode = _gps_sleep_mode.none
 
     locator_init_params = {
         "gps_cfg": _gps_cfg,
