@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uos
 import dataCall
-
 from misc import Power
 
 from usr.modules.led import LED
@@ -36,33 +34,9 @@ except ImportError:
 log = getLogger(__name__)
 
 
-# TODO: DELETE THIS MODULE
-class OTAFileClear(object):
-    def __init__(self):
-        self.usrList = uos.ilistdir("/usr/")
-
-    def __remove_updater_dir(self, path):
-        dirList = uos.ilistdir(path)
-        for fileInfo in dirList:
-            if fileInfo[1] == 0x4000:
-                self.__remove_updater_dir("%s/%s" % (path, fileInfo[0]))
-            else:
-                log.debug("remove file name: %s/%s" % (path, fileInfo[0]))
-                uos.remove("%s/%s" % (path, fileInfo[0]))
-
-        log.debug("remove dir name: %s" % path)
-        uos.remove(path)
-
-    def file_clear(self):
-        for fileInfo in self.usrList:
-            if fileInfo[0] == ".updater":
-                self.__remove_updater_dir("/usr/.updater")
-            elif fileInfo[0] == "sotaFile.tar.gz":
-                log.debug("remove update file sotaFile.tar.gz")
-                uos.remove("/usr/sotaFile.tar.gz")
-
-
 class Controller(Singleton):
+    """Device module control and post data to cloud"""
+
     def __init__(self):
         self.__remote_pub = None
         self.__settings = None
@@ -72,7 +46,6 @@ class Controller(Singleton):
         self.__power_key = None
         self.__usb = None
         self.__data_call = None
-        self.__ota_file_clear = None
 
     def add_module(self, module, led_type=None, callback=None):
         if isinstance(module, RemotePublish):
@@ -83,9 +56,6 @@ class Controller(Singleton):
             return True
         elif isinstance(module, LowEnergyManage):
             self.__low_energy = module
-            return True
-        elif isinstance(module, OTAFileClear):
-            self.__ota_file_clear = module
             return True
         elif isinstance(module, LED):
             if led_type == "energy":
@@ -133,6 +103,7 @@ class Controller(Singleton):
     def remote_post_data(self, data):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
+        log.debug("remote_post_data data: %s" % str(data))
         return self.__remote_pub.post_data(data)
 
     def remote_ota_check(self):
@@ -179,11 +150,6 @@ class Controller(Singleton):
         if not self.__low_energy:
             raise TypeError("self.__low_energy is not registered.")
         return self.__low_energy.stop()
-
-    def ota_file_clean(self):
-        if not self.__ota_file_clear:
-            raise TypeError("self.__ota_file_clear is not registered.")
-        self.__ota_file_clear.file_clear()
 
     def running_led_show(self, period):
         if not self.__running_led:

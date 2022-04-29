@@ -43,6 +43,7 @@ ALERTCODE = {
 
 
 class Collector(Singleton):
+    """Device data and commands collector"""
     def __init__(self):
         self.__controller = None
         self.__devicecheck = None
