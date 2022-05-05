@@ -1398,9 +1398,9 @@ collector.update(observable, *args, **kwargs)
 
 无
 
-### Controller 采集器
+### Controller 控制器
 
-> 采集器模块，主要用于采集各个功能模块数据，如传感器，电池，发送失败历史数据等；消息指令的接收，数据的整合与业务逻辑的处理。
+> 控制器模块，主要用于控制各个功能模块，如电源关闭与重启，发送数据等。
 
 #### Controller 导入
 
@@ -1579,7 +1579,7 @@ controller.remote_post_data(data)
 例:
 
 ```python
-res = collector.remote_ota_check()
+res = controller.remote_ota_check()
 ```
 
 参数:
@@ -1601,7 +1601,7 @@ res = collector.remote_ota_check()
 例:
 
 ```python
-res = collector.remote_ota_action(action, module)
+res = controller.remote_ota_action(action, module)
 ```
 
 参数:
@@ -1626,7 +1626,7 @@ res = collector.remote_ota_action(action, module)
 例:
 
 ```python
-res = collector.remote_device_report()
+res = controller.remote_device_report()
 ```
 
 参数:
@@ -1648,7 +1648,7 @@ res = collector.remote_device_report()
 例:
 
 ```python
-res = collector.remote_rrpc_response(message_id, data)
+res = controller.remote_rrpc_response(message_id, data)
 ```
 
 参数:
@@ -1673,7 +1673,7 @@ res = collector.remote_rrpc_response(message_id, data)
 例:
 
 ```python
-res = collector.low_energy_set_period(period)
+res = controller.low_energy_set_period(period)
 ```
 
 参数:
@@ -1697,7 +1697,7 @@ res = collector.low_energy_set_period(period)
 例:
 
 ```python
-res = collector.low_energy_set_method(method)
+res = controller.low_energy_set_method(method)
 ```
 
 参数:
@@ -1721,7 +1721,7 @@ res = collector.low_energy_set_method(method)
 例:
 
 ```python
-res = collector.low_energy_init()
+res = controller.low_energy_init()
 ```
 
 参数:
@@ -1742,7 +1742,7 @@ res = collector.low_energy_init()
 
 例:
 ```python
-res = collector.low_energy_start()
+res = controller.low_energy_start()
 ```
 
 参数:
@@ -1763,7 +1763,7 @@ res = collector.low_energy_start()
 
 例:
 ```python
-res = collector.low_energy_stop()
+res = controller.low_energy_stop()
 ```
 
 参数:
