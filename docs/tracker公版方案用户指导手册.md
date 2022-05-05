@@ -681,7 +681,7 @@ collector.add_module(battery)
 
 #### device_status_get 设备模块状态获取
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `DeviceCheck`
 > - `Controller`
@@ -702,7 +702,9 @@ res = collector.device_status_get()
 
 返回值:
 
-返回`DICT`类型数据。
+|数据类型|说明|
+|:---|---|
+|DICT|设备状态信息与告警信息|
 
 | EKY | VALUE | 数据类型 | 说明 |
 |---|---|---|---|
@@ -733,12 +735,12 @@ res = collector.device_status_get()
 ```
 #### device_status_check 设备状态检测并上报设备信息
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > - `DeviceCheck`
 >
-> 该模块业务功能:
+> 业务功能:
 > 
 > 1. 该模块先获取设备模块状态信息
 > 2. 调用设备信息上报接口上报设备信息
@@ -775,7 +777,9 @@ collector.device_data_get(power_switch=True)
 
 返回值:
 
-返回`DICT`类型数据。
+|数据类型|说明|
+|:---|---|
+|DICT|设备信息与业务信息|
 
 ```json
 {
@@ -832,11 +836,11 @@ collector.device_data_get(power_switch=True)
 
 #### device_data_report 设备与业务信息上报云端
 
-> 该功能依赖模块:
+> 依赖模块:
 >
 > - `Controller`
 >
-> 该模块业务功能:
+> 业务功能:
 > 
 > 1. 该模块先获取设备业务信息数据
 > 2. 与传入的事件数据合并后发送云端
@@ -863,11 +867,11 @@ res = collector.device_data_report(power_switch=True, event_data={})
 
 #### ota_status_reset 设备OTA升级信息初始化
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 将设备OTA升级信息初始化, 该数据为自定义物模型数据
 > - 设置字段:
@@ -899,11 +903,11 @@ collector.ota_status_reset()
 
 #### ota_status_init 设备OTA升级信息初始化
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该功能在设备启动时运行
 > - 检测当前设备的OTA升级状态记录是否有升级计划
@@ -927,11 +931,11 @@ collector.ota_status_init()
 
 #### report_history 设备历史上报失败数据重新上报
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`, `History`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 查询历史上报失败数据
 > - 上报云端
@@ -957,11 +961,11 @@ collector.report_history()
 
 #### event_option 云端透传数据下发功能
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为`RemoteSubscribe`透传数据下发监听功能
 > - 收到被监听者的消息通知时，进行处理
@@ -987,11 +991,11 @@ collector.event_option(*args, **kwargs)
 
 #### event_done 云端物模型属性设置功能
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为`RemoteSubscribe`物模型属性设置监听功能
 > - 收到被监听者的消息通知时，进行处理
@@ -1021,11 +1025,11 @@ collector.event_done(*args, **kwargs)
 
 #### event_query 云端查询设备信息功能
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为`RemoteSubscribe`云端查询设备信息监听功能
 > - 收到被监听者的消息通知时，进行处理
@@ -1054,11 +1058,11 @@ collector.event_query(*args, **kwargs)
 
 #### event_ota_plain OTA升级计划处理功能
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为`RemoteSubscribe`OTA升级计划信息监听功能
 > - 收到被监听者的消息通知时，进行处理
@@ -1100,11 +1104,11 @@ collector.event_ota_plain(*args, **kwargs)
 
 #### event_ota_file_download 阿里云OTA设备请求下载文件分片
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为`RemoteSubscribe`透传数据下发监听功能
 > - 收到被监听者的消息通知时，进行处理
@@ -1130,11 +1134,11 @@ collector.event_ota_file_download(*args, **kwargs)
 
 #### event_rrpc_request MQTT同步通信(RRPC)
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为`RemoteSubscribe`MQTT同步通信(RRPC)监听功能
 > - 收到被监听者的消息通知时，进行处理
@@ -1151,20 +1155,8 @@ collector.event_rrpc_request(*args, **kwargs)
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
-| args | TUPLE | 元组数据(元素1为OTA升级计划具体数据) |
-| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
-
-阿里云OTA升级计划参数
-
-```python
-(("ota_cfg", {"module": "", "version": ""}),)
-```
-
-移远云OTA升级计划参数
-
-```python
-(("ota_cfg", {"componentNo": "", "targetVersion": ""}),)
-```
+| args | TUPLE | 元组数据(作为扩展数据，暂无用处) |
+| kwargs | DICT | 字典数据, 包含两个key值，message_id(RRPC消息编号)与data(RRPC消息内容) |
 
 返回值:
 
@@ -1172,11 +1164,11 @@ collector.event_rrpc_request(*args, **kwargs)
 
 #### power_switch 下发电源状态控制指令
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为物模型属性设置，电源状态控制指令
 > - 当收到设置开关机命令时上报设备信息
@@ -1201,11 +1193,11 @@ collector.power_switch(onoff)
 
 #### user_ota_action 下发指令用户确认是否升级
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为物模型属性设置，用户确认是否升级
 > - 记录用户设置参数，0-取消升级，1-确认升级
@@ -1230,11 +1222,11 @@ collector.user_ota_action(action)
 
 #### ota_status 设置OTA升级状态
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为物模型属性设置，设置OTA升级状态
 > - 记录OTA升级状态，1-待升级，2-升级中，3-升级成功，4-升级失败
@@ -1258,11 +1250,11 @@ collector.ota_status(upgrade_info)
 
 #### loc_method 设置定位方式
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为物模型属性设置，设置定位方式
 > - 解析并记录定位方式，由于物模型定义的定位方式为结构体，每种定位方式的启用禁用以0，1进行表示，而代码逻辑中定位方式是以二进制位的方式进行表示，所以需要进行转换
@@ -1288,11 +1280,11 @@ collector.loc_method(method)
 
 #### power_restart 重启设备指令
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为物模型属性设置，重启设备
 > - 上报设备信息，并标记电源状态关闭
@@ -1317,11 +1309,11 @@ collector.power_restart(flag)
 
 #### work_cycle_period 重置设备周期唤醒时间
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块为物模型属性设置，重置设备周期唤醒时间
 > - 先将未触发唤醒的定时器取消
@@ -1346,11 +1338,11 @@ collector.work_cycle_period(period)
 
 #### low_engery_option 低功耗唤醒后业务功能
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Controller`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 低功耗唤醒后业务功能逻辑
 >     + 上报历史数据
@@ -1380,7 +1372,7 @@ collector.low_engery_option(low_energy_method)
 
 #### update 监听者消息通知接口
 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 做为监听者，当被监听者产生变化时，通知监听者
 > - 当`observable`为`LowEnergyManage`对象时，调用`low_engery_option`功能
@@ -1447,11 +1439,11 @@ controller.add_module(settings)
 
 #### settings_set 配置信息修改
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Settings`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块用于修改用户业务配置参数
 
@@ -1476,11 +1468,11 @@ controller.settings_set(key, value)
 
 #### settings_save 配置信息持久化保存
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Settings`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块用于将修改后的配置参数持久化存储到文件中
 
@@ -1502,11 +1494,11 @@ controller.settings_save()
 
 #### power_restart 设备电源重启
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Power`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块调用电源模块接口重启设备
 
@@ -1526,11 +1518,11 @@ controller.power_restart()
 
 #### power_down 设备关机
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `Power`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块调用电源模块接口关机设备
 
@@ -1550,11 +1542,11 @@ controller.power_down()
 
 #### remote_post_data 云端消息发布
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `RemotePublish`
 > 
-> 该模块业务功能:
+> 业务功能:
 > 
 > - 该模块调用`RemotePublish.post_data`接口发布消息
 
@@ -1578,7 +1570,7 @@ controller.remote_post_data(data)
 
 #### remote_ota_check OTA升级计划查询
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `RemotePublish`
 
@@ -1600,7 +1592,7 @@ res = controller.remote_ota_check()
 
 #### remote_ota_action OTA升级确认
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `RemotePublish`
 
@@ -1625,7 +1617,7 @@ res = controller.remote_ota_action(action, module)
 
 #### remote_device_report 设备软硬件版本信息上报
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `RemotePublish`
 
@@ -1647,7 +1639,7 @@ res = controller.remote_device_report()
 
 #### remote_rrpc_response RRPC消息应答
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `RemotePublish`
 
@@ -1672,7 +1664,7 @@ res = controller.remote_rrpc_response(message_id, data)
 
 #### low_energy_set_period 低功耗模块唤醒周期设置
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `LowEnergyManage`
 
@@ -1696,7 +1688,7 @@ res = controller.low_energy_set_period(period)
 
 #### low_energy_set_method 低功耗模块模式设置
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `LowEnergyManage`
 
@@ -1720,7 +1712,7 @@ res = controller.low_energy_set_method(method)
 
 #### low_energy_init 低功耗模块唤醒初始化
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `LowEnergyManage`
 
@@ -1742,7 +1734,7 @@ res = controller.low_energy_init()
 
 #### low_energy_start 低功耗模块唤醒启动
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `LowEnergyManage`
 
@@ -1761,9 +1753,9 @@ res = controller.low_energy_start()
 |:---|---|
 |BOOL|`True`成功, `False`失败|
 
-#### low_energy_stop 低功耗模块唤醒定时器停止
+#### low_energy_stop 低功耗模块唤醒停止
 
-> 该功能依赖模块:
+> 依赖模块:
 > 
 > - `LowEnergyManage`
 
