@@ -124,287 +124,69 @@
 - 先向云端发送紧急报警信息，同时向内置电话号码拨打电话、发送短信。
 - 报警代码：50001
 
-## Tracker API v2.0.0
-
-### Tracker
-
-#### 创建 Tracker 对象
-
-1. 导入Tracker模块
-2. 创建Tracker对象
-
-- 例:
-
-```python
-from usr.tracker import Tracker
-tracker = Tracker()
-```
-
-#### battery 电池功能
-
-改功能提供`energy`方法查询当前电池电量。
-
->`tracker.battery.energy`
-
-- 例:
-
-```python
-battery_energy = tracker.battery.energy()
-```
-- 参数:
-
-无
-
-- 返回值:
-
-返回当前电池电量百分比, 数据类型为`int`。
-
-#### locator 定位功能
-
-该功能提供了`read`查询当前模块的定位信息, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
-
-##### `read` 查询当前模块的定位信息。
-
->`tracker.locator.read`
-
-- 例:
-
-```python
-location_info = tracker.locator.read()
-```
-
-- 参数:
-
-无
-
-- 返回值:
-
-返回当前定位方式与定位信息, 数据类型为元组, `(loc_method, loc_data)`, `()`空元组表示没有获取到定位信息。
-
-- `loc_method` 定位方式
-    - 0 -- 无
-    - 1 -- GPS
-    - 2 -- 基站
-    - 4 -- WIFI(暂不支持)
-    - 7 -- GPS&基站&WIFI
-
-- `loc_data` 定位信息
-
-|平台|GPS|基站|WIFI|
-|:---|---|---|---|
-|移远云|`{'gps': ['GPRMC,XXX','GPGGA,XXX','GPVTG,XXX']}`|`{'non_gps': ['LBS']}`|`{'non_gps': []}`|
-|阿里云|`{'GeoLocation': {'Longtitude': x.xx, 'Latitude': x.xx, 'Altitude': x.xx, 'CoordinateSystem': 1}}`|同GPS|同GPS|
-
-#### remote 信息通信功能
-
-##### `post_data` 向云端进行消息发送功能。
-
-- `post_data`发放支持阻塞和非阻塞两种消息发送模式, 默认为阻塞方式进行消息发送。
-
->`tracker.remote.post_data`
-
-- 例:
-
-```python
-import utime
-topic = '1'
-data = {
-    'power_switch': True,
-    'energy': tracker.battery.energy(),
-    'local_time': utime.mktime(utime.localtime())
-}
-tracker.remote.post_data(topic, data)
-```
-
-- 参数:
-
-|参数|参数类型|参数说明|
-|:---|---|---|
-|topic|str|发送消息唯一标识|
-|data|dict|数据信息(见下表)|
-
-- GPS定位信息标识符
-
-|平台|标识符|数据定义|
-|:---|---|---|
-|移远云|`gps`|list|
-|移远云|`non_gps`|list|
-|阿里云|`GeoLocation`|dict|
-
-- 属性功能定义标识符
-
-|功能名称|标识符|数据类型|数据定义|功能描述|读写类型|
-|:---|:---|:---|:---|:---|:---|
-|开关机|`power_switch`|`bool`|`True`:开启,`False`:关闭||读写|
-|电量|`energy`|`int`|取值范围：0 ~ 100||只读|
-|电话号码|`phone_num`|`text`|数据长度：11||读写|
-|定位方式|`loc_method`|`int`|取值范围：0 ~ 7|0: 无;1: GPS;2: 基站;4: WIFI(暂不支持);7: 全部支持|读写|
-|工作模式|`work_mode`|`int`|取值范围：0 ~ 15|0: 无;1: 周期性模式;2: 智能模式;4: 低功耗模式;7: 全部|读写|
-|工作模式循环周期|`work_cycle_period`|`int`|取值范围： ~|单位s|读写|
-|本地时间|`local_time`|`int`|取值范围： ~||只读|
-|低电报警阈值|`low_power_alert_threshold`|`int`|取值范围：5 ~ 30||读写|
-|低电关机阈值|`low_power_shutdown_threshold`|`int`|取值范围：5 ~ 30||读写|
-|OTA功能开关|`sw_ota`|`bool`|`True`:开启,`False`:关闭||读写|
-|OTA自动升级功能开关|`sw_ota_auto_upgrade`|`bool`|`True`:开启,`False`:关闭||读写|
-|语音监听功能开关|`sw_voice_listen`|`bool`|`True`:开启,`False`:关闭||读写|
-|录音上报功能开关|`sw_voice_record`|`bool`|`True`:开启,`False`:关闭||读写|
-|故障报警功能开关|`sw_fault_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|低电报警功能开关|`sw_low_power_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|超速报警功能开关|`sw_over_speed_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|SIM卡异常报警功能开关|`sw_sim_abnormal_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|拆卸报警功能开关|`sw_disassemble_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|驾驶行为报警功能开关|`sw_drive_behavior_alert`|`bool`|`True`:开启,`False`:关闭||读写|
-|驾驶行为代码|`drive_behavior_code`|`int`|取值范围：40001 ~ 40004|40001: quick_start;40002: quick_stop;40003: quick_turn_left;40004: quick_turn_right|只读|
-|模块重启|`power_restart`|`bool`|`True`:重启,`False`:无动作||读写|
-|超速报警阈值|`over_speed_threshold`|`int`|取值范围：0 ~ 132|单位km/h|读写|
-|设备模块状态|`device_module_status`|`int`|1: net_error,2: gps_error,3: temp_sensor_error,4: light_sensor_error,5: move_sensor_error,6: mike_error|只读|
-|GPS模块类型|`gps_mode`|`int`|取值范围：0 ~ 2|0: 无GPS模块,1: 内置GPS模块,2: 外置GPS模块|只读|
-|是否OTA升级|`user_ota_action`|`bool`|`True`:接受升级,`False`:拒绝升级||只写|
-|OTA升级状态|`ota_status`|`int`|取值范围：0 ~ 5|0: 无升级;1: 待升级;2: 升级中;3: 升级成功;4: 升级失败|只读|
-
-- 事件功能定义标识符
-
-|功能名称|标识符|数据定义|
-|:---|:---|:---|
-|SOS报警|`sos_alert`|`{'local_time': xxx}`|
-|故障报警|`fault_alert`|`{'local_time': xxx}`|
-|低电报警|`low_power_alert`|`{'local_time': xxx}`|
-|SIM卡异常报警|`sim_abnormal_alert`|`{'local_time': xxx}`|
-|驾驶行为报警|`drive_behavior_alert`|`{'local_time': xxx}`|
-|拆卸报警|`disassemble_alert`|`{'local_time': xxx}`|
-|超速报警|`over_speed_alert`|`{'local_time': xxx}`|
-
-- 返回值:
-
-无
-
-#### get_alert_data 格式化报警数据
-
-该功能提供`get_alert_data`方法, 返回格式化上报告警数据。
-
->`tracker.get_alert_data`
-
-- 例:
-
-```python
-import utime
-alert_code = 20000
-alert_info = {
-    'local_time': utime.mktime(utime.localtime())
-}
-res = tracker.get_alert_data(alert_code, alert_info)
-```
-
-- 参数:
-
-|参数|参数类型|参数说明|
-|:---|---|---|
-|alert_code|int|报警编码|
-|alert_info|dict|报警信息, key为标识符, value为具体信息|
-
-- 返回值:
-
-报警编码结构，字典数据。
-
-- 报警编码与标识符
-
-|报警编码|子码|标识符|说明|
-|:---|:---|:---|:---|
-|20000|-|`fault_alert`|故障报警|
-|-|20001|`net_error`|网络异常|
-|-|20002|`gps_error`|GPS异常|
-|-|20003|`temp_sensor_error`|温度传感器异常|
-|-|20004|`light_sensor_error`|照度传感器异常|
-|-|20005|`move_sensor_error`|三轴加速度传感器异常|
-|-|20006|`mike_error`|麦克风异常|
-|30002|-|`low_power_alert`|低电量报警|
-|30003|-|`over_speed_alert`|超速报警|
-|30004|-|`sim_abnormal_alert`|SIM卡异常报警|
-|30005|-|`disassemble_alert`|拆卸报警|
-|40000|-|`drive_behavior_alert`|驾驶行为监测报警|
-|-|40001|`quick_start`|急起|
-|-|40002|`quick_stop`|急停|
-|-|40003|`quick_turn_left`|左急转弯|
-|-|40004|`quick_turn_right`|右急转弯|
-|50001|-|`sos_alert`|SOS求救报警|
-
-#### device_data_report 设备信息上报功能
-
-该模块实现了机器信息的汇总上报功能, 会将机器的位置信息, 开机状态, 电池电量等相关设置信息全部实时上报云端。
-
-- 例:
-
-```python
-res = tracker.device_data_report()
-```
-
-- 参数:
-
-无
-
-- 返回值:
-
-无
-
-#### device_check 设备自检功能
-
-该功能用于检测设备相关功能是否正常, 主要包括网络状态, GPS模组, 各类传感器, 麦克风是否正常工作(目前暂不支持各类传感器麦克风等外设检测)。 如异常会上报远端异常信息。 检查完毕后不论异常与否都会调用`device_data_report`功能上报云端设备所有信息。
-
-- 例:
-
-```python
-res = tracker.device_check()
-```
-
-- 参数:
-
-无
-
-- 返回值:
-
-返回码，数值类型`int`
-
-|返回码|说明|
-|:---|:---|
-|0|无异常|
-|20001|网络异常|
-|20002|GPS异常|
-|20003|温度传感器异常|
-|20004|照度传感器异常|
-|20005|三轴加速度传感器异常|
-|20006|麦克风异常|
-
-#### over_speed_check 设备超速报警检测
-
-该模块实现了检测当前设备运动速度检测，当当前速度(km/h)超出设定的超速阈值，则立即向云端进行报警，**该功能只在定位模式为GPS时生效**。
-
-- 例:
-
-```python
-tracker.over_speed_check()
-```
-
-- 参数:
-
-无
-
-- 返回值:
-
-无
+## Tracker 功能模块说明
+
+### 功能模块注册流程图
+
+![](./docs/media/tracker_modules_registration_process.png)
+
+### 功能模块说明
+
+#### 业务功能模块
+
+| 模块名称 | 模块功能 |
+|---|---|
+| Settings | 配置参数读写模块 |
+| Collector | 采集器模块，主要用于采集各个功能模块数据，如传感器，电池，发送失败历史数据等；消息指令的接收，数据的整合与业务逻辑的处理。 |
+| Controller | 控制器模块，主要用于设备功能模块的控制，如电源的重启与关机，LED的亮灭控制，配置文件的写入保存，云端消息的发送等。 |
+| DeviceCheck | 设备状态检测模块，主要负责检测各个传感器模块，定位模块是否正常工作，网络拨号是否正常 |
+
+#### 设备功能模块
+
+| 模块名称 | 模块功能 |
+|---|---|
+| History | 历史文件读写操作模块 |
+| Battery | 电池模块，获取电池电量与电压 |
+| LowEnergyManage | 低功耗唤醒模块，用于设置不同级别的低功耗模型，定时唤醒模块进行业务工作。 |
+| Location | 定位模块，可获取GPS，基站，WIFI三种定位方式的定位信息。 |
+| QuecThing | 移远云模块，主要用于与云端的消息交互与OTA升级 |
+| QuecObjectModel | 移远云物模型抽象类，将移远云导出的物模型（json格式）抽象为一个类进行功能使用 |
+| AliYunIot | 阿里云模块，主要用于与云端的消息交互与OTA升级 |
+| AliObjectModel | 阿里云物模型抽象类，将阿里云导出的精简物模型（json格式）抽象为一个类进行功能使用 |
+| RemotePublish | 云端消息发布类，用于兼容不同云的消息发布与OTA升级检测与确认 |
+| RemoteSubscribe | 云端消息订阅类，用于兼容不同云端的下发消息 |
+
+## Tracker API v2.1.0
 
 ### settings
 
-该模块为配置参数模块
+> 该模块为配置参数模块
 
-- 该模块主要有`app`和`sys`两种类型的参数。
-- `app`为可修改控制相关参数;
-- `sys`为系统默认参数, 不可修改。
-- 配置参数都已集成到一个字典中, 可通过`settings.get()`方式获取到具体配置参数
-- `app`配置参数具体含义见`quec_cloud_module.json`(导入移远云产品功能定义中)
+- 项目配置主要分为三个大块
+    1. 系统配置模块, settings_sys.SYSConfig
+    2. 用户配置模块, settings_user.UserConfig
+    3. 基础模块配置, settings_loc.LocConfig, settings_alicloud.AliCloudConfig, settings_queccloud.QuecCloudConfig
+- 该模块将配置好的模块设置集成到一个`dict`中，可通过`settings.get()`方式获取到具体配置参数
+- 全局变量:
+    + `PROJECT_NAME` -- 项目名称
+    + `PROJECT_VERSION` -- 项目版本
+    + `DEVICE_FIRMWARE_NAME` -- 设备版本
+    + `DEVICE_FIRMWARE_VERSION` -- 固件版本
+    
+#### 全局变量导入
+
+例:
+
+```python
+from usr.settings import PROJECT_NAME
+from usr.settings import PROJECT_VERSION
+from usr.settings import DEVICE_FIRMWARE_NAME
+from usr.settings import DEVICE_FIRMWARE_VERSION
+```
 
 #### settings 导入
 
-- 例:
+例:
 
 ```python
 from usr.settings import settings
@@ -412,70 +194,107 @@ from usr.settings import settings
 
 #### init 初始化
 
-- 例:
+例:
 
 ```python
 res = settings.init()
 ```
 
-- 参数:
+参数:
 
 无
 
-- 返回值:
+返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### get 获取配置参数
 
-- 例:
+例:
 
 ```python
 current_settings = settings.get()
 ```
 
-- 参数:
+参数:
 
 无
 
-- 返回值:
+返回值:
 
-|返回数据类型|说明|
+|数据类型|说明|
 |:---|---|
-|dict|字典参数|
+|DICT|配置参数|
 
 ```json
 {
-    "app": {
-        "work_cycle_period": 30,
+    "sys": {
+        "checknet_timeout": 60,
+        "log_level": "DEBUG",
+        "debug": true,
+        "user_cfg": true,
+        "cloud": 2,
+        "base_cfg": {
+            "LocConfig": true
+        }
+    },
+    "cloud": {
+        "burning_method": 1,
+        "SERVER": "XXX.iot-as-mqtt.cn-shanghai.aliyuncs.com",
+        "DK": "XXX",
+        "life_time": 120,
+        "PS": "XXX",
+        "DS": "XXX",
+        "PK": "XXX",
+        "client_id": ""
+    },
+    "user_cfg": {
+        "sw_sim_abnormal_alert": true,
+        "work_mode": 1,
         "phone_num": "",
+        "user_ota_action": -1,
+        "drive_behavior_code": 0,
         "loc_method": 1,
-        "work_mode": 0,
         "low_power_alert_threshold": 20,
+        "work_mode_timeline": 3600,
         "low_power_shutdown_threshold": 5,
-        "sw_over_speed_alert": true,
-        "over_speed_threshold": 120,
+        "ota_status": {
+            "sys_target_version": "--",
+            "upgrade_module": 0,
+            "upgrade_status": 0,
+            "app_current_version": "2.1.0",
+            "app_target_version": "--",
+            "sys_current_version": "EC600NCNLCR01A01M08_PY_BETA0421"
+        },
+        "sw_low_power_alert": true,
+        "over_speed_threshold": 50,
         "sw_disassemble_alert": true,
         "sw_fault_alert": true,
-        "sw_low_power_alert": true,
         "sw_voice_record": false,
         "sw_voice_listen": false,
-        "sw_sim_abnormal_alert": true,
-        "gps_mode": 2,
         "sw_drive_behavior_alert": true,
+        "work_cycle_period": 30,
+        "sw_over_speed_alert": true,
         "sw_ota": true,
         "sw_ota_auto_upgrade": true
     },
-    "sys": {
-        "cloud": 1,
+    "LocConfig": {
         "profile_idx": 1,
-        "cloud_init_params": {
-            "DK": "XXXXX",
-            "DS": "XXXXX",
-            "PK": "XXXXX",
-            "PS": "XXXXX"
-        },
+        "gps_mode": 2,
+        "map_coordinate_system": "WGS84",
         "locator_init_params": {
+            "cell_cfg": {
+                "timeout": 3,
+                "profileIdx": 1,
+                "port": 80,
+                "serverAddr": "www.queclocator.com",
+                "token": "XXX"
+            },
+            "wifi_cfg": {
+                "token": "XXX"
+            },
             "gps_cfg": {
                 "parity": 0,
                 "stopbits": 1,
@@ -484,14 +303,17 @@ current_settings = settings.get()
                 "buadrate": 115200,
                 "databits": 8
             }
-        }
+        },
+        "loc_method": 1
     }
 }
 ```
 
 #### set 设置配置参数
 
-- 例:
+> 配置参数标识符列表，见 `settings_user` 中 `UserConfig` 具体属性
+
+例:
 
 ```python
 opt = 'phone_num'
@@ -499,47 +321,1457 @@ val = '123456789'
 res = settings.set(opt, val)
 ```
 
-- 参数:
+参数:
 
-|参数|参数类型|参数说明|
+|参数|类型|说明|
 |:---|---|---|
-|opt|str|配置参数标识符|
-|val|str/bool/int|配置参数属性值|
+|opt|STRING|配置参数标识符|
+|val|STRING/BOOL/INT/DICT|配置参数属性值|
 
-- 返回值:
+返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
-
-- 配置参数标识符列表，见`移远云物模型属性功能定义标识符`表中可写权限数据
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### save 持久化保存配置参数
 
-- 例:
+例:
 
 ```python
 res = settings.save()
 ```
 
-- 参数:
+参数:
 
 无
 
-- 返回值:
+返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### reset 重置配置参数
 
-- 例:
+例:
 
 ```python
 res = settings.reset()
 ```
 
-- 参数:
+参数:
 
 无
 
-- 返回值:
+返回值:
 
-返回`bool`类型数据, `True`成功, `False`失败。
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+### settings_sys
+
+> 系统配置参数，主要用于配置debug日志的开启关闭，日志等级，使用的云平台，基础模块启用设置，用户配置启用设置。
+用户只用在对应的配置模块中将配置参数录入完整之后，调用`settings`模块进行初始化即可集成所有配置参数和配置文件。
+
+#### SYSConfig
+
+> 系统配置参数列表
+
+| 参数           | 类型 | 说明                                                                        |
+| ---------------- | ------ | ----------------------------------------------------------------------------- |
+| debug            | BOOL   | 是否开启debug日志,True - 开启,False - 关闭                          |
+| log_level        | STRING | 日志等级,debug,info,warn,error,critical                                   |
+| cloud            | INT    | 项目使用云平台,0 - none,1 - quecIot,2 - AliYun                         |
+| checknet_timeout | INT    | 网络检测超时时间，单位s，默认60s                                |
+| base_cfg         | DICT   | 基础模块启用配置,key：为模块配置名称,value：是否启用,True - 启用,False - 禁用 |
+| user_cfg         | BOOL   | 是否启用用户具体业务配置文件,True - 开启,False - 关闭       |
+
+> `base_cfg` 样例
+
+```json
+{
+    "LocConfig": true,
+}
+```
+
+> 系统配置参数枚举值
+
+SYSConfig.\_cloud 支持云服务列表
+
+| KEY | VALUE | 说明 |
+|---|---|---|
+| none | 0x0 | 无 |
+| quecIot | 0x1 | 移远云 |
+| AliYun | 0x2 | 阿里云 |
+| JTT808 | 0x4 | 部标808 |
+| customization | 0x8 | 定制云 |
+
+### settings_loc
+
+> 定位模块相关配置，GPS，基站，WIFI初始化配置参数，定位方式，坐标系统，GPS模块类型。
+
+#### LocConfig
+
+> 定位模块配置参数列表
+
+| 参数                    | 类型   | 说明                                                                |
+|-----------------------    |--------   |------------------------------------------------------------------ |
+| profile_idx               | INT       | PDP索引，ASR平台范围1-8，展锐平台范围1-7，默认1。                   |
+| \_gps_cfg                  | DICT      | 外置GPS UART 串口配置参数                                         |
+| \_cell_cfg                 | DICT      | 基站定位配置参数                                                  |
+| \_wifi_cfg                 | DICT      | WIFI定位配置参数。                                                   |
+| gps_mode                  | INT       | GPS模块类型,0 - 无,1 - 内置GPS,2 - 外置GPS                         |
+| loc_method                | INT       | GPS定位方式,以二进制方式组合,设置多个,1 - GPS,2 - 基站, 4 - WIFI    |
+| map_coordinate_system     | STRING    | GPS坐标系统,WGS84,GCJ02                                           |
+| locator_init_params       | DICT      | 不同定位方式参数汇总                                                |
+
+> 字典类型数据说明与样例
+
+\_gps_cfg
+
+| 参数        | 类型   | 说明                                        |
+|---------- |--------   |-----------------------------------------  |
+| UARTn     | INT       | UART串口号，默认1                           |
+| buadrate  | INT       | 波特率                                    |
+| databits  | INT       | 数据位（5 ~ 8），展锐平台当前仅支持8位    |
+| parity    | INT       | 奇偶校验（0 – NONE，1 – EVEN，2 - ODD）   |
+| stopbits  | INT       | 停止位（1 ~ 2）                            |
+| flowctl   | INT       | 硬件控制流（0 – FC_NONE， 1 – FC_HW）     |
+
+样例:
+
+```json
+{
+    "UARTn": 1,
+    "buadrate": 115200,
+    "databits": 8,
+    "parity": 0,
+    "stopbits": 1,
+    "flowctl": 0,
+}
+```
+
+\_cell_cfg
+
+| 参数        | 类型  | 说明                                                                    |
+|------------   |---------- |---------------------------------------------------------------------  |
+| serverAddr    | STRING    | 服务器域名，长度必须小于255 bytes，目前仅支持 “www.queclocator.com”     |
+| port          | INT       | 服务器端口，目前仅支持 80 端口                                         |
+| token         | STRING    | 密钥，16位字符组成，需要申请                                           |
+| timeout       | INT       | 设置超时时间，范围1-300s，默认300s                                    |
+| profileIdx    | INT       | PDP索引，ASR平台范围1-8，展锐平台范围1-7                                |
+
+样例:
+
+```json
+{
+    "serverAddr": "www.queclocator.com",
+    "port": 80,
+    "token": "XXX",
+    "timeout": 3,
+    "profileIdx": 1
+}
+```
+
+\_wifi_cfg
+
+| 参数        | 类型  | 说明                                                                    |
+|------------   |---------- |---------------------------------------------------------------------  |
+| token         | STRING    | 密钥，16位字符组成，需要申请                                           |
+
+样例:
+
+```json
+{
+    "token": "XXX"
+}
+```
+
+locator_init_params
+
+| 参数          | 类型   | 说明                                                      |
+|------------   |---------- |---------------------------------------------------------  |
+| gps_cfg       | DICT      | GPS定位配置参数                                           |
+| cell_cfg      | DICT      | 基站定位配置参数                                           |
+| wifi_cfg      | DICT      | WIFI定位配置参数                                           |
+
+样例:
+
+```json
+{
+    "gps_cfg": {
+        "UARTn": 1,
+        "buadrate": 115200,
+        "databits": 8,
+        "parity": 0,
+        "stopbits": 1,
+        "flowctl": 0
+    },
+    "cell_cfg": {
+        "serverAddr": "www.queclocator.com",
+        "port": 80,
+        "token": "XXX",
+        "timeout": 3,
+        "profileIdx": 1
+    },
+    "wifi_cfg": {
+        "token": "XXX"
+    }
+}
+```
+
+> 定位配置参数枚举值
+
+LocConfig.\_gps_mode GPS模块类型列表
+
+| KEY | VALUE | 说明 |
+|---|---|---|
+| none | 0x0 | 无 |
+| internal | 0x1 | 内置GPS |
+| external | 0x2 | 外置GPS |
+
+LocConfig.\_loc_method 定位方式列表, 可指定多种定位方式
+
+| KEY | VALUE | 说明 |
+|---|---|---|
+| none | 0x0 | 无 |
+| gps | 0x1 | GPS |
+| cell | 0x2 | CELL |
+| gps & cell | 0x3 | GPS & CELL |
+| wifi | 0x4 | WIFI |
+| wifi & gps | 0x5 | WIFI & GPS |
+| wifi & cell | 0x6 | WIFI & CELL |
+| all | 0x7 | GPS & CELL & WIFI |
+
+LocConfig.\_map_coordinate_system GPS坐标系统
+
+| KEY | VALUE | 说明 |
+|---|---|---|
+| WGS84 | WGS84 | WGS84 |
+| GCJ02 | GCJ02 | GCJ02 |
+
+LocConfig.\_gps_sleep_mode GPS休眠模式
+
+| KEY | VALUE | 说明 |
+|---|---|---|
+| none | 0x0 | 无 |
+| pull_off | 0x1 | 断电休眠模式，功耗最低，启动时间长（目前只适用L76K模块） |
+| backup | 0x2 | Backup休眠模式，功耗一般，启动时间中等（目前只适用L76K模块） |
+| standby | 0x3 | Standby休眠模式，功耗稍高，启动时间快（目前只适用L76K模块） |
+
+### settings_alicloud
+
+> 阿里云模块初始化配置参数
+
+#### AliCloudConfig
+
+> 阿里云模块配置参数列表
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| PK | STRING | 产品标识ProductKey |
+| PS | STRING | 可选参数，默认为None，productSecret，产品密钥 一机一密认证方案时，此参数传入None 一型一密认证方案时，此参数传入真实的产品密钥 |
+| DK | STRING | DeviceName,设备名称 |
+| DS | STRING | DeviceSecret,可选参数,默认为None，设备密钥（一型一密认证方案时此参数传入None） |
+| SERVER | STRING | 可选参数,需要连接的服务器名称,默认为"{productKey}.iot-as-mqtt.cn-shanghai.aliyuncs.com" |
+| client_id | STRING | 自定义阿里云连接id,默认DK |
+| life_time | INT | 通信之间允许的最长时间段（以秒为单位）,默认为120，范围（60-1200） |
+| burning_method | INT | 认证方案，0 - 一型一密，1 - 一机一密 |
+
+> 阿里云配置参数枚举值
+
+AliCloudConfig.\_burning_method 设备密钥认证方式
+
+| KEY | VALUE | 说明 |
+|---|---|---|
+| one_type_one_secret | 0x0 | 一型一密 |
+| one_machine_one_secret | 0x1 | 一机一密 |
+
+### settings_queccloud
+
+> 移远云模块初始化配置参数
+
+#### QuecCloudConfig
+
+> 移远云模块配置参数列表
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| PK | STRING | ProductKey产品标识 |
+| PS | STRING | ProductSecret产品密钥 |
+| DK | STRING | DeviceName设备名称, 默认空 |
+| DS | STRING | DeviceSecret设备密钥, 默认空 |
+| SERVER | STRING | 可选参数,需要连接的服务器名称,默认为"iot-south.quectel.com:1883" |
+| life_time | INT | 通信之间允许的最长时间段（以秒为单位）,默认为120，范围（60-1200） |
+
+### Collector 采集器
+
+> 采集器模块，主要用于采集各个功能模块数据，如传感器，电池，发送失败历史数据等；消息指令的接收，数据的整合与业务逻辑的处理。
+
+#### ALERTCODE 告警类型编码表
+
+例:
+
+```python
+from usr.tracker_collector import ALERTCODE
+```
+
+| 编码 | 标识符 | 说明 |
+|---|---|---|
+| 20000 | fault_alert | 设备异常告警 |
+| 30002 | low_power_alert | 低电告警 |
+| 30003 | over_speed_alert | 超速告警 |
+| 30004 | sim_abnormal_alert | SIM卡异常告警 |
+| 30005 | disassemble_alert | 拆卸告警 |
+| 40000 | drive_behavior_alert | 异常驾驶行为告警 |
+| 50001 | sos_alert | SOS告警 |
+
+#### Collector 导入
+
+例:
+
+```python
+from usr.tracker_collector import Collector
+
+collector = Collector()
+```
+
+#### add_module 注册功能模块
+
+> 可注册模块:
+>
+> - `Controller`
+> - `DeviceCheck`
+> - `Battery`
+> - `Sensor`
+> - `Location`
+> - `History`
+>
+> 业务功能:
+> 
+> 将需要进行数据采集的设备模块与控制器模块以注册的方式添加进采集器模块
+
+例:
+
+```python
+from usr.modules.battery import Battery
+battery = Battery()
+collector.add_module(battery)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| module | object | 模块对象 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### device_status_get 设备模块状态获取
+
+> 该功能依赖模块:
+> 
+> - `DeviceCheck`
+> - `Controller`
+>
+> 业务功能:
+> 
+> 获取设备的各个模块的功能状态, 如有异常则同步返回异常告警数据
+
+例:
+
+```python
+res = collector.device_status_get()
+```
+
+参数:
+
+无
+
+返回值:
+
+返回`DICT`类型数据。
+
+| EKY | VALUE | 数据类型 | 说明 |
+|---|---|---|---|
+| device_module_status |  | DICT | 设备模块状态， 0 - 异常；1 - 正常；模块不存在则无对应标识符 |
+|  | net | INT | 网络状态 |
+|  | location | INT | 定位状态 |
+|  | temp_sensor | INT | 温湿度传感器状态 |
+|  | light_sensor | INT | 光明传感器状态 |
+|  | move_sensor | INT | 三轴传感器状态 |
+|  | mike | INT | 麦克风状态 |
+| fault_alert |  | DICT | 有设备异常时，该数据存在，无异常，该数据不存在 |
+|  | local_time | STRING | 当前时间，毫秒时间戳 |
+
+```json
+{
+    "device_module_status": {
+        "net": 1,
+        "location": 1,
+        "temp_sensor": 1,
+        "light_sensor": 1,
+        "move_sensor": 1,
+        "mike": 1
+    },
+    "fault_alert": {
+        "local_time": "1651136994000"
+    }
+}
+```
+#### device_status_check 设备状态检测并上报设备信息
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> - `DeviceCheck`
+>
+> 该模块业务功能:
+> 
+> 1. 该模块先获取设备模块状态信息
+> 2. 调用设备信息上报接口上报设备信息
+
+例:
+
+```python
+collector.device_status_check()
+```
+
+参数:
+
+无
+
+返回值:
+
+无
+
+#### device_data_get 设备与业务信息数据收集
+
+> 获取上班云端的所有数据信息并整合成`DICT`。
+
+例:
+
+```python
+collector.device_data_get(power_switch=True)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| power_switch | BOOL | 设备电源状态，True - 开机，False - 关机，默认True，当关机上报数据时，传入False |
+
+返回值:
+
+返回`DICT`类型数据。
+
+```json
+{
+    "drive_behavior_code": 0,
+    "current_speed": 2.46,
+    "voltage": 4274,
+    "ota_status": {
+        "upgrade_status": 0,
+        "app_target_version": "--",
+        "sys_current_version": "EC600NCNLCR01A01M08_PY_BETA0421",
+        "app_current_version": "2.1.0",
+        "upgrade_module": 0,
+        "sys_target_version": "--"
+    },
+    "sw_voice_listen": false,
+    "loc_method": {
+        "cell": false,
+        "gps": true,
+        "wifi": false
+    },
+    "sw_ota_auto_upgrade": true,
+    "energy": 100,
+    "low_power_alert_threshold": 20,
+    "work_mode_timeline": 3600,
+    "sw_voice_record": false,
+    "sw_disassemble_alert": true,
+    "sw_sim_abnormal_alert": true,
+    "GeoLocation": {
+        "CoordinateSystem": 1,
+        "Latitude": 31.82249895,
+        "Longtitude": 117.1155386833333,
+        "Altitude": 147.136
+    },
+    "device_module_status": {
+        "net": 1,
+        "location": 1
+    },
+    "power_switch": true,
+    "sw_drive_behavior_alert": true,
+    "over_speed_threshold": 50,
+    "work_cycle_period": 30,
+    "user_ota_action": -1,
+    "phone_num": "",
+    "low_power_shutdown_threshold": 5,
+    "sw_low_power_alert": true,
+    "sw_fault_alert": true,
+    "work_mode": 1,
+    "local_time": "1651138075000",
+    "loc_gps_read_timeout": 300,
+    "sw_ota": true,
+    "sw_over_speed_alert": true
+}
+```
+
+#### device_data_report 设备与业务信息上报云端
+
+> 该功能依赖模块:
+>
+> - `Controller`
+>
+> 该模块业务功能:
+> 
+> 1. 该模块先获取设备业务信息数据
+> 2. 与传入的事件数据合并后发送云端
+> 3. 检测OTA升级状态, 如果OTA升级状态为失败或完成, 此时状态已上报云端, 所以更新状态为无更新
+
+例:
+
+```python
+res = collector.device_data_report(power_switch=True, event_data={})
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| power_switch | BOOL | 设备电源状态，True - 开机，False - 关机，默认True，当关机上报数据时，传入False |
+| event_data | DICT | 事件数据 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### ota_status_reset 设备OTA升级信息初始化
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 将设备OTA升级信息初始化, 该数据为自定义物模型数据
+> - 设置字段:
+> 
+> ```json
+> {
+>     "sys_current_version": `DEVICE_FIRMWARE_VERSION`,
+>     "sys_target_version": "--",
+>     "app_current_version": `PROJECT_VERSION`,
+>     "app_target_version": "--",
+>     "upgrade_module": 0,
+>     "upgrade_status": 0,
+> }
+> ```
+
+例:
+
+```python
+collector.ota_status_reset()
+```
+
+参数:
+
+无
+
+返回值:
+
+无
+
+#### ota_status_init 设备OTA升级信息初始化
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该功能在设备启动时运行
+> - 检测当前设备的OTA升级状态记录是否有升级计划
+> - 当有升级计划时，检测当前设备版本与升级计划目标版本是否一致
+> - 当一致时，且升级状态不为已完成时，设置升级状态为已完成
+> - 当不一致时，且升级状态不为失败时，设置升级状态为升级失败
+
+例:
+
+```python
+collector.ota_status_init()
+```
+
+参数:
+
+无
+
+返回值:
+
+无
+
+#### report_history 设备历史上报失败数据重新上报
+
+> 该功能依赖模块:
+> 
+> - `Controller`, `History`
+> 
+> 该模块业务功能:
+> 
+> - 查询历史上报失败数据
+> - 上报云端
+> - 成功则丢弃上报完成的数据
+> - 失败则继续写入历史文件中
+
+
+例:
+
+```python
+collector.report_history()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### event_option 云端透传数据下发功能
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为`RemoteSubscribe`透传数据下发监听功能
+> - 收到被监听者的消息通知时，进行处理
+> - 目前Tracker暂未使用该功能
+
+
+例:
+
+```python
+collector.event_option(*args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| args | TUPLE | 元素1为属性标识符, 元素2为具体透传数据 |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+返回值:
+
+无
+
+#### event_done 云端物模型属性设置功能
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为`RemoteSubscribe`物模型属性设置监听功能
+> - 收到被监听者的消息通知时，进行处理
+> - 将属性写入`settings.current_settings`中
+> - 将`settings.current_settings`写入文件中持久化存储
+> - 根据不同的数据进行具体业务处理
+
+
+例:
+
+```python
+collector.event_done(*args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| args | TUPLE | 元素1为属性标识符, 元素2为具体设置属性值 |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### event_query 云端查询设备信息功能
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为`RemoteSubscribe`云端查询设备信息监听功能
+> - 收到被监听者的消息通知时，进行处理
+> - 直接调用`device_data_report`上报设备信息
+> - 阿里云不支持云端下发查询指令进行上报设备信息，移远云目前支持该功能
+
+
+例:
+
+```python
+collector.event_query(*args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| args | TUPLE | 元组数据(作为扩展数据，暂无用处) |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### event_ota_plain OTA升级计划处理功能
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为`RemoteSubscribe`OTA升级计划信息监听功能
+> - 收到被监听者的消息通知时，进行处理
+> - 检测设备是否开启OTA升级，否则取消OTA升级
+> - 检测设备是否开启自动OTA升级，否则等待用户确认升级
+> - 检测用户是否确认OTA升级，否则取消OTA升级
+> - 更新OTA设备升级状态记录
+> - 调用`Controller.remote_ota_action`功能进行OTA升级
+
+
+例:
+
+```python
+collector.event_ota_plain(*args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| args | TUPLE | 元组数据(元素1为OTA升级计划具体数据) |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+阿里云OTA升级计划参数
+
+```python
+(("ota_cfg", {"module": "", "version": ""}),)
+```
+
+移远云OTA升级计划参数
+
+```python
+(("ota_cfg", {"componentNo": "", "targetVersion": ""}),)
+```
+
+返回值:
+
+无
+
+#### event_ota_file_download 阿里云OTA设备请求下载文件分片
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为`RemoteSubscribe`透传数据下发监听功能
+> - 收到被监听者的消息通知时，进行处理
+> - 目前Tracker暂未使用该功能
+
+
+例:
+
+```python
+collector.event_ota_file_download(*args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| args | TUPLE | 元素1为属性标识符, 元素2为具体透传数据 |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+返回值:
+
+无
+
+#### event_rrpc_request MQTT同步通信(RRPC)
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为`RemoteSubscribe`MQTT同步通信(RRPC)监听功能
+> - 收到被监听者的消息通知时，进行处理
+> - 目前Tracker暂未使用该功能
+
+
+例:
+
+```python
+collector.event_rrpc_request(*args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| args | TUPLE | 元组数据(元素1为OTA升级计划具体数据) |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+阿里云OTA升级计划参数
+
+```python
+(("ota_cfg", {"module": "", "version": ""}),)
+```
+
+移远云OTA升级计划参数
+
+```python
+(("ota_cfg", {"componentNo": "", "targetVersion": ""}),)
+```
+
+返回值:
+
+无
+
+#### power_switch 下发电源状态控制指令
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为物模型属性设置，电源状态控制指令
+> - 当收到设置开关机命令时上报设备信息
+> - 当为关机命令时，即`onoff`为False，上报信息完成后，关闭设备电源
+
+
+例:
+
+```python
+collector.power_switch(onoff)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| onoff | BOOL | True - 开机, False - 关机 |
+
+返回值:
+
+无
+
+#### user_ota_action 下发指令用户确认是否升级
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为物模型属性设置，用户确认是否升级
+> - 记录用户设置参数，0-取消升级，1-确认升级
+> - 调用查询OTA升级接口进行升级
+
+
+例:
+
+```python
+collector.user_ota_action(action)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| action | INT | 0 - 取消升级，1 - 确认升级 |
+
+返回值:
+
+无
+
+#### ota_status 设置OTA升级状态
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为物模型属性设置，设置OTA升级状态
+> - 记录OTA升级状态，1-待升级，2-升级中，3-升级成功，4-升级失败
+
+
+例:
+
+```python
+collector.ota_status(upgrade_info)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| upgrade_info | TUPLE | (ota_module, upgrade_status, ota_module_version) 元素1为升级模块，元素2为升级状态，元素3为升级目标版本 |
+
+返回值:
+
+无
+
+#### loc_method 设置定位方式
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为物模型属性设置，设置定位方式
+> - 解析并记录定位方式，由于物模型定义的定位方式为结构体，每种定位方式的启用禁用以0，1进行表示，而代码逻辑中定位方式是以二进制位的方式进行表示，所以需要进行转换
+
+
+例:
+
+```python
+collector.loc_method(method)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| method | INT | 0 - 7，十进制转二进制后，从右往左第一位表示GPS定位的开启关闭，第二位表示基站定位的开启关闭，第三位表示WIFI定位的开启关闭 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### power_restart 重启设备指令
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为物模型属性设置，重启设备
+> - 上报设备信息，并标记电源状态关闭
+> - 将设备模块重启
+
+
+例:
+
+```python
+collector.power_restart(flag)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| flag | INT | 1，设备重启 |
+
+返回值:
+
+无
+
+#### work_cycle_period 重置设备周期唤醒时间
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 该模块为物模型属性设置，重置设备周期唤醒时间
+> - 先将未触发唤醒的定时器取消
+> - 按新的周期启动唤醒定时器
+
+
+例:
+
+```python
+collector.work_cycle_period(period)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| period | INT | 休眠周期唤醒时间，单位s |
+
+返回值:
+
+无
+
+#### low_engery_option 低功耗唤醒后业务功能
+
+> 该功能依赖模块:
+> 
+> - `Controller`
+> 
+> 该模块业务功能:
+> 
+> - 低功耗唤醒后业务功能逻辑
+>     + 上报历史数据
+>     + 上报设备版本信息
+>     + OTA升级计划查询
+>     + 检测是否为智能模式，当为智能模式时，检测当前设备是否在运动中，是则上报设备信息，否则继续休眠
+>     + 当为非智能模式时，上报设备数据
+>     + 检测当前电量是否低于低电关机阈值，是否需要关机
+>     + 启动休眠唤醒定时器
+>     + 当低功耗模式为`POWERDOWN`时，关机
+
+例:
+
+```python
+collector.low_engery_option(low_energy_method)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| low_energy_method | STRING | 目前的低功耗模式有`NULL`, `PM`, `PSM`, `POWERDOWN` |
+
+返回值:
+
+无
+
+#### update 监听者消息通知接口
+
+> 该模块业务功能:
+> 
+> - 做为监听者，当被监听者产生变化时，通知监听者
+> - 当`observable`为`LowEnergyManage`对象时，调用`low_engery_option`功能
+
+
+例:
+
+```python
+collector.update(observable, *args, **kwargs)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| observable | OBJECT | 被监听者实例对象 |
+| args | TUPLE | 元组数据，元素1为被监听者实例对象，元素2为具体参数 |
+| kwargs | DICT | 字典数据(作为扩展数据，暂无用处) |
+
+返回值:
+
+无
+
+### Controller 采集器
+
+> 采集器模块，主要用于采集各个功能模块数据，如传感器，电池，发送失败历史数据等；消息指令的接收，数据的整合与业务逻辑的处理。
+
+#### Controller 导入
+
+例:
+
+```python
+from usr.tracker_controller import Controller
+
+controller = Controller()
+```
+
+#### add_module 注册功能模块
+
+例:
+
+```python
+from usr.settings import settings
+controller.add_module(settings)
+```
+
+参数:
+
+> 模块对象, 可注册模块有:
+> 
+> - `RemotePublish`
+> - `Settings`
+> - `LowEnergyManage`
+> - `LED`
+> - `PowerKey`
+> - `USB`
+> - `dataCall`
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### settings_set 配置信息修改
+
+> 该功能依赖模块:
+> 
+> - `Settings`
+> 
+> 该模块业务功能:
+> 
+> - 该模块用于修改用户业务配置参数
+
+例:
+
+```python
+controller.settings_set(key, value)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| key | STRING | 属性名称 |
+| value | STRING/INT/DICT | 属性值 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### settings_save 配置信息持久化保存
+
+> 该功能依赖模块:
+> 
+> - `Settings`
+> 
+> 该模块业务功能:
+> 
+> - 该模块用于将修改后的配置参数持久化存储到文件中
+
+例:
+
+```python
+controller.settings_save()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### power_restart 设备电源重启
+
+> 该功能依赖模块:
+> 
+> - `Power`
+> 
+> 该模块业务功能:
+> 
+> - 该模块调用电源模块接口重启设备
+
+例:
+
+```python
+controller.power_restart()
+```
+
+参数:
+
+无
+
+返回值:
+
+无
+
+#### power_down 设备关机
+
+> 该功能依赖模块:
+> 
+> - `Power`
+> 
+> 该模块业务功能:
+> 
+> - 该模块调用电源模块接口关机设备
+
+例:
+
+```python
+controller.power_down()
+```
+
+参数:
+
+无
+
+返回值:
+
+无
+
+#### remote_post_data 云端消息发布
+
+> 该功能依赖模块:
+> 
+> - `RemotePublish`
+> 
+> 该模块业务功能:
+> 
+> - 该模块调用`RemotePublish.post_data`接口发布消息
+
+例:
+
+```python
+controller.remote_post_data(data)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| data | DICT | 发送消息集合, 即`collector.device_data_get()`的返回值 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### remote_ota_check OTA升级计划查询
+
+> 该功能依赖模块:
+> 
+> - `RemotePublish`
+
+例:
+
+```python
+res = collector.remote_ota_check()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### remote_ota_action OTA升级确认
+
+> 该功能依赖模块:
+> 
+> - `RemotePublish`
+
+例:
+
+```python
+res = collector.remote_ota_action(action, module)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| action | INT | 0 - 取消升级，1 - 确认升级 |
+| module | STRING | 升级模块，设备版本`DEVICE_FIRMWARE_NAME`或项目名称`PROJECT_NAME` |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### remote_device_report 设备软硬件版本信息上报
+
+> 该功能依赖模块:
+> 
+> - `RemotePublish`
+
+例:
+
+```python
+res = collector.remote_device_report()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### remote_rrpc_response RRPC消息应答
+
+> 该功能依赖模块:
+> 
+> - `RemotePublish`
+
+例:
+
+```python
+res = collector.remote_rrpc_response(message_id, data)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| message_id | STRING | RRPC 消息编号 |
+| data | DICT/STRING | 应答消息体 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### low_energy_set_period 低功耗模块唤醒周期设置
+
+> 该功能依赖模块:
+> 
+> - `LowEnergyManage`
+
+例:
+
+```python
+res = collector.low_energy_set_period(period)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| period | INT | 唤醒周期，单位s |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### low_energy_set_method 低功耗模块模式设置
+
+> 该功能依赖模块:
+> 
+> - `LowEnergyManage`
+
+例:
+
+```python
+res = collector.low_energy_set_method(method)
+```
+
+参数:
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| method | STRING | 低功耗模式, `NULL` - 非低功耗, `PM` - wakelock模式, `PSM` - PSM模式, `POWERDOWN` - POWERDOWN模式 |
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### low_energy_init 低功耗模块唤醒初始化
+
+> 该功能依赖模块:
+> 
+> - `LowEnergyManage`
+
+例:
+
+```python
+res = collector.low_energy_init()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### low_energy_start 低功耗模块唤醒启动
+
+> 该功能依赖模块:
+> 
+> - `LowEnergyManage`
+
+例:
+```python
+res = collector.low_energy_start()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
+#### low_energy_stop 低功耗模块唤醒定时器停止
+
+> 该功能依赖模块:
+> 
+> - `LowEnergyManage`
+
+例:
+```python
+res = collector.low_energy_stop()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|

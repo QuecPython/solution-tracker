@@ -565,6 +565,19 @@ class Collector(Singleton):
                                 self.__controller.remote_ota_action(action=ota_action_val, module=module)
                 else:
                     log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])
+        else:
+            if current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot:
+                if args and args[0]:
+                    if args[0][0] == "ota_cfg":
+                        module = args[0][1].get("componentNo")
+                        self.__controller.remote_ota_action(action=0, module=module)
+            elif current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
+                if args and args[0]:
+                    if args[0][0] == "ota_cfg":
+                        module = args[0][1].get("module")
+                        self.__controller.remote_ota_action(action=0, module=module)
+            else:
+                log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])
 
     def event_ota_file_download(self, *args, **kwargs):
         # OAT MQTT File Download Is Not Supported Yet.
@@ -577,12 +590,12 @@ class Collector(Singleton):
         log.debug("RRPC data: %s" % data)
         self.__controller.remote_rrpc_response(message_id, data)
 
-    def power_switch(self, flag=None):
+    def power_switch(self, onoff=None):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        self.event_query(power_switch=flag)
-        if flag is False:
+        self.event_query(power_switch=onoff)
+        if onoff is False:
             self.__controller.power_down()
 
     def user_ota_action(self, action):
@@ -660,13 +673,6 @@ class Collector(Singleton):
 
         self.__controller.low_energy_init()
         self.__controller.low_energy_start()
-
-    def cloud_init_params(self, params):
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
-
-        self.__controller.settings_set("cloud", params)
-        self.__controller.settings_save()
 
     def low_engery_option(self, low_energy_method):
         if not self.__controller:
