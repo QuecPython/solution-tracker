@@ -128,7 +128,7 @@
 
 ### 功能模块注册流程图
 
-![](./docs/media/tracker_modules_registration_process.png)
+![](./media/tracker_modules_registration_process.png)
 
 ### 功能模块说明
 
