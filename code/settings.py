@@ -47,15 +47,8 @@ class Settings(Singleton):
         self.current_settings = {}
         self.init()
 
-    @option_lock(_settings_lock)
-    def init(self):
+    def __init_config(self):
         try:
-            if ql_fs.path_exists(self.settings_file):
-                with open(self.settings_file, "r") as f:
-                    self.current_settings = ujson.load(f)
-                return True
-
-            # SYSConfig init
             self.current_settings["sys"] = {k: v for k, v in SYSConfig.__dict__.items() if not k.startswith("_")}
 
             # CloudConfig init
@@ -79,19 +72,18 @@ class Settings(Singleton):
                 self.current_settings["user_cfg"] = {k: v for k, v in UserConfig.__dict__.items() if not k.startswith("_")}
                 self.current_settings["user_cfg"]["ota_status"]["sys_current_version"] = DEVICE_FIRMWARE_VERSION
                 self.current_settings["user_cfg"]["ota_status"]["app_current_version"] = PROJECT_VERSION
-            with open(self.settings_file, "w") as f:
-                ujson.dump(self.current_settings, f)
-
             return True
         except:
             return False
 
-    @option_lock(_settings_lock)
-    def get(self):
-        return self.current_settings
+    def __read_config(self):
+        if ql_fs.path_exists(self.settings_file):
+            with open(self.settings_file, "r") as f:
+                self.current_settings = ujson.load(f)
+                return True
+        return False
 
-    @option_lock(_settings_lock)
-    def set(self, opt, val):
+    def __set_config(self, opt, val):
         if opt in self.current_settings["user_cfg"]:
             if opt == "phone_num":
                 if not isinstance(val, str):
@@ -154,8 +146,7 @@ class Settings(Singleton):
 
         return False
 
-    @option_lock(_settings_lock)
-    def save(self):
+    def __save_config(self):
         try:
             with open(self.settings_file, "w") as f:
                 ujson.dump(self.current_settings, f)
@@ -163,13 +154,45 @@ class Settings(Singleton):
         except:
             return False
 
-    @option_lock(_settings_lock)
-    def reset(self):
+    def __remove_config(self):
         try:
             uos.remove(self.settings_file)
             return True
         except:
             return False
+
+    def __get_config(self):
+        return self.current_settings
+
+    @option_lock(_settings_lock)
+    def init(self):
+        if self.__read_config() is False:
+            if self.__init_config():
+                return self.__save_config()
+        return False
+
+    @option_lock(_settings_lock)
+    def get(self):
+        return self.__get_config()
+
+    @option_lock(_settings_lock)
+    def set(self, opt, val):
+        return self.__set_config(opt, val)
+
+    @option_lock(_settings_lock)
+    def save(self):
+        return self.__save_config()
+
+    @option_lock(_settings_lock)
+    def remove(self):
+        return self.__remove_config()
+
+    @option_lock(_settings_lock)
+    def reset(self):
+        if self.__remove_config():
+            if self.__init_config():
+                return self.__save_config()
+        return False
 
 
 settings = Settings()

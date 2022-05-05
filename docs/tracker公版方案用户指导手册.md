@@ -163,10 +163,15 @@
 > 该模块为配置参数模块
 
 - 项目配置主要分为三个大块
-    1. 系统配置模块, settings_sys.SYSConfig
-    2. 用户配置模块, settings_user.UserConfig
-    3. 基础模块配置, settings_loc.LocConfig, settings_alicloud.AliCloudConfig, settings_queccloud.QuecCloudConfig
-- 该模块将配置好的模块设置集成到一个`dict`中，可通过`settings.get()`方式获取到具体配置参数
+    + 系统配置模块:
+        * settings_sys.SYSConfig
+    + 用户配置模块:
+        * settings_user.UserConfig
+    + 功能模块配置:
+        * settings_loc.LocConfig
+        * settings_alicloud.AliCloudConfig
+        * settings_queccloud.QuecCloudConfig
+- 该模块将配置好的模块设置集成到一个`DICT`中，可通过`settings.get()`方式获取到具体配置参数
 - 全局变量:
     + `PROJECT_NAME` -- 项目名称
     + `PROJECT_VERSION` -- 项目版本
@@ -197,8 +202,8 @@ from usr.settings import settings
 > 功能:
 > 
 > - 检查持久化配置文件是否存在，存在则直接读取配置文件配置
-> - 若不存在则读取`SYSConfig`设置参数进行后续默认参数读取
-> - 读取完成所有配置参数后，将参数写入配置文件中持久化存储
+> - 若不存在则读取`SYSConfig`设置参数, 根据配置读取用户配置与功能配置
+> - 读取完成所有配置参数后，将配置参数写入配置文件中持久化存储
 
 例:
 
@@ -342,6 +347,8 @@ res = settings.set(opt, val)
 
 #### save 持久化保存配置参数
 
+> 将配置参数写入文件进行持久化保存，文件名全路径`/usr/tracker_settings.json`
+
 例:
 
 ```python
@@ -358,7 +365,27 @@ res = settings.save()
 |:---|---|
 |BOOL|`True`成功, `False`失败|
 
+#### remove 删除配置参数文件
+
+例:
+
+```python
+res = settings.remove()
+```
+
+参数:
+
+无
+
+返回值:
+
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
+
 #### reset 重置配置参数
+
+> 先移除配置参数文件, 再重新生成配置参数文件
 
 例:
 
@@ -761,7 +788,7 @@ collector.device_status_check()
 
 #### device_data_get 设备与业务信息数据收集
 
-> 获取上班云端的所有数据信息并整合成`DICT`。
+> 获取上报云端的所有数据信息并整合成`DICT`。
 
 例:
 
