@@ -905,9 +905,9 @@ res = collector.device_data_report(power_switch=True, event_data={})
 > 
 > ```json
 > {
->     "sys_current_version": `DEVICE_FIRMWARE_VERSION`,
+>     "sys_current_version": "DEVICE_FIRMWARE_VERSION",
 >     "sys_target_version": "--",
->     "app_current_version": `PROJECT_VERSION`,
+>     "app_current_version": "PROJECT_VERSION",
 >     "app_target_version": "--",
 >     "upgrade_module": 0,
 >     "upgrade_status": 0,
@@ -1197,7 +1197,6 @@ collector.event_rrpc_request(*args, **kwargs)
 > 
 > 业务功能:
 > 
-> - 该模块为物模型属性设置，电源状态控制指令
 > - 当收到设置开关机命令时上报设备信息
 > - 当为关机命令时，即`onoff`为False，上报信息完成后，关闭设备电源
 
@@ -1218,7 +1217,7 @@ collector.power_switch(onoff)
 
 无
 
-#### user_ota_action 下发指令用户确认是否升级
+#### user_ota_action 下发指令用户确认是否OTA升级
 
 > 依赖模块:
 > 
@@ -1226,7 +1225,6 @@ collector.power_switch(onoff)
 > 
 > 业务功能:
 > 
-> - 该模块为物模型属性设置，用户确认是否升级
 > - 记录用户设置参数，0-取消升级，1-确认升级
 > - 调用查询OTA升级接口进行升级
 
@@ -1255,7 +1253,6 @@ collector.user_ota_action(action)
 > 
 > 业务功能:
 > 
-> - 该模块为物模型属性设置，设置OTA升级状态
 > - 记录OTA升级状态，1-待升级，2-升级中，3-升级成功，4-升级失败
 
 
@@ -1283,8 +1280,7 @@ collector.ota_status(upgrade_info)
 > 
 > 业务功能:
 > 
-> - 该模块为物模型属性设置，设置定位方式
-> - 解析并记录定位方式，由于物模型定义的定位方式为结构体，每种定位方式的启用禁用以0，1进行表示，而代码逻辑中定位方式是以二进制位的方式进行表示，所以需要进行转换
+> - 解析并记录定位方式，由于物模型定义的定位方式为结构体，每种定位方式的禁用启用以0，1进行表示，而代码逻辑中定位方式是以二进制位的方式进行表示，所以需要进行转换
 
 
 例:
@@ -1297,7 +1293,7 @@ collector.loc_method(method)
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
-| method | INT | 0 - 7，十进制转二进制后，从右往左第一位表示GPS定位的开启关闭，第二位表示基站定位的开启关闭，第三位表示WIFI定位的开启关闭 |
+| method | INT | 0 - 7，十进制转二进制后，从右往左第一位表示GPS定位的开启关闭，第二位表示基站定位的开启关闭，第三位表示WIFI定位的开启关闭, 如: 3 对应二进制为 `0b011`, 对应的定位方式即为GPS&基站 |
 
 返回值:
 
@@ -1313,8 +1309,7 @@ collector.loc_method(method)
 > 
 > 业务功能:
 > 
-> - 该模块为物模型属性设置，重启设备
-> - 上报设备信息，并标记电源状态关闭
+> - 标记电源状态关闭，并上报设备信息
 > - 将设备模块重启
 
 
@@ -1342,9 +1337,8 @@ collector.power_restart(flag)
 > 
 > 业务功能:
 > 
-> - 该模块为物模型属性设置，重置设备周期唤醒时间
 > - 先将未触发唤醒的定时器取消
-> - 按新的周期启动唤醒定时器
+> - 按新的唤醒周期启动唤醒定时器
 
 
 例:
@@ -1472,7 +1466,7 @@ controller.add_module(settings)
 > 
 > 业务功能:
 > 
-> - 该模块用于修改用户业务配置参数
+> - 用于修改用户业务配置参数
 
 例:
 
@@ -1501,7 +1495,7 @@ controller.settings_set(key, value)
 > 
 > 业务功能:
 > 
-> - 该模块用于将修改后的配置参数持久化存储到文件中
+> - 用于将修改后的配置参数持久化存储到文件中
 
 例:
 
@@ -1527,7 +1521,7 @@ controller.settings_save()
 > 
 > 业务功能:
 > 
-> - 该模块调用电源模块接口重启设备
+> - 调用电源模块接口重启设备
 
 例:
 
@@ -1551,7 +1545,7 @@ controller.power_restart()
 > 
 > 业务功能:
 > 
-> - 该模块调用电源模块接口关机设备
+> - 调用电源模块接口关机设备
 
 例:
 
@@ -1575,7 +1569,7 @@ controller.power_down()
 > 
 > 业务功能:
 > 
-> - 该模块调用`RemotePublish.post_data`接口发布消息
+> - 调用`RemotePublish.post_data`接口发布消息
 
 例:
 
@@ -1689,7 +1683,7 @@ res = controller.remote_rrpc_response(message_id, data)
 |:---|---|
 |BOOL|`True`成功, `False`失败|
 
-#### low_energy_set_period 低功耗模块唤醒周期设置
+#### low_energy_set_period 低功耗唤醒周期设置
 
 > 依赖模块:
 > 
@@ -1713,7 +1707,7 @@ res = controller.low_energy_set_period(period)
 |:---|---|
 |BOOL|`True`成功, `False`失败|
 
-#### low_energy_set_method 低功耗模块模式设置
+#### low_energy_set_method 低功耗模式设置
 
 > 依赖模块:
 > 
@@ -1780,7 +1774,7 @@ res = controller.low_energy_start()
 |:---|---|
 |BOOL|`True`成功, `False`失败|
 
-#### low_energy_stop 低功耗模块唤醒停止
+#### low_energy_stop 低功耗模块唤醒终止
 
 > 依赖模块:
 > 
