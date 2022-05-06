@@ -572,10 +572,7 @@ LocConfig.\_loc_method 定位方式列表, 可指定多种定位方式
 | none | 0x0 | 无 |
 | gps | 0x1 | GPS |
 | cell | 0x2 | CELL |
-| gps & cell | 0x3 | GPS & CELL |
 | wifi | 0x4 | WIFI |
-| wifi & gps | 0x5 | WIFI & GPS |
-| wifi & cell | 0x6 | WIFI & CELL |
 | all | 0x7 | GPS & CELL & WIFI |
 
 LocConfig.\_map_coordinate_system GPS坐标系统
@@ -1281,6 +1278,18 @@ collector.ota_status(upgrade_info)
 > 业务功能:
 > 
 > - 解析并记录定位方式，由于物模型定义的定位方式为结构体，每种定位方式的禁用启用以0，1进行表示，而代码逻辑中定位方式是以二进制位的方式进行表示，所以需要进行转换
+> - loc_method枚举值对应关系表:
+
+| method | 说明 |
+|---|---|
+| 0x0 | 无 |
+| 0x1 | GPS |
+| 0x2 | CELL |
+| 0x3 | GPS & CELL |
+| 0x4 | WIFI |
+| 0x5 | WIFI & GPS |
+| 0x6 | WIFI & CELL |
+| 0x7 | GPS & CELL & WIFI |
 
 
 例:
