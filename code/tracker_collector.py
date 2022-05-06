@@ -352,7 +352,7 @@ class Collector(Singleton):
 
     def device_status_check(self):
         device_status_check_res = self.device_status_get()
-        self.device_data_report(event_data=device_status_check_res)
+        return self.device_data_report(event_data=device_status_check_res)
 
     def device_data_get(self, power_switch=True):
         current_settings = settings.get()
@@ -436,37 +436,41 @@ class Collector(Singleton):
 
         if current_settings["user_cfg"]["user_ota_action"] != -1:
             self.__controller.settings_set("user_ota_action", -1)
-        self.__controller.settings_save()
+        return self.__controller.settings_save()
 
     def ota_status_init(self):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        current_settings = settings.get()
-        ota_status = current_settings["user_cfg"]["ota_status"]
-        log.debug("ota_status_init ota_status: %s" % str(ota_status))
-        save_flag = False
-        if ota_status["sys_target_version"] != "--":
-            if ota_status["sys_target_version"] == DEVICE_FIRMWARE_VERSION:
-                if ota_status["upgrade_status"] != 3:
-                    ota_status["upgrade_status"] = 3
-                    save_flag = True
-            else:
-                if ota_status["upgrade_status"] != 4:
-                    ota_status["upgrade_status"] = 4
-                    save_flag = True
-        if ota_status["app_target_version"] != "--":
-            if ota_status["app_target_version"] == PROJECT_VERSION:
-                if ota_status["upgrade_status"] != 3:
-                    ota_status["upgrade_status"] = 3
-                    save_flag = True
-            else:
-                if ota_status["upgrade_status"] != 4:
-                    ota_status["upgrade_status"] = 4
-                    save_flag = True
-        if save_flag:
-            self.__controller.settings_set("ota_status", ota_status)
-            self.__controller.settings_save()
+        try:
+            current_settings = settings.get()
+            ota_status = current_settings["user_cfg"]["ota_status"]
+            log.debug("ota_status_init ota_status: %s" % str(ota_status))
+            save_flag = False
+            if ota_status["sys_target_version"] != "--":
+                if ota_status["sys_target_version"] == DEVICE_FIRMWARE_VERSION:
+                    if ota_status["upgrade_status"] != 3:
+                        ota_status["upgrade_status"] = 3
+                        save_flag = True
+                else:
+                    if ota_status["upgrade_status"] != 4:
+                        ota_status["upgrade_status"] = 4
+                        save_flag = True
+            if ota_status["app_target_version"] != "--":
+                if ota_status["app_target_version"] == PROJECT_VERSION:
+                    if ota_status["upgrade_status"] != 3:
+                        ota_status["upgrade_status"] = 3
+                        save_flag = True
+                else:
+                    if ota_status["upgrade_status"] != 4:
+                        ota_status["upgrade_status"] = 4
+                        save_flag = True
+            if save_flag:
+                self.__controller.settings_set("ota_status", ota_status)
+                self.__controller.settings_save()
+        except:
+            return False
+        return True
 
     def report_history(self):
         if not self.__history:
@@ -494,7 +498,7 @@ class Collector(Singleton):
     # Do cloud event downlink option by controller
     def event_option(self, *args, **kwargs):
         # TODO: Data Type Passthrough (Not Support Now).
-        return False
+        pass
 
     def event_done(self, *args, **kwargs):
         if not self.__controller:
@@ -581,7 +585,7 @@ class Collector(Singleton):
 
     def event_ota_file_download(self, *args, **kwargs):
         # OAT MQTT File Download Is Not Supported Yet.
-        return False
+        pass
 
     def event_rrpc_request(self, *args, **kwargs):
         message_id = kwargs["message_id"]
@@ -614,28 +618,33 @@ class Collector(Singleton):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        current_settings = settings.get()
-        if upgrade_info and current_settings["user_cfg"]["sw_ota"]:
-            ota_status_info = current_settings["user_cfg"]["ota_status"]
-            ota_info = {}
-            pass_flag = False
-            if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
-                if upgrade_info[0] == DEVICE_FIRMWARE_NAME:
-                    if upgrade_info[2] != DEVICE_FIRMWARE_VERSION:
-                        ota_info["upgrade_module"] = 1
-                        ota_info["sys_target_version"] = upgrade_info[2]
-                    else:
-                        pass_flag = True
-                elif upgrade_info[0] == PROJECT_NAME:
-                    if upgrade_info[2] != PROJECT_VERSION:
-                        ota_info["upgrade_module"] = 2
-                        ota_info["app_target_version"] = upgrade_info[2]
-                    else:
-                        pass_flag = True
-            if pass_flag is False:
-                ota_info["upgrade_status"] = upgrade_info[1]
-            ota_status_info.update(ota_info)
-            self.__controller.settings_set("ota_status", ota_status_info)
+        try:
+            current_settings = settings.get()
+            if upgrade_info and current_settings["user_cfg"]["sw_ota"]:
+                ota_status_info = current_settings["user_cfg"]["ota_status"]
+                ota_info = {}
+                pass_flag = False
+                if ota_status_info["sys_target_version"] == "--" and ota_status_info["app_target_version"] == "--":
+                    if upgrade_info[0] == DEVICE_FIRMWARE_NAME:
+                        if upgrade_info[2] != DEVICE_FIRMWARE_VERSION:
+                            ota_info["upgrade_module"] = 1
+                            ota_info["sys_target_version"] = upgrade_info[2]
+                        else:
+                            pass_flag = True
+                    elif upgrade_info[0] == PROJECT_NAME:
+                        if upgrade_info[2] != PROJECT_VERSION:
+                            ota_info["upgrade_module"] = 2
+                            ota_info["app_target_version"] = upgrade_info[2]
+                        else:
+                            pass_flag = True
+                if pass_flag is False:
+                    ota_info["upgrade_status"] = upgrade_info[1]
+                ota_status_info.update(ota_info)
+                self.__controller.settings_set("ota_status", ota_status_info)
+                self.__controller.settings_save()
+        except:
+            return False
+        return True
 
     def loc_method(self, method):
         log.debug("loc_method: %s" % str(method))
@@ -665,14 +674,18 @@ class Collector(Singleton):
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
-        self.__controller.low_energy_stop()
+        try:
+            self.__controller.low_energy_stop()
 
-        self.__controller.low_energy_set_period(period)
-        method = self.__init_low_energy_method(period)
-        self.__controller.low_energy_set_method(method)
+            self.__controller.low_energy_set_period(period)
+            method = self.__init_low_energy_method(period)
+            self.__controller.low_energy_set_method(method)
 
-        self.__controller.low_energy_init()
-        self.__controller.low_energy_start()
+            self.__controller.low_energy_init()
+            self.__controller.low_energy_start()
+        except:
+            return False
+        return True
 
     def low_engery_option(self, low_energy_method):
         if not self.__controller:

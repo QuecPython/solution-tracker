@@ -781,7 +781,9 @@ collector.device_status_check()
 
 返回值:
 
-无
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### device_data_get 设备与业务信息数据收集
 
@@ -923,7 +925,9 @@ collector.ota_status_reset()
 
 返回值:
 
-无
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### ota_status_init 设备OTA升级信息初始化
 
@@ -951,7 +955,9 @@ collector.ota_status_init()
 
 返回值:
 
-无
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### report_history 设备历史上报失败数据重新上报
 
@@ -1267,7 +1273,9 @@ collector.ota_status(upgrade_info)
 
 返回值:
 
-无
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### loc_method 设置定位方式
 
@@ -1364,7 +1372,9 @@ collector.work_cycle_period(period)
 
 返回值:
 
-无
+|数据类型|说明|
+|:---|---|
+|BOOL|`True`成功, `False`失败|
 
 #### low_engery_option 低功耗唤醒后业务功能
 
