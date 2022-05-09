@@ -9,6 +9,7 @@
 - `settings_xxx`, 按模块将配置文件进行分类
 - 整个Tracker的业务功能进行了结构上的重构，新增了三个模块`tracker_collector`采集器, `tracker_controller`控制器, `tracker_devicecheck`设备状态检测
 - 将非业务功能进行了抽离，独立成单独的模块，与业务解耦，独立出`modules`项目，存储独立的功能模块
+- 添加阿里云移远云物模型json样例文件
 
 ### Changed
 
