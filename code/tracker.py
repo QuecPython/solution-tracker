@@ -105,7 +105,9 @@ def tracker():
 
     # DeviceCheck initialization
     devicecheck = DeviceCheck()
+    # Add Location to DeviceCheck for checking whether locate is normal or not.
     devicecheck.add_module(locator)
+    # Add Sensor to DeviceCheck for checking whether the sensor is normal or not.
     devicecheck.add_module(sensor)
 
     # Cloud initialization
@@ -120,6 +122,7 @@ def tracker():
             mcu_name=PROJECT_NAME,
             mcu_version=PROJECT_VERSION
         )
+        # Cloud object model init
         cloud_om = QuecObjectModel()
         cloud.set_object_model(cloud_om)
     elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
@@ -137,6 +140,7 @@ def tracker():
             firmware_name=DEVICE_FIRMWARE_NAME,
             firmware_version=DEVICE_FIRMWARE_VERSION
         )
+        # Cloud object model init
         cloud_om = AliObjectModel()
         cloud.set_object_model(cloud_om)
     else:
@@ -144,27 +148,42 @@ def tracker():
 
     # RemotePublish initialization
     remote_pub = RemotePublish()
+    # Add History to RemotePublish for recording failure data
     remote_pub.addObserver(history)
+    # Add Cloud to RemotePublish for publishing data to cloud
     remote_pub.add_cloud(cloud)
 
     # Controller initialization
     controller = Controller()
+    # Add RemotePublish to Controller for publishing data to cloud
     controller.add_module(remote_pub)
+    # Add Settings to Controller for changing settings.
     controller.add_module(settings)
+    # Add LowEnergyManage to Controller for controlling low energy.
     controller.add_module(low_energy)
+    # Add LED to Controller for show device status.
     # controller.add_module(energy_led, led_type="energy")
     # controller.add_module(running_led, led_type="running")
+    # Add power_key to Controller for power key callback
     controller.add_module(power_key, callback=pwk_callback)
+    # Add USB to Controller for get usb status
     controller.add_module(usb, callback=usb_callback)
+    # Add dataCall to Controller for get net error callback
     controller.add_module(data_call)
 
     # Collector initialization
     collector = Collector()
+    # Add Controller to Collector for puting command to control device.
     collector.add_module(controller)
+    # Add DeviceCheck to Collector for getting device status.
     collector.add_module(devicecheck)
+    # Add Battery to Collector for getting battery info.
     collector.add_module(battery)
+    # Add Sensor to Collector for getting sensor info.
     collector.add_module(sensor)
+    # Add Location to Collector for getting location info.
     collector.add_module(locator)
+    # Add History to Collector for getting history data.
     collector.add_module(history)
 
     # LowEnergyManage initialization

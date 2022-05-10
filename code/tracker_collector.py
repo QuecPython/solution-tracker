@@ -55,6 +55,9 @@ class Collector(Singleton):
         self.__gps_parse = GPSParse()
 
     def __format_loc_method(self, data):
+        """Decimal to Binary for loc method
+        The first is gps, second is cell, third is wifi from binary right.
+        """
         loc_method = "%04d" % int(bin(data)[2:])
         gps = bool(int(loc_method[-1]))
         cell = bool(int(loc_method[-2]))
@@ -68,9 +71,11 @@ class Collector(Singleton):
         return loc_method
 
     def __get_local_time(self):
+        """Get millisecond timestamp"""
         return str(utime.mktime(utime.localtime()) * 1000)
 
     def __get_alert_data(self, alert_code, alert_info):
+        """Get alert data by alert code"""
         current_settings = settings.get()
         alert_data = {}
         if ALERTCODE.get(alert_code):
@@ -85,29 +90,35 @@ class Collector(Singleton):
         return alert_data
 
     def __init_low_energy_method(self, period):
+        """Auto set low energy method
+        1. Get device support method.
+        2. Compare low energy period with user set work_mode_timeline.
+        """
         current_settings = settings.get()
         device_model = modem.getDevModel()
-        support_methds = LOWENERGYMAP.get(device_model, [])
+        support_methods = LOWENERGYMAP.get(device_model, [])
         method = "NULL"
-        if support_methds:
+        if support_methods:
             if period >= current_settings["user_cfg"]["work_mode_timeline"]:
-                if "PSM" in support_methds:
+                if "PSM" in support_methods:
                     method = "PSM"
-                elif "POWERDOWN" in support_methds:
+                elif "POWERDOWN" in support_methods:
                     method = "POWERDOWN"
-                elif "PM" in support_methds:
+                elif "PM" in support_methods:
                     method = "PM"
             else:
-                if "PM" in support_methds:
+                if "PM" in support_methods:
                     method = "PM"
         log.debug("__init_low_energy_method: %s" % method)
         return method
 
     def __read_battery(self):
+        """Get battery energy & voltage"""
         if not self.__battery:
             raise TypeError("self.__battery is not registered.")
 
         res = {}
+        # TODO: Get temperature from sensor
         self.__battery.set_temp(20)
         energy = self.__battery.get_energy()
         res = {
@@ -118,6 +129,7 @@ class Collector(Singleton):
         return res
 
     def __check_battery_energy(self, energy):
+        """Check battery low power alert"""
         alert_data = {}
         current_settings = settings.get()
         if current_settings["user_cfg"]["sw_low_power_alert"] is True and \
@@ -127,6 +139,7 @@ class Collector(Singleton):
         return alert_data
 
     def __check_battery_low_energy_power_down(self):
+        """Check battery low power power down"""
         battery_data = self.__read_battery()
         current_settings = settings.get()
         if battery_data["energy"] <= current_settings["user_cfg"]["low_power_shutdown_threshold"]:
@@ -139,6 +152,7 @@ class Collector(Singleton):
         self.__gps_read_break = True
 
     def __read_location(self):
+        """Get loction info"""
         if not self.__locator:
             raise TypeError("self.__locator is not registered.")
 
@@ -170,6 +184,7 @@ class Collector(Singleton):
         return loc_info
 
     def __locator_gps_hibernation_strategy(self, onoff):
+        """Set GPS sleep"""
         current_settings = settings.get()
         gps_sleep_mode = current_settings["LocConfig"]["gps_sleep_mode"]
         if self.__locator.gps:
@@ -181,6 +196,7 @@ class Collector(Singleton):
                 self.__locator.gps.standby(onoff)
 
     def __read_cloud_location(self, loc_info):
+        """Format cloud loction data by source loction info"""
         res = {}
         loc_method_dict = {v: k for k, v in _loc_method.__dict__.items()}
         for loc_method in loc_method_dict.keys():
@@ -191,6 +207,7 @@ class Collector(Singleton):
         return res
 
     def __check_speed(self, gps_data):
+        """Check speed by GPS location info and check whether over speed or not"""
         if not self.__locator:
             raise TypeError("self.__locator is not registered")
 
@@ -213,6 +230,7 @@ class Collector(Singleton):
         return alert_data
 
     def __get_ali_loc_data(self, loc_method, loc_data):
+        """Format aliyun loction data"""
         res = {"GeoLocation": {}}
 
         current_settings = settings.get()
@@ -250,6 +268,7 @@ class Collector(Singleton):
         return res
 
     def __get_quec_loc_data(self, loc_method, loc_data):
+        """Format queccloud loction data"""
         if loc_method == 0x1:
             res = {"gps": []}
             r = self.__gps_match.GxRMC(loc_data)
@@ -270,6 +289,7 @@ class Collector(Singleton):
             return {"non_gps": []}
 
     def __get_loc_data(self, loc_method, loc_data):
+        """Format loction data for different cloud"""
         current_settings = settings.get()
         if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
             return self.__get_quec_loc_data(loc_method, loc_data)
@@ -279,6 +299,7 @@ class Collector(Singleton):
         return {}
 
     def add_module(self, module):
+        """add modules for collecting data"""
         if isinstance(module, Controller):
             self.__controller = module
             return True
@@ -301,6 +322,22 @@ class Collector(Singleton):
         return False
 
     def device_status_get(self):
+        """Get device status from DeviceCheck module
+        Return:
+        {
+            "device_module_status": {
+                "net": 1,
+                "location": 1,
+                "temp_sensor": 1,
+                "light_sensor": 1,
+                "move_sensor": 1,
+                "mike": 1
+            },
+            "fault_alert": {
+                "local_time": "1651136994000"
+            }
+        }
+        """
         if not self.__devicecheck:
             raise TypeError("self.__devicecheck is not registered.")
         if not self.__controller:
@@ -351,10 +388,20 @@ class Collector(Singleton):
         return device_status_data
 
     def device_status_check(self):
+        """Check device status and publish data to cloud"""
         device_status_check_res = self.device_status_get()
         return self.device_data_report(event_data=device_status_check_res)
 
     def device_data_get(self, power_switch=True):
+        """Get device business data
+        return:
+        data format:
+        {
+            "power_switch": True,
+            "local_time": "1651136994000",
+            ...
+        }
+        """
         current_settings = settings.get()
 
         device_data = {
@@ -399,6 +446,7 @@ class Collector(Singleton):
         return device_data
 
     def device_data_report(self, power_switch=True, event_data={}, msg=""):
+        """Publish data to cloud from controller"""
         # TODO: msg to mark post data source
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
@@ -418,6 +466,7 @@ class Collector(Singleton):
         return post_res
 
     def ota_status_reset(self):
+        """Reset customize ota status"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -439,6 +488,7 @@ class Collector(Singleton):
         return self.__controller.settings_save()
 
     def ota_status_init(self):
+        """Init customize ota status"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -473,6 +523,7 @@ class Collector(Singleton):
         return True
 
     def report_history(self):
+        """Publish history data to cloud."""
         if not self.__history:
             raise TypeError("self.__history is not registered.")
         if not self.__controller:
@@ -501,6 +552,7 @@ class Collector(Singleton):
         pass
 
     def event_done(self, *args, **kwargs):
+        """Hanle setting object model downlink message from cloud."""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -527,9 +579,11 @@ class Collector(Singleton):
             return False
 
     def event_query(self, *args, **kwargs):
+        """Hanle quering object model downlink message from cloud."""
         return self.device_data_report()
 
     def event_ota_plain(self, *args, **kwargs):
+        """Hanle OTA plain from cloud."""
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
@@ -588,6 +642,7 @@ class Collector(Singleton):
         pass
 
     def event_rrpc_request(self, *args, **kwargs):
+        """Hanle RRPC request"""
         message_id = kwargs["message_id"]
         data = kwargs["data"]
         log.debug("RRPC message_id: %s" % message_id)
@@ -595,6 +650,7 @@ class Collector(Singleton):
         self.__controller.remote_rrpc_response(message_id, data)
 
     def power_switch(self, onoff=None):
+        """Control device power"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -603,6 +659,7 @@ class Collector(Singleton):
             self.__controller.power_down()
 
     def user_ota_action(self, action):
+        """Set user set ota action"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -615,6 +672,7 @@ class Collector(Singleton):
                 self.__controller.remote_ota_check()
 
     def ota_status(self, upgrade_info=None):
+        """Set ota status by ota upgrade process"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -647,6 +705,7 @@ class Collector(Singleton):
         return True
 
     def loc_method(self, method):
+        """Set loc_method from cloud downlink message."""
         log.debug("loc_method: %s" % str(method))
         current_settings = settings.get()
         v = '0b'
@@ -663,6 +722,7 @@ class Collector(Singleton):
         return self.__controller.settings_set("loc_method", value)
 
     def power_restart(self, flag):
+        """Control power restart"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -670,7 +730,7 @@ class Collector(Singleton):
         self.__controller.power_restart()
 
     def work_cycle_period(self, period):
-        # Reset work_cycle_period & Reset RTC
+        """Reset low energy when reset work_cycle_period."""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -688,6 +748,7 @@ class Collector(Singleton):
         return True
 
     def low_engery_option(self, low_energy_method):
+        """Business option after low energy waking up."""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
@@ -714,6 +775,7 @@ class Collector(Singleton):
             self.__controller.power_down()
 
     def update(self, observable, *args, **kwargs):
+        """Observer update option"""
         if isinstance(observable, LowEnergyManage):
             log.debug("Low Energy RTC Method: %s" % args[1])
             self.low_engery_option(args[1])
