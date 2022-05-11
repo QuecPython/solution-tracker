@@ -142,9 +142,9 @@ tracker = Tracker()
 
 #### battery 电池功能
 
-改功能提供`energy`方法查询当前电池电量。
+##### tracker.battery.energy
 
->`tracker.battery.energy`
+> 查询当前电池电量
 
 - 例:
 
@@ -159,13 +159,30 @@ battery_energy = tracker.battery.energy()
 
 返回当前电池电量百分比, 数据类型为`int`。
 
+##### tracker.battery.voltage
+
+> 查询当前电源电压
+
+- 例:
+
+```python
+voltage = tracker.battery.voltage()
+```
+- 参数:
+
+无
+
+- 返回值:
+
+返回当前电源电压, 单位mV, 数据类型为`int`。
+
 #### locator 定位功能
 
-该功能提供了`read`查询当前模块的定位信息, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
+> 该功能提供了`read`查询当前模块的定位信息, 定位模式, 定位方式, 定位信息上报模式在`settings`模块中配置, 亦可通过云端远程进行消息控制。
 
-##### `read` 查询当前模块的定位信息。
+##### tracker.locator.read
 
->`tracker.locator.read`
+>  查询当前模块的定位信息。
 
 - 例:
 
@@ -197,11 +214,9 @@ location_info = tracker.locator.read()
 
 #### remote 信息通信功能
 
-##### `post_data` 向云端进行消息发送功能。
+##### tracker.remote.post_data 向云端进行消息发送功能。
 
-- `post_data`发放支持阻塞和非阻塞两种消息发送模式, 默认为阻塞方式进行消息发送。
-
->`tracker.remote.post_data`
+> 发放支持阻塞和非阻塞两种消息发送模式, 默认为阻塞方式进行消息发送。
 
 - 例:
 
@@ -278,6 +293,41 @@ tracker.remote.post_data(topic, data)
 
 无
 
+##### tracker.remote.check_ota OTA升级计划查询
+
+- 例:
+
+```python
+tracker.remote.check_ota()
+```
+
+- 参数:
+
+无
+
+- 返回值:
+
+无
+
+##### tracker.remote.cloud_ota_action OTA升级确认
+
+- 例:
+
+```python
+val = 1
+tracker.remote.check_ota(val=val)
+```
+
+- 参数:
+
+|参数|参数类型|参数说明|
+|:---|---|---|
+|val|int|1 - 确认升级; 0 - 取消升级|
+
+- 返回值:
+
+无
+
 #### get_alert_data 格式化报警数据
 
 该功能提供`get_alert_data`方法, 返回格式化上报告警数据。
@@ -328,6 +378,24 @@ res = tracker.get_alert_data(alert_code, alert_info)
 |-|40004|`quick_turn_right`|右急转弯|
 |50001|-|`sos_alert`|SOS求救报警|
 
+#### get_device_data 获取设备相关业务信息
+
+- 例:
+
+```python
+res = tracker.get_device_data(power_switch=True)
+```
+
+- 参数:
+
+|参数|参数类型|参数说明|
+|:---|---|---|
+|power_switch|bool|开关机状态|
+
+- 返回值:
+
+具体物模型`dict`数据，用于设备信息上报
+
 #### device_data_report 设备信息上报功能
 
 该模块实现了机器信息的汇总上报功能, 会将机器的位置信息, 开机状态, 电池电量等相关设置信息全部实时上报云端。
@@ -346,6 +414,32 @@ res = tracker.device_data_report()
 
 无
 
+#### get_device_check 设备状态检测
+
+- 例:
+
+```python
+res = tracker.get_device_check()
+```
+
+- 参数:
+
+无
+
+- 返回值:
+
+字典类型数据，设备各个模块状态
+
+```json
+{
+    "device_module_status": {
+        "net": 1,
+        "location": 1,
+        "sensor": 1
+    }
+}
+```
+
 #### device_check 设备自检功能
 
 该功能用于检测设备相关功能是否正常, 主要包括网络状态, GPS模组, 各类传感器, 麦克风是否正常工作(目前暂不支持各类传感器麦克风等外设检测)。 如异常会上报远端异常信息。 检查完毕后不论异常与否都会调用`device_data_report`功能上报云端设备所有信息。
@@ -362,17 +456,7 @@ res = tracker.device_check()
 
 - 返回值:
 
-返回码，数值类型`int`
-
-|返回码|说明|
-|:---|:---|
-|0|无异常|
-|20001|网络异常|
-|20002|GPS异常|
-|20003|温度传感器异常|
-|20004|照度传感器异常|
-|20005|三轴加速度传感器异常|
-|20006|麦克风异常|
+无
 
 #### over_speed_check 设备超速报警检测
 
