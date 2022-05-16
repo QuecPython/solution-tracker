@@ -16,6 +16,31 @@
 - [x] 云服务中间件(remote): 提供云服务消息处理中间件功能。
 - [ ] 传感器功能(sensor): 开发中...
 
+## 项目拉取
+
+```bash
+# 下载主项目代码
+git clone https://gitee.com/qpy-solutions/tracker-v2.git
+
+# 进入主项目目录
+cd tracker-v2/
+
+# 切换对应的主项目分支
+git checkout master
+
+# 子项目初始化
+git submodule init
+
+# 子项目代码拉取
+git submodule update
+
+# 进入子项目目录
+cd code/modules/
+
+# 切换对应的子项目分支
+git checkout master
+```
+
 ## 项目结构
 
 ```
@@ -47,35 +72,6 @@
         |--quecthing.py
         |--remote.py
         |--sensor.py
-```
-
-### 功能模块注册流程图
-
-![](./media/tracker_modules_registration_process.png)
-
-## 项目拉取
-
-```bash
-# 下载主项目代码
-git clone https://gitee.com/qpy-solutions/tracker-v2.git
-
-# 进入主项目目录
-cd tracker-v2/
-
-# 切换对应的主项目分支
-git checkout master
-
-# 子项目初始化
-git submodule init
-
-# 子项目代码拉取
-git submodule update
-
-# 进入子项目目录
-cd code/modules/
-
-# 切换对应的子项目分支
-git checkout master
 ```
 
 ## 项目配置
@@ -150,6 +146,10 @@ _wifi_cfg = {
     "token": "XXXX"  # 密钥，16位字符组成，需要申请
 }
 ```
+
+## 功能模块注册流程图
+
+![](./media/tracker_modules_registration_process.png)
 
 ## 启动项目
 
