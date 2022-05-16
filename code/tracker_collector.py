@@ -774,6 +774,18 @@ class Collector(Singleton):
         elif low_energy_method == "POWERDOWN":
             self.__controller.power_down()
 
+    def thing_services(self, data):
+        log.debug("thing_services data: %s" % str(data))
+        service_data = {
+            data["service"]: {
+                "id": data["data"]["id"],
+                "code": 200,
+                "message": "Success",
+                "data": {}
+            }
+        }
+        self.__controller.remote_post_data(service_data)
+
     def update(self, observable, *args, **kwargs):
         """Observer update option"""
         if isinstance(observable, LowEnergyManage):
