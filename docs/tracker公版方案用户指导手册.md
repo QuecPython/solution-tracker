@@ -83,77 +83,345 @@ git checkout master
 - 内置GNSS设备: EC200UCNAA
 - 外置GNSS设备: EC600NCNLA/EC600NCNLC
 
+推荐外置GPS
+
+- [LC86L](https://www.quectel.com/product/gnss-lc86l-series)
+- [L76K](https://www.quectel.com/cn/product/gnss-l76k)
+
 ### 云服务平台
 
-- 目前项目支持移远云，阿里云
-- 创建物联网平台产品和设备(移远云无需创建设备)
-    + [阿里云物联网平台相关文档](https://help.aliyun.com/product/30520.html)
-    + [移远云物联网平台相关文档](https://iot-cloud-docs.quectelcn.com/homepage/)
-- 项目提供了[阿里云tracker物模型demo](https://gitee.com/qpy-solutions/tracker-v2/blob/dev/object_model_demo/ali_cloud_object_model.json)和[移远云tracker物模型demo](https://gitee.com/qpy-solutions/tracker-v2/blob/dev/object_model_demo/quec_cloud_object_model.json)，可以直接导入使用，用户亦可根据自己的实际需求进行物模型的定义
-- 将云平台物模型导出(阿里云可导出精简模式)json格式，放入代码根目录`code`下
-    + 阿里云物模型json文件建议命名: `aliyun_object_model.json`
-    + 移远云物模型json文件建议命名: `quec_object_model.json`
+#### 阿里云
+
+1. [创建产品与设备](https://help.aliyun.com/document_detail/73705.html)
+
+![](./media/aliyun_create_product.png)
+![](./media/aliyun_create_device.png)
+
+2. [为产品定义物模型](https://help.aliyun.com/document_detail/117636.html)
+
+![](./media/aliyun_create_object_model.png)
+
+3. 项目提供了[物模型demo](https://gitee.com/qpy-solutions/tracker-v2/blob/dev/object_model_demo/ali_cloud_object_model.json), 可直接导入生成，无需手动创建
+
+![](./media/aliyun_import_object_model.png)
+
+4. 导出JSON格式的精简模式物模型, 解压缩后得到物模型JSON文件, 重命名后, 放入项目根目录`code`下, 建议命名`aliyun_object_model.json`
+
+![](./media/aliyun_export_lite_mode_object_model.png)
+
+#### 移远云
+
+1. [创建产品与设备](https://iot-cloud-docs.quectelcn.com/quickStart/ProductDevelop.html)
+
+![](./media/quec_create_project.png)
+![](./media/quec_create_device.png)
+
+2. [为产品定义物模型](https://iot-cloud-docs.quectelcn.com/quickStart/ProductDevelop.html)
+
+![](./media/quec_create_object_model.png)
+
+3. 项目提供了[物模型demo](https://gitee.com/qpy-solutions/tracker-v2/blob/dev/object_model_demo/quec_cloud_object_model.json), 可直接导入生成，无需手动创建
+
+![](./media/quec_import_object_model.png)
+
+4. 导出JSON格式的物模型, 重命名后, 放入项目根目录`code`下, 建议命名`quec_object_model.json`
+
+![](./media/quec_export_object_model.png)
+
+### 开发工具
+
+推荐使用[QPYcom](https://python.quectel.com/doc/doc/Advanced_development/zh/QuecPythonTools/QPYcom.html)作为项目的调试软件工具
+
+下载地址: https://python.quectel.com/download
+
+![](./media/qpycom_download.png)
 
 ### 设置项目配置参数
 
-- 设置云服务平台链接配置参数
-    + 移远云连接配置: `settings_queccloud.py`
-    + 阿里云连接配置: `settings_alicloud.py`
-- 设置定位模块相关配置参数 `settings_loc.py`
+#### settings_sys 项目基础配置
 
 ```python
-# settings_queccloud.py
-PK = "{ProductKey}"
-PS = "{ProductSecret}"
-DK = ""
-DS = ""
+debug = True  # 是否开启debug日志
+log_level = "DEBUG"  # 日志等级
+cloud = _cloud.AliYun  # 设置云服务平台
+checknet_timeout = 60  # 网络检测超时时间
+base_cfg = {
+    "LocConfig": True,  # 是否启用定位模块
+}
+user_cfg = True  # 是否启用用户配置模块
+```
 
-# settings_alicloud.py
+#### settings_alicoud 阿里云配置
 
-PK = "{ProductKey}"
-PS = "{ProductSecret}"
-DK = "{DeviceName}"
-DS = "{DeviceSecret}"
+```python
+PK = "{ProductKey}"  # 产品KEY
+PS = "{ProductSecret}"  # 产品密钥
+DK = "{DeviceName}"  # 设备名称
+DS = "{DeviceSecret}"  # 设备密钥
 
-SERVER = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % PK
-client_id = ""
-life_time = 120
-burning_method = _burning_method.one_machine_one_secret  # 一机一密或一型一密
+SERVER = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % PK  # 连接的服务器名称
+client_id = ""  # 自定义阿里云连接id
+life_time = 120  # 通信之间允许的最长时间段(以秒为单位), 范围(60-1200)
+burning_method = _burning_method.one_machine_one_secret  # 一机一密，一型一密
+```
 
-# settings_loc.py
+#### settings_queccloud 移远云配置
 
+```python
+PK = "{ProductKey}"  # 产品KEY
+PS = "{ProductSecret}"  # 产品密钥
+DK = "{DeviceKey}"  # 设备名称
+DS = "{DeviceSecret}"  # 设备密钥
+SERVER = "iot-south.quectel.com:1883"  # 连接的服务器名称
+life_time = 120  # 通信之间允许的最长时间段(以秒为单位), 范围(60-1200)
+```
+
+#### settings_loc 定位功能配置
+
+```python
+
+profile_idx = 1  # PDP索引，ASR平台范围1-8，展锐平台范围1-7
+
+# 外置GPS UART串口读取配置参数
 _gps_cfg = {
-    "UARTn": UART.UART1,
-    "buadrate": 115200,
-    "databits": 8,
-    "parity": 0,
-    "stopbits": 1,
-    "flowctl": 0,
-    "PowerPin": None,
-    "StandbyPin": None,
-    "BackupPin": None
+    "UARTn": UART.UART1,  # 串口号
+    "buadrate": 115200,  # 波特率，常用波特率都支持，如4800、9600、19200、38400、57600、115200、230400等
+    "databits": 8,  # 数据位（5 ~ 8），展锐平台当前仅支持8位
+    "parity": 0,  # 奇偶校验（0 – NONE，1 – EVEN，2 - ODD）
+    "stopbits": 1,  # 停止位（1 ~ 2）
+    "flowctl": 0,  # 硬件控制流（0 – FC_NONE， 1 – FC_HW）
+    "PowerPin": None,  # 电源控制引脚号
+    "StandbyPin": None,  # Standby低功耗模式引脚号(L76K)
+    "BackupPin": None  # Backup低功耗模式引脚号(L76K)
 }
 
 _cell_cfg = {
-    "serverAddr": "www.queclocator.com",
-    "port": 80,
+    "serverAddr": "www.queclocator.com",  # 服务器域名，长度必须小于255 bytes
+    "port": 80,  # 服务器端口，目前仅支持 80 端口
     "token": "XXXX",  # 密钥，16位字符组成，需要申请
-    "timeout": 3,
-    "profileIdx": profile_idx,
+    "timeout": 3,  # 设置超时时间，范围1-300s，默认300s
+    "profileIdx": profile_idx,  # PDP索引，ASR平台范围1-8，展锐平台范围1-7
 }
 
 _wifi_cfg = {
     "token": "XXXX"  # 密钥，16位字符组成，需要申请
 }
+
+gps_mode = _gps_mode.external  # 1-内置GPS, 2-外置GPS
+
+loc_method = _loc_method.gps  # 定位方式, 1-GPS;2-CELL;3-GPS&CELL;4-WIFI;5-GPS&WIFI;6-CELL&WIFI;7-GPS&CELL&WIFI
+
+map_coordinate_system = _map_coordinate_system.WGS84  # 坐标系统WGS84 & 
+
+gps_sleep_mode = _gps_sleep_mode.none  # GPS 休眠模式 0-无;1-pull off(关闭电源);2-backup;3-standby.
+
 ```
+
+#### settings_user tracker业务相关配置
+
+> 该模块配置参数为业务定义的物模型的参数与默认值，用户可根据具体业务的物模型参数进行调整。
+
+```python
+phone_num = ""  # 设备内置电话号码
+
+low_power_alert_threshold = 20  # 低电告警阈值
+
+low_power_shutdown_threshold = 5  # 低电关机阈值
+
+over_speed_threshold = 50  # 超速阈值
+
+sw_ota = True  # 是否开启OTA升级
+
+sw_ota_auto_upgrade = True  # 是否开启OTA自动升级
+
+sw_voice_listen = False  # 是否开启语音监听功能
+
+sw_voice_record = False  # 是否开启语音录音功能
+
+sw_fault_alert = True  # 是否开启异常告警功能
+
+sw_low_power_alert = True  # 是否开启低电告警功能
+
+sw_over_speed_alert = True  # 是否开启超速告警功能
+
+sw_sim_abnormal_alert = True  # 是否开启SIM卡异常告警功能
+
+sw_disassemble_alert = True  # 是否开启拆卸告警功能
+
+sw_drive_behavior_alert = True  # 是否开启异常驾驶行为告警功能
+
+drive_behavior_code = _drive_behavior_code.none  # 异常驾驶行为编码
+
+loc_method = LocConfig._loc_method.gps  # 定位方式
+
+loc_gps_read_timeout = 300  # GPS定位信息读取超时时间
+
+work_mode = _work_mode.cycle  # 设备工作模式: 周期性模式，智能模式
+
+work_mode_timeline = 3600  # 深度休眠与浅休眠时间分割点
+
+work_cycle_period = 30  # 低功耗唤醒周期
+
+user_ota_action = -1  # 用户确认是否OTA升级: 0-取消升级;1-确认升级
+
+# OTA升级状态记录
+ota_status = {
+    "sys_current_version": "",  # 当前固件版本
+    "sys_target_version": "--",  # 升级固件目标版本
+    "app_current_version": "",  # 当前应用版本
+    "app_target_version": "--",  # 升级应用目标版本
+    "upgrade_module": _ota_upgrade_module.none,  # 升级模块: 0-无;1-固件;2-应用
+    "upgrade_status": _ota_upgrade_status.none,  # 升级状态
+}
+```
+
+## 启动项目
+
+1. 设置好模块的配置参数;
+2. 将物模型JSON文件放入项目根目录中;
+3. 开发主机安装好设备驱动与调试软件QPYcom;
+4. 给设备安装SIM卡，并连接主机;
+5. 打开对应的设备串口，将项目代码通过QPYcom烧录至设备中;
+
+![](./media/tracker_code_import.png)
+
+6. 通过交互页面即可查看项目运行状态.
+
+![](./media/tracker_running.png)
 
 ## 功能模块注册流程图
 
 ![](./media/tracker_modules_registration_process.png)
 
-## 启动项目
+**代码样例:**
 
-直接使用项目提供的物模型，当各个模块配置都已就绪后，将项目代码按项目结构(`code`即`usr`目录)导入设备`/usr/`目录下，设备会自动运行`main.py`，通过QPYcom交互界面即可看到消息上传日志，同时查看云服务平台设备信息，即可看到上传的数据信息。
+```python
+### 基础模块初始化 ###
+current_settings = settings.get()
+energy_led = LED()
+running_led = LED()
+sensor = Sensor()
+history = History()
+battery = Battery()
+low_energy = LowEnergyManage()
+work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
+low_energy.set_period(work_cycle_period)
+low_energy.set_low_energy_method(collector.__init_low_energy_method(work_cycle_period))
+data_call = dataCall
+usb = USB() if USB is not None else None
+power_key = PowerKey() if PowerKey is not None else None
+locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
+# DeviceCheck initialization
+devicecheck = DeviceCheck()
+# Add Location to DeviceCheck for checking whether locate is normal or not.
+devicecheck.add_module(locator)
+# Add Sensor to DeviceCheck for checking whether the sensor is normal or not.
+devicecheck.add_module(sensor)
+
+### 云模块初始化 ###
+cloud_init_params = current_settings["cloud"]
+if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
+    cloud = QuecThing(
+        cloud_init_params["PK"],
+        cloud_init_params["PS"],
+        cloud_init_params["DK"],
+        cloud_init_params["DS"],
+        cloud_init_params["SERVER"],
+        mcu_name=PROJECT_NAME,
+        mcu_version=PROJECT_VERSION
+    )
+    # Cloud object model init
+    cloud_om = QuecObjectModel()
+    cloud.set_object_model(cloud_om)
+elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
+    client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
+    cloud = AliYunIot(
+        cloud_init_params["PK"],
+        cloud_init_params["PS"],
+        cloud_init_params["DK"],
+        cloud_init_params["DS"],
+        cloud_init_params["SERVER"],
+        client_id,
+        burning_method=cloud_init_params["burning_method"],
+        mcu_name=PROJECT_NAME,
+        mcu_version=PROJECT_VERSION,
+        firmware_name=DEVICE_FIRMWARE_NAME,
+        firmware_version=DEVICE_FIRMWARE_VERSION
+    )
+    # Cloud object model init
+    cloud_om = AliObjectModel()
+    cloud.set_object_model(cloud_om)
+else:
+    raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
+
+### 云端发布数据中间层模块初始化 ###
+# RemotePublish initialization
+remote_pub = RemotePublish()
+# Add History to RemotePublish for recording failure data
+remote_pub.addObserver(history)
+# Add Cloud to RemotePublish for publishing data to cloud
+remote_pub.add_cloud(cloud)
+
+### 控制模块初始化 ###
+# Controller initialization
+controller = Controller()
+# Add RemotePublish to Controller for publishing data to cloud
+controller.add_module(remote_pub)
+# Add Settings to Controller for changing settings.
+controller.add_module(settings)
+# Add LowEnergyManage to Controller for controlling low energy.
+controller.add_module(low_energy)
+# Add LED to Controller for show device status.
+controller.add_module(energy_led, led_type="energy")
+controller.add_module(running_led, led_type="running")
+# Add power_key to Controller for power key callback
+controller.add_module(power_key, callback=pwk_callback)
+# Add USB to Controller for get usb status
+controller.add_module(usb, callback=usb_callback)
+# Add dataCall to Controller for get net error callback
+controller.add_module(data_call)
+
+### 数据采集模块初始化 ###
+# Collector initialization
+collector = Collector()
+# Add Controller to Collector for puting command to control device.
+collector.add_module(controller)
+# Add DeviceCheck to Collector for getting device status.
+collector.add_module(devicecheck)
+# Add Battery to Collector for getting battery info.
+collector.add_module(battery)
+# Add Sensor to Collector for getting sensor info.
+collector.add_module(sensor)
+# Add Location to Collector for getting location info.
+collector.add_module(locator)
+# Add History to Collector for getting history data.
+collector.add_module(history)
+# LowEnergyManage initialization
+low_energy.addObserver(collector)
+
+### 云端订阅中间层模块初始化 ###
+# RemoteSubscribe initialization
+remote_sub = RemoteSubscribe()
+remote_sub.add_executor(collector)
+cloud.addObserver(remote_sub)
+
+### 启动Tracker功能 ###
+# Business start
+# Cloud start
+cloud.init()
+# OTA status init
+collector.ota_status_init()
+# Device modules status check
+collector.device_status_check()
+# Device info report to cloud
+controller.remote_device_report()
+# OTA plain check
+controller.remote_ota_check()
+# Low energy init
+controller.low_energy_init()
+# Low energy start
+controller.low_energy_start()
+```
 
 ## 二次开发
 
@@ -214,15 +482,22 @@ def TestCollector(Collector):
             self.__controller.power_down()
 
 
+### 基础模块初始化 ###
 current_settings = settings.get()
-
 # 初始化历史文件存储模块
 history = History()
 # 初始化低功耗模块
 low_energy = LowEnergyManage()
+# 初始化低功耗模块
+work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
+# 设置低功耗唤醒周期
+low_energy.set_period(work_cycle_period)
+# 根据低功耗唤醒周期和设备选择低功耗模式
+low_energy.set_low_energy_method(collector.__init_low_energy_method(work_cycle_period))
 # 初始化定位模块
 locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
 
+### 云模块初始化 ###
 cloud_init_params = current_settings["cloud"]
 if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
     # 初始化移远云服务模块
@@ -262,6 +537,7 @@ elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
 else:
     raise TypeError("Settings cloud[%s] is not support." % current_settings["sys"]["cloud"])
 
+### 云端发布数据中间层模块初始化 ###
 # 初始化云服务发布消息中间件
 remote_pub = RemotePublish()
 # 添加历史文件模块到云服务发布消息中间件中，当发送失败时将数据存入历史文件中
@@ -269,6 +545,7 @@ remote_pub.addObserver(history)
 # 添加云服务模块到云服务发布消息中间件中，用于消息的发布
 remote_pub.add_cloud(cloud)
 
+### 控制模块初始化 ###
 # 初始化控制模块
 controller = Controller()
 # 添加云服务发布消息中间件到控制模块
@@ -276,22 +553,17 @@ controller.add_module(remote_pub)
 # 添加低功耗模块到控制模块中
 controller.add_module(low_energy)
 
+### 数据采集模块初始化 ###
 # 初始化数据采集模块
 collector = TestCollector()
 # 添加控制模块到数据采集模块，用于控制设备模块与发送数据
 collector.add_module(controller)
 # 添加定位模块到数据采集模块，用于查询定位信息.
 collector.add_module(locator)
-
-# 初始化低功耗模块
-work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
-# 设置低功耗唤醒周期
-low_energy.set_period(work_cycle_period)
-# 根据低功耗唤醒周期和设备选择低功耗模式
-low_energy.set_low_energy_method(collector.__init_low_energy_method(work_cycle_period))
 # 添加数据采集者作为低功耗模块的监听者，接收唤醒消息
 low_energy.addObserver(collector)
 
+### 云端订阅中间层模块初始化 ###
 # 初始化云服务消息订阅中间件
 remote_sub = RemoteSubscribe()
 # 添加数据采集这作为云服务消息订阅中间件的监听者，接收云端下发的消息指令
@@ -299,11 +571,11 @@ remote_sub.add_executor(collector)
 # 云服务模块添加云服务消息订阅中间件作为云服务模块的监听者，接收云端下发的消息指令
 cloud.addObserver(remote_sub)
 
+### 启动Tracker功能 ###
 # 云服务初始化连接
 cloud.init()
 # 上报定位信息
 collector.loc_report()
-
 # 低功耗休眠初始化
 controller.low_energy_init()
 # 启动低功耗休眠
