@@ -128,14 +128,6 @@ git checkout master
 
 ![](./media/quec_export_object_model.png)
 
-### 开发工具
-
-推荐使用[QPYcom](https://python.quectel.com/doc/doc/Advanced_development/zh/QuecPythonTools/QPYcom.html)作为项目的调试软件工具
-
-下载地址: https://python.quectel.com/download
-
-![](./media/qpycom_download.png)
-
 ### 设置项目配置参数
 
 #### 项目基础配置(settings_sys)
@@ -274,6 +266,14 @@ ota_status = {
     "upgrade_status": _ota_upgrade_status.none,  # 升级状态
 }
 ```
+
+## 开发工具
+
+推荐使用[QPYcom](https://python.quectel.com/doc/doc/Advanced_development/zh/QuecPythonTools/QPYcom.html)作为项目的调试软件工具
+
+下载地址: https://python.quectel.com/download
+
+![](./media/qpycom_download.png)
 
 ## 运行项目
 
