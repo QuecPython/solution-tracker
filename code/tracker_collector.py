@@ -374,10 +374,10 @@ class Collector(Singleton):
                 (light_status is True or light_status is None) and \
                 (triaxial_status is True or triaxial_status is None) and \
                 (mike_status is True or mike_status is None):
-            # self.__controller.running_led_show(0.5)
+            # self.__controller.running_led_show(200, 200)
             device_status = True
         else:
-            # self.__controller.running_led_show(2)
+            # self.__controller.running_led_show(2000, 200)
             device_status = False
 
         if device_status is False:
@@ -641,7 +641,7 @@ class Collector(Singleton):
         # OAT MQTT File Download Is Not Supported Yet.
         pass
 
-    def event_rrpc_request(self, *args, **kwargs):
+    def rrpc_request(self, *args, **kwargs):
         """Hanle RRPC request"""
         message_id = kwargs["message_id"]
         data = kwargs["data"]

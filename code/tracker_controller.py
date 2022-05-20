@@ -151,14 +151,12 @@ class Controller(Singleton):
             raise TypeError("self.__low_energy is not registered.")
         return self.__low_energy.stop()
 
-    def running_led_show(self, period):
+    def running_led_show(self, on_period, off_period):
         if not self.__running_led:
             raise TypeError("self.__running_led is not registered.")
-        self.__running_led.set_period(period)
-        return self.__running_led.led_timer_start()
+        return self.__running_led.start_flicker(on_period, off_period)
 
-    def energy_led_show(self, period):
+    def energy_led_show(self, on_period, off_period):
         if not self.energy_led_show:
             raise TypeError("self.energy_led_show is not registered.")
-        self.__energy_led.set_period(period)
-        return self.__energy_led.led_timer_start()
+        return self.__energy_led.start_flicker(on_period, off_period)

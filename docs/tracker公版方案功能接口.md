@@ -1162,7 +1162,7 @@ collector.event_ota_file_download(*args, **kwargs)
 
 无
 
-#### event_rrpc_request MQTT同步通信(RRPC)
+#### rrpc_request MQTT同步通信(RRPC)
 
 > 依赖模块:
 > 
@@ -1178,7 +1178,7 @@ collector.event_ota_file_download(*args, **kwargs)
 例:
 
 ```python
-collector.event_rrpc_request(*args, **kwargs)
+collector.rrpc_request(*args, **kwargs)
 ```
 
 参数:
