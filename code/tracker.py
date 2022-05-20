@@ -200,6 +200,8 @@ def tracker():
     # Business start
     # Cloud start
     cloud.init()
+    # Report history
+    collector.report_history()
     # OTA status init
     collector.ota_status_init()
     # Device modules status check
