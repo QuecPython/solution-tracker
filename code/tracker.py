@@ -206,8 +206,9 @@ def tracker():
     collector.device_status_check()
     # Device info report to cloud
     controller.remote_device_report()
-    # OTA plain check
-    controller.remote_ota_check()
+    if current_settings["user_cfg"]["sw_ota"] is True:
+        # OTA plain check
+        controller.remote_ota_check()
     # Low energy init
     controller.low_energy_init()
     # Low energy start
