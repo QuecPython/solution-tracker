@@ -54,6 +54,9 @@ class Collector(Singleton):
         self.__gps_match = GPSMatch()
         self.__gps_parse = GPSParse()
 
+        self.__net_status = False
+        self.__loc_status = False
+
     def __format_loc_method(self, data):
         """Decimal to Binary for loc method
         The first is gps, second is cell, third is wifi from binary right.
@@ -349,6 +352,8 @@ class Collector(Singleton):
 
         net_status = self.__devicecheck.net()
         location_status = self.__devicecheck.location()
+        self.__net_status = True if net_status == (3, 1) else False
+        self.__loc_status = location_status
         temp_status = self.__devicecheck.temp()
         light_status = self.__devicecheck.light()
         triaxial_status = self.__devicecheck.triaxial()
@@ -422,17 +427,18 @@ class Collector(Singleton):
         device_data.update({"loc_method": self.__format_loc_method(current_settings["user_cfg"]["loc_method"])})
 
         # Get cloud location data
-        loc_info = self.__read_location()
-        cloud_loc = self.__read_cloud_location(loc_info)
-        device_data.update(cloud_loc)
-        gps_data = loc_info.get(_loc_method.gps)
-        if gps_data:
-            gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(gps_data))
-            log.debug("GxGGA Satellite Num %s" % gga_satellite)
-            gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(gps_data))
-            log.debug("GxGSV Satellite Num %s" % gsv_satellite)
-            # Get gps speed
-            device_data.update(self.__check_speed(gps_data))
+        if self.__loc_status:
+            loc_info = self.__read_location()
+            cloud_loc = self.__read_cloud_location(loc_info)
+            device_data.update(cloud_loc)
+            gps_data = loc_info.get(_loc_method.gps)
+            if gps_data:
+                gga_satellite = self.__gps_parse.GxGGA_satellite_num(self.__gps_match.GxGGA(gps_data))
+                log.debug("GxGGA Satellite Num %s" % gga_satellite)
+                gsv_satellite = self.__gps_parse.GxGSV_satellite_num(self.__gps_match.GxGSV(gps_data))
+                log.debug("GxGSV Satellite Num %s" % gsv_satellite)
+                # Get gps speed
+                device_data.update(self.__check_speed(gps_data))
 
         # Get battery energy
         battery_data = self.__read_battery()
@@ -580,7 +586,9 @@ class Collector(Singleton):
 
     def event_query(self, *args, **kwargs):
         """Hanle quering object model downlink message from cloud."""
-        return self.device_data_report()
+        power_switch = kwargs.get("power_switch", 1)
+        power_switch = bool(power_switch)
+        return self.device_data_report(power_switch=power_switch)
 
     def event_ota_plain(self, *args, **kwargs):
         """Hanle OTA plain from cloud."""
@@ -649,11 +657,12 @@ class Collector(Singleton):
         log.debug("RRPC data: %s" % data)
         self.__controller.remote_rrpc_response(message_id, data)
 
-    def power_switch(self, onoff=None):
+    def power_switch(self, onoff=1):
         """Control device power"""
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
+        onoff = bool(onoff)
         self.event_query(power_switch=onoff)
         if onoff is False:
             self.__controller.power_down()
@@ -749,30 +758,36 @@ class Collector(Singleton):
 
     def low_engery_option(self, low_energy_method):
         """Business option after low energy waking up."""
+        log.debug("start low_engery_option")
         if not self.__controller:
             raise TypeError("self.__controller is not registered.")
 
         self.report_history()
-        self.__controller.remote_device_report()
-        self.__controller.remote_ota_check()
+        report_flag = True
         current_settings = settings.get()
         if current_settings["user_cfg"]["work_mode"] == UserConfig._work_mode.intelligent:
-            speed_info = self.__check_speed()
-            if speed_info.get("current_speed") > 0:
-                self.device_data_report()
-        else:
-            self.device_data_report()
+            # TODO: Check speed by sensor
+            if self.__loc_status:
+                loc_info = self.__read_location()
+                gps_data = loc_info.get(_loc_method.gps)
+                speed_info = self.__check_speed(gps_data)
+                if speed_info.get("current_speed") <= 0:
+                    report_flag = False
+
+        if report_flag is True:
+            self.device_status_check()
+            if self.__net_status:
+                self.__controller.remote_device_report()
+                self.__controller.remote_ota_check()
 
         # Check battery low enery power down.
         self.__check_battery_low_energy_power_down()
 
         self.__controller.low_energy_start()
 
-        if low_energy_method == "PSM":
-            # TODO: PSM option.
-            pass
-        elif low_energy_method == "POWERDOWN":
+        if low_energy_method == "POWERDOWN":
             self.__controller.power_down()
+        log.debug("end low_engery_option")
 
     def thing_services(self, data):
         log.debug("thing_services data: %s" % str(data))

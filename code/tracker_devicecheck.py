@@ -57,6 +57,11 @@ class DeviceCheck(object):
         sleep_time = 1
 
         while retry < 5:
+            if retry > 0:
+                retry += 1
+                utime.sleep(sleep_time)
+                sleep_time *= 2
+
             if current_settings["user_cfg"].get("loc_method"):
                 loc_method = current_settings["user_cfg"].get("loc_method")
             elif current_settings["sys"]["base_cfg"]["LocConfig"]:
@@ -64,13 +69,13 @@ class DeviceCheck(object):
             else:
                 loc_method = 7
 
-            gps_data = self.__locator.read(loc_method)
+            loc_info = self.__locator.read(loc_method)
+            for k, v in loc_info.items():
+                gps_data = v
+                if gps_data:
+                    break
             if gps_data:
                 break
-            else:
-                retry += 1
-                utime.sleep(sleep_time)
-                sleep_time *= 2
 
         if gps_data:
             return True

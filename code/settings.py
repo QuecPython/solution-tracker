@@ -124,16 +124,16 @@ class Settings(Singleton):
             elif opt in ("sw_ota", "sw_ota_auto_upgrade", "sw_voice_listen", "sw_voice_record",
                          "sw_fault_alert", "sw_low_power_alert", "sw_over_speed_alert",
                          "sw_sim_abnormal_alert", "sw_disassemble_alert", "sw_drive_behavior_alert"):
-                if not isinstance(val, bool):
+                if not isinstance(val, bool) and val not in (0, 1):
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings["user_cfg"][opt] = bool(val)
                 return True
             elif opt == "ota_status":
                 if not isinstance(val, dict):
                     return False
                 self.current_settings["user_cfg"][opt] = val
                 return True
-            elif opt in ("user_ota_action", "drive_behavior_code"):
+            elif opt in ("user_ota_action", "drive_behavior_code", "loc_gps_read_timeout", "work_mode_timeline"):
                 if not isinstance(val, int):
                     return False
                 self.current_settings["sys"][opt] = val
