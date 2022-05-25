@@ -24,7 +24,7 @@ from usr.modules.mpower import LowEnergyManage
 from usr.modules.common import Singleton, LOWENERGYMAP
 from usr.modules.location import Location, GPSMatch, GPSParse, _loc_method
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
-    settings, UserConfig, SYSConfig, LocConfig
+    settings, UserConfig, SYSConfig
 from usr.tracker_controller import Controller
 from usr.tracker_devicecheck import DeviceCheck
 
@@ -189,13 +189,13 @@ class Collector(Singleton):
     def __locator_gps_hibernation_strategy(self, onoff):
         """Set GPS sleep"""
         current_settings = settings.get()
-        gps_sleep_mode = current_settings["LocConfig"]["gps_sleep_mode"]
+        work_cycle_period = current_settings["UserConfig"]["work_cycle_period"]
         if self.__locator.gps:
-            if gps_sleep_mode == LocConfig._gps_sleep_mode.pull_off:
+            if work_cycle_period >= 3600:
                 self.__locator.gps.power_switch(onoff)
-            elif gps_sleep_mode == LocConfig._gps_sleep_mode.backup:
+            elif 1200 <= work_cycle_period < 3600:
                 self.__locator.gps.backup(onoff)
-            elif gps_sleep_mode == LocConfig._gps_sleep_mode.standby:
+            elif 0 < work_cycle_period < 1200:
                 self.__locator.gps.standby(onoff)
 
     def __read_cloud_location(self, loc_info):
