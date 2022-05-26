@@ -193,7 +193,7 @@ class Collector(Singleton):
         if self.__locator.gps:
             if work_cycle_period >= 3600:
                 self.__locator.gps.power_switch(onoff)
-            elif 1200 <= work_cycle_period < 3600:
+            elif 1800 <= work_cycle_period < 3600:
                 self.__locator.gps.backup(onoff)
             elif 0 < work_cycle_period < 1200:
                 self.__locator.gps.standby(onoff)
