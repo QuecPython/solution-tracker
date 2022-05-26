@@ -189,7 +189,7 @@ class Collector(Singleton):
     def __locator_gps_hibernation_strategy(self, onoff):
         """Set GPS sleep"""
         current_settings = settings.get()
-        work_cycle_period = current_settings["UserConfig"]["work_cycle_period"]
+        work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
         if self.__locator.gps:
             if work_cycle_period >= 3600:
                 self.__locator.gps.power_switch(onoff)
@@ -412,6 +412,7 @@ class Collector(Singleton):
         device_data = {
             "power_switch": power_switch,
             "local_time": self.__get_local_time(),
+            "gps_mode": current_settings["LocConfig"]["gps_mode"],
         }
 
         # Get ota status & drive behiver code
