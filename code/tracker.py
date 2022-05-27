@@ -189,7 +189,8 @@ def tracker():
     # LowEnergyManage initialization
     work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]
     low_energy.set_period(work_cycle_period)
-    low_energy.set_low_energy_method(collector.__init_low_energy_method(work_cycle_period))
+    low_energy_method = collector.__init_low_energy_method(work_cycle_period)
+    low_energy.set_low_energy_method(low_energy_method)
     low_energy.addObserver(collector)
 
     # RemoteSubscribe initialization
@@ -215,3 +216,5 @@ def tracker():
     controller.low_energy_init()
     # Low energy start
     controller.low_energy_start()
+    if low_energy.get_low_energy_method() == "POWERDOWN":
+        controller.power_down()
