@@ -617,7 +617,7 @@
       "dataType": {
         "type": "int",
         "specs": {
-          "min": "0",
+          "min": "3600",
           "max": "2147483647",
           "unit": "s",
           "unitName": "秒",
@@ -1203,7 +1203,7 @@
           "dataType": {
             "type": "int",
             "specs": {
-              "min": "0",
+              "min": "3600",
               "max": "2147483647",
               "unit": "s",
               "unitName": "秒",
@@ -1556,7 +1556,7 @@
           "dataType": {
             "type": "int",
             "specs": {
-              "min": "0",
+              "min": "3600",
               "max": "2147483647",
               "unit": "s",
               "unitName": "秒",
@@ -2173,7 +2173,7 @@
           "dataType": {
             "type": "int",
             "specs": {
-              "min": "0",
+              "min": "3600",
               "max": "2147483647",
               "unit": "s",
               "unitName": "秒",
