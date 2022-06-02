@@ -65,9 +65,9 @@ class LocConfig(object):
         "token": "xGP77d2z0i91s67n"
     }
 
-    gps_mode = _gps_mode.external
+    gps_mode = _gps_mode.internal
 
-    loc_method = _loc_method.gps
+    loc_method = _loc_method.all
 
     map_coordinate_system = _map_coordinate_system.WGS84
 
