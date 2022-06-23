@@ -90,11 +90,14 @@ class DeviceCheck(object):
     def temp(self):
         # return True if OK
         res = False
-        if self.__temp_humidity.on():
-            temperature, humidity = self.__temp_humidity.read()
-            if temperature is not None and humidity is not None:
-                res = True
-            self.__temp_humidity.off()
+        if self.__temp_humidity is None:
+            res = None
+        else:
+            if self.__temp_humidity.on():
+                temperature, humidity = self.__temp_humidity.read()
+                if temperature is not None and humidity is not None:
+                    res = True
+                self.__temp_humidity.off()
         return res
 
     def light(self):

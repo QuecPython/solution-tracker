@@ -305,12 +305,13 @@ class Collector(Singleton):
 
     def __get_temp_humidity(self):
         data = {}
-        on_res = self.__temp_humidity_sensor.on()
-        if on_res:
-            temperature, humidity = self.__temp_humidity_sensor.read()
-            data["temperature"] = temperature
-            data["humidity"] = humidity
-            self.__temp_humidity_sensor.off()
+        if self.__temp_humidity_sensor is not None:
+            on_res = self.__temp_humidity_sensor.on()
+            if on_res:
+                temperature, humidity = self.__temp_humidity_sensor.read()
+                data["temperature"] = temperature
+                data["humidity"] = humidity
+                self.__temp_humidity_sensor.off()
         return data
 
     def add_module(self, module):
