@@ -307,6 +307,18 @@
       "dataType": {
         "type": "int"
       }
+    },
+    {
+      "identifier": "temperature",
+      "dataType": {
+        "type": "double"
+      }
+    },
+    {
+      "identifier": "humidity",
+      "dataType": {
+        "type": "double"
+      }
     }
   ],
   "events": [

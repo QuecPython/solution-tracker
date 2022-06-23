@@ -2,9 +2,42 @@
 	"profile":{
 		"tslVersion":"1.1.0",
 		"productKey":"p11275",
-		"version":"20220428155940369"
+		"version":"20220622194658344"
 	},
+	"services":[
+		{
+			"outputData":[
+				{
+					"$ref":"#/properties/id/19"
+				}
+			],
+			"inputData":[
+				{
+					"$ref":"#/properties/id/2"
+				}
+			],
+			"code":"test_service",
+			"name":"test_service",
+			"subType":"ASYNC",
+			"id":5,
+			"sort":38,
+			"type":"SERVICE",
+			"desc":""
+		}
+	],
 	"properties":[
+		{
+			"specs":{
+				"length":"512"
+			},
+			"code":"query_device_info",
+			"dataType":"TEXT",
+			"name":"查询设备信息",
+			"subType":"RW",
+			"id":2,
+			"type":"PROPERTY",
+			"desc":""
+		},
 		{
 			"specs":[
 				{
@@ -811,22 +844,6 @@
 		{
 			"specs":{
 				"unit":"s",
-				"min":"0",
-				"max":"2147483647",
-				"step":"1"
-			},
-			"code":"work_mode_timeline",
-			"dataType":"INT",
-			"name":"休眠策略参考时间",
-			"subType":"RW",
-			"id":44,
-			"sort":35,
-			"type":"PROPERTY",
-			"desc":""
-		},
-		{
-			"specs":{
-				"unit":"s",
 				"min":"-1",
 				"max":"2147483647",
 				"step":"1"
@@ -839,6 +856,54 @@
 			"sort":36,
 			"type":"PROPERTY",
 			"desc":"-1：一直等待直到读取到数据才进行返回\n0：不等待，读取接口返回数据后立即返回\n>0: 等待超时时间，单位秒"
+		},
+		{
+			"specs":{
+				"unit":"s",
+				"min":"3600",
+				"max":"2147483647",
+				"step":"1"
+			},
+			"code":"work_mode_timeline",
+			"dataType":"INT",
+			"name":"休眠策略参考时间",
+			"subType":"RW",
+			"id":1,
+			"sort":37,
+			"type":"PROPERTY",
+			"desc":""
+		},
+		{
+			"specs":{
+				"unit":"℃",
+				"min":"-40",
+				"max":"125",
+				"step":"0.01"
+			},
+			"code":"temperature",
+			"dataType":"DOUBLE",
+			"name":"设备温度",
+			"subType":"R",
+			"id":7,
+			"sort":39,
+			"type":"PROPERTY",
+			"desc":""
+		},
+		{
+			"specs":{
+				"unit":"%",
+				"min":"0",
+				"max":"100",
+				"step":"0.01"
+			},
+			"code":"humidity",
+			"dataType":"DOUBLE",
+			"name":"设备湿度",
+			"subType":"R",
+			"id":39,
+			"sort":40,
+			"type":"PROPERTY",
+			"desc":""
 		}
 	],
 	"events":[

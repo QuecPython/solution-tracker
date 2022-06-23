@@ -22,11 +22,12 @@ from usr.modules.sensor import Sensor
 from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
+from usr.modules.location import Location
 from usr.modules.mpower import LowEnergyManage
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.modules.aliyunIot import AliYunIot, AliObjectModel
 from usr.modules.quecthing import QuecThing, QuecObjectModel
-from usr.modules.location import Location
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, \
     DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, settings, SYSConfig
 from usr.tracker_collector import Collector
@@ -99,6 +100,7 @@ def tracker():
     battery = Battery()
     data_call = dataCall
     low_energy = LowEnergyManage()
+    temp_humidity_sensor = TempHumiditySensor()
     usb = USB() if USB is not None else None
     power_key = PowerKey() if PowerKey is not None else None
     locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
@@ -185,6 +187,8 @@ def tracker():
     collector.add_module(locator)
     # Add History to Collector for getting history data.
     collector.add_module(history)
+    # Add TempHumiditySensor to Collector for getting temperature and humidity
+    collector.add_module(temp_humidity_sensor)
 
     # LowEnergyManage initialization
     work_cycle_period = current_settings["user_cfg"]["work_cycle_period"]

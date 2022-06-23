@@ -21,6 +21,7 @@ from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.modules.mpower import LowEnergyManage
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.modules.common import Singleton, LOWENERGYMAP
 from usr.modules.location import Location, GPSMatch, GPSParse, _loc_method
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
@@ -51,6 +52,7 @@ class Collector(Singleton):
         self.__sensor = None
         self.__locator = None
         self.__history = None
+        self.__temp_humidity_sensor = None
         self.__gps_match = GPSMatch()
         self.__gps_parse = GPSParse()
 
@@ -301,6 +303,16 @@ class Collector(Singleton):
 
         return {}
 
+    def __get_temp_humidity(self):
+        data = {}
+        on_res = self.__temp_humidity_sensor.on()
+        if on_res:
+            temperature, humidity = self.__temp_humidity_sensor.read()
+            data["temperature"] = temperature
+            data["humidity"] = humidity
+            self.__temp_humidity_sensor.off()
+        return data
+
     def add_module(self, module):
         """add modules for collecting data"""
         if isinstance(module, Controller):
@@ -320,6 +332,9 @@ class Collector(Singleton):
             return True
         elif isinstance(module, History):
             self.__history = module
+            return True
+        elif isinstance(module, TempHumiditySensor):
+            self.__temp_humidity_sensor = module
             return True
 
         return False
@@ -447,6 +462,9 @@ class Collector(Singleton):
         if battery_data.get("energy") is not None:
             check_battery_energy = self.__check_battery_energy(battery_data.get("energy"))
             device_data.update(check_battery_energy)
+
+        temp_humidity_data = self.__get_temp_humidity()
+        device_data.update(temp_humidity_data)
 
         # TODO: Add other machine info.
 
