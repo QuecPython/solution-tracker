@@ -111,6 +111,8 @@ def tracker():
     devicecheck.add_module(locator)
     # Add Sensor to DeviceCheck for checking whether the sensor is normal or not.
     devicecheck.add_module(sensor)
+    # Add TempHumiditySensor to DeviceCheck for checking whether the sensor is normal or not.
+    devicecheck.add_module(temp_humidity_sensor)
 
     # Cloud initialization
     cloud_init_params = current_settings["cloud"]
