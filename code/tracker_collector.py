@@ -402,7 +402,9 @@ class Collector(Singleton):
             device_status = False
 
         if device_status is False:
-            device_status_data = self.__get_alert_data(alert_code, {"local_time": self.__get_local_time()})
+            device_status_data.update(self.__get_alert_data(alert_code, {"local_time": self.__get_local_time()}))
+        if net_status[0] == 1:
+            device_status_data.update(self.__get_alert_data(30004, {"local_time": self.__get_local_time()}))
 
         device_status_data.update({"device_module_status": device_module_status})
 
