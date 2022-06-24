@@ -591,13 +591,13 @@ class Collector(Singleton):
                 log.debug("arg: %s" % str(arg))
                 if hasattr(UserConfig, arg[0]):
                     log.debug("UserConfig %s" % arg[0])
-                    if arg[0] not in ("ota_status", "loc_method"):
+                    if arg[0] not in ("ota_status", "loc_method", "user_ota_action"):
                         set_res = self.__controller.settings_set(arg[0], arg[1])
                         if set_res and setting_flag == 0:
                             setting_flag = 1
                 if hasattr(self, arg[0]):
                     getattr(self, arg[0])(arg[1])
-                    if arg[0] in ("ota_status", "loc_method") and setting_flag == 0:
+                    if arg[0] in ("ota_status", "loc_method", "user_ota_action") and setting_flag == 0:
                         setting_flag = 1
 
             if setting_flag:
