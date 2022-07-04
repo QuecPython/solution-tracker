@@ -136,7 +136,7 @@ class Settings(Singleton):
             elif opt in ("user_ota_action", "drive_behavior_code", "loc_gps_read_timeout", "work_mode_timeline"):
                 if not isinstance(val, int):
                     return False
-                self.current_settings["sys"][opt] = val
+                self.current_settings["user_cfg"][opt] = val
                 return True
         elif opt == "cloud":
             if not isinstance(val, dict):

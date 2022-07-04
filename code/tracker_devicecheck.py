@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import utime
 import checkNet
 
 from usr.modules.sensor import Sensor
 from usr.modules.logging import getLogger
 from usr.modules.location import Location
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, settings
 
 log = getLogger(__name__)
@@ -28,6 +28,7 @@ class DeviceCheck(object):
     def __init__(self):
         self.__locator = None
         self.__sensor = None
+        self.__temp_humidity = None
 
     def add_module(self, module):
         if isinstance(module, Location):
@@ -35,6 +36,9 @@ class DeviceCheck(object):
             return True
         elif isinstance(module, Sensor):
             self.__sensor = module
+            return True
+        elif isinstance(module, TempHumiditySensor):
+            self.__temp_humidity = module
             return True
         return False
 
@@ -52,39 +56,35 @@ class DeviceCheck(object):
             raise TypeError("self.__locator is not registered")
 
         current_settings = settings.get()
-        retry = 0
         gps_data = None
-        sleep_time = 1
 
-        while retry < 5:
-            if retry > 0:
-                retry += 1
-                utime.sleep(sleep_time)
-                sleep_time *= 2
+        if current_settings["user_cfg"].get("loc_method"):
+            loc_method = current_settings["user_cfg"].get("loc_method")
+        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
+            loc_method = current_settings["LocConfig"].get("loc_method")
+        else:
+            loc_method = 7
 
-            if current_settings["user_cfg"].get("loc_method"):
-                loc_method = current_settings["user_cfg"].get("loc_method")
-            elif current_settings["sys"]["base_cfg"]["LocConfig"]:
-                loc_method = current_settings["LocConfig"].get("loc_method")
-            else:
-                loc_method = 7
-
-            loc_info = self.__locator.read(loc_method)
-            for k, v in loc_info.items():
-                gps_data = v
-                if gps_data:
-                    break
+        loc_info = self.__locator.read(loc_method)
+        for k, v in loc_info.items():
+            gps_data = v
             if gps_data:
                 break
 
-        if gps_data:
-            return True
-
-        return False
+        return True if gps_data else False
 
     def temp(self):
         # return True if OK
-        return None
+        res = False
+        if self.__temp_humidity is None:
+            res = None
+        else:
+            if self.__temp_humidity.on():
+                temperature, humidity = self.__temp_humidity.read()
+                if temperature is not None and humidity is not None:
+                    res = True
+                self.__temp_humidity.off()
+        return res
 
     def light(self):
         # return True if OK

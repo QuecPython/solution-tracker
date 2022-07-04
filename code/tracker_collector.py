@@ -21,6 +21,7 @@ from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.modules.mpower import LowEnergyManage
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.modules.common import Singleton, LOWENERGYMAP
 from usr.modules.location import Location, GPSMatch, GPSParse, _loc_method
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, \
@@ -51,6 +52,7 @@ class Collector(Singleton):
         self.__sensor = None
         self.__locator = None
         self.__history = None
+        self.__temp_humidity_sensor = None
         self.__gps_match = GPSMatch()
         self.__gps_parse = GPSParse()
 
@@ -301,6 +303,17 @@ class Collector(Singleton):
 
         return {}
 
+    def __get_temp_humidity(self):
+        data = {}
+        if self.__temp_humidity_sensor is not None:
+            on_res = self.__temp_humidity_sensor.on()
+            if on_res:
+                temperature, humidity = self.__temp_humidity_sensor.read()
+                data["temperature"] = temperature
+                data["humidity"] = humidity
+                self.__temp_humidity_sensor.off()
+        return data
+
     def add_module(self, module):
         """add modules for collecting data"""
         if isinstance(module, Controller):
@@ -320,6 +333,9 @@ class Collector(Singleton):
             return True
         elif isinstance(module, History):
             self.__history = module
+            return True
+        elif isinstance(module, TempHumiditySensor):
+            self.__temp_humidity_sensor = module
             return True
 
         return False
@@ -386,7 +402,9 @@ class Collector(Singleton):
             device_status = False
 
         if device_status is False:
-            device_status_data = self.__get_alert_data(alert_code, {"local_time": self.__get_local_time()})
+            device_status_data.update(self.__get_alert_data(alert_code, {"local_time": self.__get_local_time()}))
+        if net_status[0] == 1:
+            device_status_data.update(self.__get_alert_data(30004, {"local_time": self.__get_local_time()}))
 
         device_status_data.update({"device_module_status": device_module_status})
 
@@ -447,6 +465,9 @@ class Collector(Singleton):
         if battery_data.get("energy") is not None:
             check_battery_energy = self.__check_battery_energy(battery_data.get("energy"))
             device_data.update(check_battery_energy)
+
+        temp_humidity_data = self.__get_temp_humidity()
+        device_data.update(temp_humidity_data)
 
         # TODO: Add other machine info.
 
@@ -570,13 +591,13 @@ class Collector(Singleton):
                 log.debug("arg: %s" % str(arg))
                 if hasattr(UserConfig, arg[0]):
                     log.debug("UserConfig %s" % arg[0])
-                    if arg[0] not in ("ota_status", "loc_method"):
+                    if arg[0] not in ("ota_status", "loc_method", "user_ota_action"):
                         set_res = self.__controller.settings_set(arg[0], arg[1])
                         if set_res and setting_flag == 0:
                             setting_flag = 1
                 if hasattr(self, arg[0]):
                     getattr(self, arg[0])(arg[1])
-                    if arg[0] in ("ota_status", "loc_method") and setting_flag == 0:
+                    if arg[0] in ("ota_status", "loc_method", "user_ota_action") and setting_flag == 0:
                         setting_flag = 1
 
             if setting_flag:

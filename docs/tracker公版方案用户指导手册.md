@@ -70,6 +70,7 @@
 1. [创建产品与设备](https://help.aliyun.com/document_detail/73705.html)
 
 ![](./media/aliyun_create_product.png)
+![](./media/aliyun_create_product_detail.png)
 ![](./media/aliyun_create_device.png)
 
 2. [为产品定义物模型](https://help.aliyun.com/document_detail/117636.html)
