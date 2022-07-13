@@ -14,7 +14,8 @@
 - [x] 日志模块(logging): 提供日志打印功能。
 - [x] 低功耗模块(mpower): 提供周期性低功耗唤醒功能。
 - [x] 云服务中间件(remote): 提供云服务消息处理中间件功能。
-- [ ] 传感器功能(sensor): 开发中...
+- [x] 温湿度传感器(temp_humidity_sensor): 提供从温湿度传感器获取数据功能。
+- [ ] 其他传感器功能(sensor): 开发中...
 
 ## 项目结构
 
@@ -46,6 +47,7 @@
         |--mpower.py
         |--quecthing.py
         |--remote.py
+        |--temp_humidity_sensor.py
         |--sensor.py
 ```
 
