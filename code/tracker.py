@@ -103,7 +103,9 @@ def tracker():
     temp_humidity_sensor = TempHumiditySensor()
     usb = USB() if USB is not None else None
     power_key = PowerKey() if PowerKey is not None else None
-    locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["LocConfig"]["locator_init_params"])
+    _loc_method = current_settings.get("user_cfg", {}).get("loc_method")
+    _loc_method = current_settings["LocConfig"]["locator_init_params"] if not _loc_method else _loc_method
+    locator = Location(_loc_method, current_settings["LocConfig"]["locator_init_params"])
 
     # DeviceCheck initialization
     devicecheck = DeviceCheck()
