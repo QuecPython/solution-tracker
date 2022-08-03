@@ -836,7 +836,7 @@ collector.device_data_get(power_switch=True)
     "GeoLocation": {
         "CoordinateSystem": 1,
         "Latitude": 31.82249895,
-        "Longtitude": 117.1155386833333,
+        "Longitude": 117.1155386833333,
         "Altitude": 147.136
     },
     "device_module_status": {
