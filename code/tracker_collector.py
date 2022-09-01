@@ -162,13 +162,6 @@ class Collector(Singleton):
             raise TypeError("self.__locator is not registered.")
 
         current_settings = settings.get()
-        # Get cloud location data
-        if current_settings["user_cfg"].get("loc_method"):
-            cfg_loc_method = current_settings["user_cfg"].get("loc_method")
-        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
-            cfg_loc_method = current_settings["LocConfig"]["loc_method"]
-        else:
-            cfg_loc_method = 7
         self.__locator_gps_hibernation_strategy(1)
 
         loc_gps_read_timeout = current_settings["user_cfg"]["loc_gps_read_timeout"]
@@ -178,7 +171,7 @@ class Collector(Singleton):
             timeout = 5 if loc_gps_read_timeout == 0 else loc_gps_read_timeout
             _gps_read_timer.start(timeout, 0, self.__gps_read_timeout_cb)
         while self.__gps_read_break is False:
-            loc_info = self.__locator.read(cfg_loc_method)
+            loc_info = self.__locator.read()
             for k, v in loc_info.items():
                 if v:
                     self.__gps_read_break = True
@@ -244,13 +237,13 @@ class Collector(Singleton):
             gga_data = self.__gps_match.GxGGA(loc_data)
             data = {}
             if gga_data:
-                Longtitude, Latitude, Altitude = self.__locator.gps.read_coordinates(loc_data)
+                Longitude, Latitude, Altitude = self.__locator.gps.read_coordinates(loc_data)
                 if map_coordinate_system == "GCJ02":
-                    Longtitude, Latitude = self.__locator.wgs84togcj02(Longtitude, Latitude)
+                    Longitude, Latitude = self.__locator.wgs84togcj02(Longitude, Latitude)
                 if Latitude:
                     data["Latitude"] = float(Latitude)
-                if Longtitude:
-                    data["Longtitude"] = float(Longtitude)
+                if Longitude:
+                    data["Longitude"] = float(Longitude)
                 if Altitude:
                     data["Altitude"] = float(Altitude)
                 if data:
@@ -259,12 +252,12 @@ class Collector(Singleton):
         elif loc_method in (0x2, 0x4):
             if loc_data:
                 if loc_data[0]:
-                    Longtitude = loc_data[0][0]
+                    Longitude = loc_data[0][0]
                     Latitude = loc_data[0][1]
                     if map_coordinate_system == "GCJ02":
-                        Longtitude, Latitude = self.__locator.wgs84togcj02(Longtitude, Latitude)
+                        Longitude, Latitude = self.__locator.wgs84togcj02(Longitude, Latitude)
                     res["GeoLocation"] = {
-                        "Longtitude": Longtitude,
+                        "Longitude": Longitude,
                         "Latitude": Latitude,
                         # "Altitude": 0.0,
                         "CoordinateSystem": (1 if map_coordinate_system == "WGS84" else 2)
@@ -430,7 +423,7 @@ class Collector(Singleton):
         device_data = {
             "power_switch": power_switch,
             "local_time": self.__get_local_time(),
-            "gps_mode": current_settings["LocConfig"]["gps_mode"],
+            "gps_mode": current_settings["LocConfig"]["locator_init_params"]["gps_cfg"]["gps_mode"],
         }
 
         # Get ota status & drive behiver code
@@ -443,7 +436,9 @@ class Collector(Singleton):
         device_data.update(current_settings["user_cfg"])
 
         # Format loc method
-        device_data.update({"loc_method": self.__format_loc_method(current_settings["user_cfg"]["loc_method"])})
+        _cfg_loc_method = current_settings.get("user_cfg", {}).get("loc_method")
+        _cfg_loc_method = current_settings["LocConfig"]["locator_init_params"] if not _cfg_loc_method else _cfg_loc_method
+        device_data.update({"loc_method": self.__format_loc_method(_cfg_loc_method)})
 
         # Get cloud location data
         if self.__loc_status:

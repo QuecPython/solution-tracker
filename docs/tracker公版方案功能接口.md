@@ -312,7 +312,8 @@ current_settings = settings.get()
                 "flowctl": 0,
                 "UARTn": 1,
                 "buadrate": 115200,
-                "databits": 8
+                "databits": 8,
+                "gps_mode": 2
             }
         },
         "loc_method": 1
@@ -455,7 +456,6 @@ SYSConfig.\_cloud 支持云服务列表
 | \_gps_cfg                  | DICT      | 外置GPS UART 串口配置参数                                         |
 | \_cell_cfg                 | DICT      | 基站定位配置参数                                                  |
 | \_wifi_cfg                 | DICT      | WIFI定位配置参数。                                                   |
-| gps_mode                  | INT       | GPS模块类型,0 - 无,1 - 内置GPS,2 - 外置GPS                         |
 | loc_method                | INT       | GPS定位方式,以二进制方式组合,设置多个,1 - GPS,2 - 基站, 4 - WIFI    |
 | map_coordinate_system     | STRING    | GPS坐标系统,WGS84,GCJ02                                           |
 | locator_init_params       | DICT      | 不同定位方式参数汇总                                                |
@@ -472,6 +472,7 @@ SYSConfig.\_cloud 支持云服务列表
 | parity    | INT       | 奇偶校验（0 – NONE，1 – EVEN，2 - ODD）   |
 | stopbits  | INT       | 停止位（1 ~ 2）                            |
 | flowctl   | INT       | 硬件控制流（0 – FC_NONE， 1 – FC_HW）     |
+| gps_mode  | INT       | GPS模块类型,0 - 无,1 - 内置GPS,2 - 外置GPS                         |
 
 样例:
 
@@ -483,6 +484,7 @@ SYSConfig.\_cloud 支持云服务列表
     "parity": 0,
     "stopbits": 1,
     "flowctl": 0,
+    "gps_mode": 1
 }
 ```
 
@@ -540,7 +542,8 @@ locator_init_params
         "databits": 8,
         "parity": 0,
         "stopbits": 1,
-        "flowctl": 0
+        "flowctl": 0,
+        "gps_mode": 1
     },
     "cell_cfg": {
         "serverAddr": "www.queclocator.com",
@@ -836,7 +839,7 @@ collector.device_data_get(power_switch=True)
     "GeoLocation": {
         "CoordinateSystem": 1,
         "Latitude": 31.82249895,
-        "Longtitude": 117.1155386833333,
+        "Longitude": 117.1155386833333,
         "Altitude": 147.136
     },
     "device_module_status": {

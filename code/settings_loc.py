@@ -50,7 +50,8 @@ class LocConfig(object):
         "flowctl": 0,
         "PowerPin": None,
         "StandbyPin": None,
-        "BackupPin": None
+        "BackupPin": None,
+        "gps_mode": _gps_mode.internal
     }
 
     _cell_cfg = {
@@ -64,8 +65,6 @@ class LocConfig(object):
     _wifi_cfg = {
         "token": "xGP77d2z0i91s67n"
     }
-
-    gps_mode = _gps_mode.internal
 
     loc_method = _loc_method.all
 
