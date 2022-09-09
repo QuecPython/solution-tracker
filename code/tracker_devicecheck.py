@@ -55,17 +55,8 @@ class DeviceCheck(object):
         if not self.__locator:
             raise TypeError("self.__locator is not registered")
 
-        current_settings = settings.get()
         gps_data = None
-
-        if current_settings["user_cfg"].get("loc_method"):
-            loc_method = current_settings["user_cfg"].get("loc_method")
-        elif current_settings["sys"]["base_cfg"]["LocConfig"]:
-            loc_method = current_settings["LocConfig"].get("loc_method")
-        else:
-            loc_method = 7
-
-        loc_info = self.__locator.read(loc_method)
+        loc_info = self.__locator.read(retry=30)
         for k, v in loc_info.items():
             gps_data = v
             if gps_data:

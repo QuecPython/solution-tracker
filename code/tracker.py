@@ -209,6 +209,14 @@ def tracker():
     # Business start
     # Cloud start
     cloud.init()
+    # Quecthing save device secret when device key is not IMEI.
+    if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
+        if cloud_init_params["DK"] and not cloud_init_params["DS"]:
+            _ds = cloud.get_device_secret()
+            if _ds != cloud_init_params["DS"]:
+                cloud_init_params["DS"] = _ds
+                settings.set("cloud", cloud_init_params)
+                settings.save()
     # Report history
     collector.report_history()
     # OTA status init
