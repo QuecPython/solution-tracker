@@ -50,28 +50,28 @@ class QuecCloudConfig(object):
     DS = ""
 
     # # trackerdemo0326 (PROENV)
-    # "PK": "p11275",
-    # "PS": "Q0ZQQndaN3pCUFd6",
-    # "DK": "trackerdemo0326",
-    # "DS": "",
+    # PK = "p11275"
+    # PS = "Q0ZQQndaN3pCUFd6"
+    # DK = "trackerdemo0326"
+    # DS = ""
 
-    # # IMEI (PROENV)
-    # "PK": "p11275",
-    # "PS": "Q0ZQQndaN3pCUFd6",
-    # "DK": "",
-    # "DS": "",
+    # IMEI (PROENV)
+    # PK = "p11275"
+    # PS = "Q0ZQQndaN3pCUFd6"
+    # DK = ""
+    # DS = ""
 
     # # TrackerDevEC600NCNLC (TESTENV)
-    # "PK": "p119v2",
-    # "PS": "TXRPdVVhdkY3bU5s",
-    # "DK": "TrackerDevEC600NCNLC",
-    # "DS": "",
+    # PK = "p119v2"
+    # PS = "TXRPdVVhdkY3bU5s"
+    # DK = "TrackerDevEC600NCNLC"
+    # DS = ""
 
     # # IMEI (TESTENV)
-    # "PK": "p119v2",
-    # "PS": "TXRPdVVhdkY3bU5s",
-    # "DK": "",
-    # "DS": "",
+    # PK = "p119v2"
+    # PS = "TXRPdVVhdkY3bU5s"
+    # DK = ""
+    # DS = ""
 
     SERVER = "iot-south.quectel.com:1883"
     life_time = 120
