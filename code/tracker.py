@@ -86,7 +86,31 @@ def nw_callback(args):
             pass
 
 
+def set_net_mode():
+    """This function is for quecthing LBS location in EC800G and EC200U.
+
+    1. Set net mode to LTE when net mode is not LTE.
+    2. Device redial.
+    """
+    net_conf = net.getConfig()
+    if net_conf[0] != 5:
+        log.debug("Net mode is %s" % net_conf[0])
+        net.setConfig(5, 0)
+        net_conf = net.getConfig()
+        log.debug("Net set config mode 5 %s." % ("success" if net_conf[0] == 5 else "failed",))
+        net.setModemFun(0, 0)
+        log.debug("Set sim work mode to close.")
+        utime.sleep(1)
+        net.setModemFun(1, 0)
+        log.debug("Set sim work mode to open.")
+        utime.sleep(1)
+    else:
+        log.debug("Net mode is already 5.")
+
+
 def tracker():
+    set_net_mode()
+
     log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
     log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
 
@@ -209,6 +233,14 @@ def tracker():
     # Business start
     # Cloud start
     cloud.init()
+    # Quecthing save device secret when device key is not IMEI.
+    if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
+        if cloud_init_params["DK"] and not cloud_init_params["DS"]:
+            _ds = cloud.get_device_secret()
+            if _ds != cloud_init_params["DS"]:
+                cloud_init_params["DS"] = _ds
+                settings.set("cloud", cloud_init_params)
+                settings.save()
     # Report history
     collector.report_history()
     # OTA status init
