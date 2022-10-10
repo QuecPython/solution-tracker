@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sim
 import net
 import modem
 import utime
 import dataCall
+from machine import I2C
 
 from usr.modules.sensor import Sensor
 from usr.modules.battery import Battery
@@ -42,11 +42,13 @@ try:
     from misc import PowerKey
 except ImportError:
     PowerKey = None
-
+try:
+    import sim
+    sim.setSimDet(1, 0)
+except:
+    pass
 
 log = getLogger(__name__)
-
-sim.setSimDet(1, 0)
 
 
 def pwk_callback(status):
@@ -124,7 +126,7 @@ def tracker():
     battery = Battery()
     data_call = dataCall
     low_energy = LowEnergyManage()
-    temp_humidity_sensor = TempHumiditySensor()
+    temp_humidity_sensor = TempHumiditySensor(I2C.I2C1, I2C.STANDARD_MODE)
     usb = USB() if USB is not None else None
     power_key = PowerKey() if PowerKey is not None else None
     _loc_method = current_settings.get("user_cfg", {}).get("loc_method")
