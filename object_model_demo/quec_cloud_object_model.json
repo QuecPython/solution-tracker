@@ -771,6 +771,7 @@
 							"value":"1"
 						},
 						{
+							"dataType":"ENUM",
 							"name":"应用",
 							"value":"2"
 						}
