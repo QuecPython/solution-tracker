@@ -12,10 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from usr.settings_loc import LocConfig
-
 
 class UserConfig(object):
+
+    class _cloud(object):
+        none = 0x0
+        quecIot = 0x1
+        AliYun = 0x2
+        JTT808 = 0x4
+        customization = 0x8
+        ThingsBoard = 0x10
+
+    class _loc_method(object):
+        none = 0x0
+        gps = 0x1
+        cell = 0x2
+        wifi = 0x4
+        all = 0x7
 
     class _work_mode(object):
         cycle = 0x1
@@ -39,6 +52,14 @@ class UserConfig(object):
         none = 0x0
         sys = 0x1
         app = 0x2
+
+    debug = True
+
+    log_level = "DEBUG"
+
+    checknet_timeout = 60
+
+    cloud = _cloud.AliYun
 
     phone_num = ""
 
@@ -70,7 +91,7 @@ class UserConfig(object):
 
     drive_behavior_code = _drive_behavior_code.none
 
-    loc_method = LocConfig._loc_method.all
+    loc_method = _loc_method.gps
 
     loc_gps_read_timeout = 300
 

@@ -22,13 +22,6 @@ class LocConfig(object):
         internal = 0x1
         external = 0x2
 
-    class _loc_method(object):
-        none = 0x0
-        gps = 0x1
-        cell = 0x2
-        wifi = 0x4
-        all = 0x7
-
     class _map_coordinate_system(object):
         WGS84 = "WGS84"
         GCJ02 = "GCJ02"
@@ -41,20 +34,25 @@ class LocConfig(object):
 
     profile_idx = 1
 
-    _gps_cfg = {
-        "UARTn": UART.UART1,
+    map_coordinate_system = _map_coordinate_system.WGS84
+
+    gps_sleep_mode = _gps_sleep_mode.none
+
+    gps_cfg = {
+        "UARTn": UART.UART2,
         "buadrate": 115200,
         "databits": 8,
         "parity": 0,
         "stopbits": 1,
         "flowctl": 0,
+        "gps_mode": _gps_mode.external,
+        "nmea": 0b010111,
         "PowerPin": None,
         "StandbyPin": None,
         "BackupPin": None,
-        "gps_mode": _gps_mode.internal
     }
 
-    _cell_cfg = {
+    cell_cfg = {
         "serverAddr": "www.queclocator.com",
         "port": 80,
         "token": "xGP77d2z0i91s67n",
@@ -62,18 +60,6 @@ class LocConfig(object):
         "profileIdx": profile_idx,
     }
 
-    _wifi_cfg = {
+    wifi_cfg = {
         "token": "xGP77d2z0i91s67n"
-    }
-
-    loc_method = _loc_method.all
-
-    map_coordinate_system = _map_coordinate_system.WGS84
-
-    gps_sleep_mode = _gps_sleep_mode.none
-
-    locator_init_params = {
-        "gps_cfg": _gps_cfg,
-        "cell_cfg": _cell_cfg,
-        "wifi_cfg": _wifi_cfg,
     }
