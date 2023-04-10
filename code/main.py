@@ -12,8 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from usr.tracker_tb import main
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+"""
+@file      :main.py
+@author    :Jack Sun (jack.sun@quectel.com)
+@brief     :<description>
+@version   :1.0.0
+@date      :2023-01-11 13:16:21
+@copyright :Copyright (c) 2022
+"""
+from usr.tracker import main
 
 if __name__ == "__main__":
     main()
