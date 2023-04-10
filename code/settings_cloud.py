@@ -12,47 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :settings_cloud.py
+@author    :Jack Sun (jack.sun@quectel.com)
+@brief     :<description>
+@version   :1.0.0
+@date      :2022-10-31 14:42:25
+@copyright :Copyright (c) 2022
+"""
+
 
 class AliCloudConfig(object):
-    """
-    object model data format:
-
-    object_model = {
-        "event": {
-            "event_key": {
-                "id": 1,
-                "perm": "",
-                "struct_info": {
-                    "struct_key": {
-                        "id": 1
-                    }
-                }
-            }
-        },
-        "property": {
-            "property_key": {
-                "id": 1,
-                "perm": "",
-                "struct_info": {
-                    "struct_key": {
-                        "id": 1
-                    }
-                }
-            }
-        }
-    }
-    """
 
     class _burning_method(object):
         one_type_one_secret = 0x0
         one_machine_one_secret = 0x1
 
-    PK = "h3nqn03lil0"
-    PS = "UH9muaJIoAlpvnqE"
-    DK = "TrackerDevJack"
-    DS = "2980b4b86fb011375739a150c23bc252"
+    pk = "h3nqn03lil0"
+    ps = "UH9muaJIoAlpvnqE"
+    dk = "TrackerDevJack"
+    ds = "2980b4b86fb011375739a150c23bc252"
 
-    SERVER = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % PK
-    client_id = ""
+    server = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % pk
+    client_id = dk
     life_time = 120
     burning_method = _burning_method.one_machine_one_secret
+
+
+class ThingsBoardConfig:
+    host = "111.230.64.210"
+    port = 10021
+    username = "J2tD4KKfSSi2xpC81RxM"
+    quality_of_service = 0
+    client_id = "cacc2ac0-3333-11ed-a97b-cdc783a0f67e"
+    chunk_size = 0

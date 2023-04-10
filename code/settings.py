@@ -19,23 +19,23 @@ import ujson
 import modem
 import _thread
 
-from usr.modules.common import Singleton
-from usr.modules.common import option_lock
-from usr.settings_sys import SYSConfig
+from usr import settings_cloud
 from usr.settings_loc import LocConfig
-from usr.settings_alicloud import AliCloudConfig
-from usr.settings_queccloud import QuecCloudConfig
-from usr.settings_jtt808 import JTT808Config
 from usr.settings_user import UserConfig
-
+from usr.modules.common import Singleton, option_lock
 
 PROJECT_NAME = "QuecPython-Tracker"
 
-PROJECT_VERSION = "2.1.0"
+PROJECT_VERSION = "2.2.0"
 
 DEVICE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
 
 DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
+
+LOWENERGYMAP = {
+    "PM": ["EC200U", "EC600N", "EC800G", "EC800M"],
+    "POWERDOWN": ["EC200U"],
+}
 
 _settings_lock = _thread.allocate_lock()
 
@@ -49,29 +49,24 @@ class Settings(Singleton):
 
     def __init_config(self):
         try:
-            self.current_settings["sys"] = {k: v for k, v in SYSConfig.__dict__.items() if not k.startswith("_")}
+            # UserConfig init
+            self.current_settings["user_cfg"] = {k: v for k, v in UserConfig.__dict__.items() if not k.startswith("_")}
+            self.current_settings["user_cfg"]["ota_status"]["sys_current_version"] = DEVICE_FIRMWARE_VERSION
+            self.current_settings["user_cfg"]["ota_status"]["app_current_version"] = PROJECT_VERSION
 
             # CloudConfig init
-            if self.current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
-                self.current_settings["cloud"] = {k: v for k, v in AliCloudConfig.__dict__.items() if not k.startswith("_")}
-            elif self.current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot:
-                self.current_settings["cloud"] = {k: v for k, v in QuecCloudConfig.__dict__.items() if not k.startswith("_")}
-            elif self.current_settings["sys"]["cloud"] == SYSConfig._cloud.JTT808:
-                self.current_settings["cloud"] = {k: v for k, v in JTT808Config.__dict__.items() if not k.startswith("_")}
-            elif self.current_settings["sys"]["cloud"] == SYSConfig._cloud.customization:
-                self.current_settings["cloud"] = {}
-            else:
-                self.current_settings["cloud"] = {}
+            self.current_settings["cloud_cfg"] = {}
+            if self.current_settings["user_cfg"]["cloud"] == UserConfig._cloud.AliYun:
+                if not hasattr(settings_cloud, "AliCloudConfig"):
+                    raise TypeError("settings_cloud.AliCloudConfig is not exists.")
+                self.current_settings["cloud_cfg"] = {k: v for k, v in settings_cloud.AliCloudConfig.__dict__.items() if not k.startswith("_")}
+            elif self.current_settings["user_cfg"]["cloud"] == UserConfig._cloud.ThingsBoard:
+                if not hasattr(settings_cloud, "ThingsBoardConfig"):
+                    raise TypeError("ThingsBoardConfig is not exists.")
+                self.current_settings["cloud_cfg"] = {k: v for k, v in settings_cloud.ThingsBoardConfig.__dict__.items() if not k.startswith("_")}
 
             # LocConfig init
-            if self.current_settings["sys"]["base_cfg"]["LocConfig"]:
-                self.current_settings["LocConfig"] = {k: v for k, v in LocConfig.__dict__.items() if not k.startswith("_")}
-
-            # UserConfig init
-            if self.current_settings["sys"]["user_cfg"]:
-                self.current_settings["user_cfg"] = {k: v for k, v in UserConfig.__dict__.items() if not k.startswith("_")}
-                self.current_settings["user_cfg"]["ota_status"]["sys_current_version"] = DEVICE_FIRMWARE_VERSION
-                self.current_settings["user_cfg"]["ota_status"]["app_current_version"] = PROJECT_VERSION
+            self.current_settings["loc_cfg"] = {k: v for k, v in LocConfig.__dict__.items() if not k.startswith("_")}
             return True
         except:
             return False
@@ -83,66 +78,74 @@ class Settings(Singleton):
                 return True
         return False
 
-    def __set_config(self, opt, val):
-        if opt in self.current_settings["user_cfg"]:
-            if opt == "phone_num":
+    def __set_config(self, mode, key, val):
+        if mode not in self.current_settings.keys():
+            return False
+        if mode == "user_cfg":
+            if key == "phone_num":
                 if not isinstance(val, str):
                     return False
                 pattern = ure.compile(r"^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$")
                 if pattern.search(val):
-                    self.current_settings["user_cfg"][opt] = val
+                    self.current_settings[mode][key] = val
                     return True
                 return False
-            elif opt == "loc_method":
+            elif key == "loc_method":
                 if not isinstance(val, int):
                     return False
-                if val > LocConfig._loc_method.all:
+                if val > UserConfig._loc_method.all:
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings[mode][key] = val
                 return True
-            elif opt == "work_mode":
+            elif key == "work_mode":
                 if not isinstance(val, int):
                     return False
                 if val > UserConfig._work_mode.intelligent:
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings[mode][key] = val
                 return True
-            elif opt in ("work_cycle_period", "over_speed_threshold"):
+            elif key in ("work_cycle_period", "over_speed_threshold"):
                 if not isinstance(val, int):
                     return False
                 if val < 1:
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings[mode][key] = val
                 return True
-            elif opt in ("low_power_alert_threshold", "low_power_shutdown_threshold"):
+            elif key in ("low_power_alert_threshold", "low_power_shutdown_threshold"):
                 if not isinstance(val, int):
                     return False
                 if val < 0 or val > 100:
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings[mode][key] = val
                 return True
-            elif opt in ("sw_ota", "sw_ota_auto_upgrade", "sw_voice_listen", "sw_voice_record",
+            elif key in ("sw_ota", "sw_ota_auto_upgrade", "sw_voice_listen", "sw_voice_record",
                          "sw_fault_alert", "sw_low_power_alert", "sw_over_speed_alert",
                          "sw_sim_abnormal_alert", "sw_disassemble_alert", "sw_drive_behavior_alert"):
                 if not isinstance(val, bool) and val not in (0, 1):
                     return False
-                self.current_settings["user_cfg"][opt] = bool(val)
+                self.current_settings[mode][key] = bool(val)
                 return True
-            elif opt == "ota_status":
+            elif key == "ota_status":
                 if not isinstance(val, dict):
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings[mode][key] = val
                 return True
-            elif opt in ("user_ota_action", "drive_behavior_code", "loc_gps_read_timeout", "work_mode_timeline"):
+            elif key in ("user_ota_action", "drive_behavior_code", "loc_gps_read_timeout", "work_mode_timeline"):
                 if not isinstance(val, int):
                     return False
-                self.current_settings["user_cfg"][opt] = val
+                self.current_settings[mode][key] = val
                 return True
-        elif opt == "cloud":
-            if not isinstance(val, dict):
-                return False
-            self.current_settings[opt] = val
-            return True
+        elif mode == "cloud_cfg":
+            if key.lower() == "life_time":
+                if not isinstance(val, int):
+                    return False
+                self.current_settings[mode][key] = val
+                return True
+            elif key.upper() in ("PK", "PS", "DK", "DS", "SERVER"):
+                if not isinstance(val, str):
+                    return False
+                self.current_settings[mode][key] = val
+                return True
 
         return False
 
@@ -176,8 +179,8 @@ class Settings(Singleton):
         return self.__get_config()
 
     @option_lock(_settings_lock)
-    def set(self, opt, val):
-        return self.__set_config(opt, val)
+    def set(self, mode, key, val):
+        return self.__set_config(mode, key, val)
 
     @option_lock(_settings_lock)
     def save(self):
@@ -193,6 +196,3 @@ class Settings(Singleton):
             if self.__init_config():
                 return self.__save_config()
         return False
-
-
-settings = Settings()
