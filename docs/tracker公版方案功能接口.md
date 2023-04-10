@@ -149,8 +149,6 @@
 | Battery | 电池模块，获取电池电量与电压 |
 | LowEnergyManage | 低功耗唤醒模块，用于设置不同级别的低功耗模型，定时唤醒模块进行业务工作。 |
 | Location | 定位模块，可获取GPS，基站，WIFI三种定位方式的定位信息。 |
-| QuecThing | 移远云模块，主要用于与云端的消息交互与OTA升级 |
-| QuecObjectModel | 移远云物模型抽象类，将移远云导出的物模型（json格式）抽象为一个类进行功能使用 |
 | AliYunIot | 阿里云模块，主要用于与云端的消息交互与OTA升级 |
 | AliObjectModel | 阿里云物模型抽象类，将阿里云导出的精简物模型（json格式）抽象为一个类进行功能使用 |
 | RemotePublish | 云端消息发布类，用于兼容不同云的消息发布与OTA升级检测与确认 |

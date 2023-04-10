@@ -60,16 +60,10 @@ class Settings(Singleton):
                 if not hasattr(settings_cloud, "AliCloudConfig"):
                     raise TypeError("settings_cloud.AliCloudConfig is not exists.")
                 self.current_settings["cloud_cfg"] = {k: v for k, v in settings_cloud.AliCloudConfig.__dict__.items() if not k.startswith("_")}
-            elif self.current_settings["user_cfg"]["cloud"] == UserConfig._cloud.quecIot:
-                if not hasattr(settings_cloud, "QuecCloudConfig"):
-                    raise TypeError("QuecCloudConfig is not exists.")
-                self.current_settings["cloud_cfg"] = {k: v for k, v in settings_cloud.QuecCloudConfig.__dict__.items() if not k.startswith("_")}
-            elif self.current_settings["user_cfg"]["cloud"] == UserConfig._cloud.JTT808:
-                if not hasattr(settings_cloud, "QuecCloudConfig"):
-                    raise TypeError("JTT808Config is not exists.")
-                self.current_settings["cloud_cfg"] = {k: v for k, v in settings_cloud.JTT808Config.__dict__.items() if not k.startswith("_")}
-            elif self.current_settings["user_cfg"]["cloud"] == UserConfig._cloud.customization:
-                self.current_settings["cloud_cfg"] = {}
+            elif self.current_settings["user_cfg"]["cloud"] == UserConfig._cloud.ThingsBoard:
+                if not hasattr(settings_cloud, "ThingsBoardConfig"):
+                    raise TypeError("ThingsBoardConfig is not exists.")
+                self.current_settings["cloud_cfg"] = {k: v for k, v in settings_cloud.ThingsBoardConfig.__dict__.items() if not k.startswith("_")}
 
             # LocConfig init
             self.current_settings["loc_cfg"] = {k: v for k, v in LocConfig.__dict__.items() if not k.startswith("_")}

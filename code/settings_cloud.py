@@ -42,24 +42,6 @@ class AliCloudConfig(object):
     burning_method = _burning_method.one_machine_one_secret
 
 
-class QuecCloudConfig(object):
-    server = "iot-south.quectel.com:1883"
-    life_time = 120
-    pk = "p11275"
-    ps = "Q0ZQQndaN3pCUFd6"
-    dk = "trackdev0304"
-    ds = "70ecd7931f37a415911589c8208272ba"
-
-
-class JTT808Config(object):
-    PK = ""
-    PS = ""
-    DK = ""
-    DS = ""
-    SERVER = ""
-    life_time = 120
-
-
 class ThingsBoardConfig:
     host = "111.230.64.210"
     port = 10021
