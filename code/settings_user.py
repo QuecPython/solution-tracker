@@ -17,10 +17,7 @@ class UserConfig(object):
 
     class _cloud(object):
         none = 0x0
-        quecIot = 0x1
         AliYun = 0x2
-        JTT808 = 0x4
-        customization = 0x8
         ThingsBoard = 0x10
 
     class _loc_method(object):
@@ -59,7 +56,7 @@ class UserConfig(object):
 
     checknet_timeout = 60
 
-    cloud = _cloud.AliYun
+    cloud = _cloud.ThingsBoard
 
     phone_num = ""
 

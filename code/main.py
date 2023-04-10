@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from usr.tracker_quec import main
+from usr.tracker_tb import main
 
 
 if __name__ == "__main__":

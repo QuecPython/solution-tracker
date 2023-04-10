@@ -7,7 +7,7 @@
 ## 内置功能模块
 
 - [x] 阿里云(aliyunIot): 提供阿里云物联网物模型的消息发布与订阅，OTA升级功能。
-- [x] 移远云(quecthing): 提供移远云物联网物模型的消息发布与订阅，OTA升级功能。
+- [x] ThingsBoard(thingsboard): 提供ThingsBoard平台物联网物模型的消息发布与订阅，OTA升级功能。
 - [x] 电池模块(battery): 提供设电池电量，电压数据查询，充电状态查询功能。
 - [x] LED模块(led): 提供LED开关控制功能，周期性闪烁功能。
 - [x] 定位模块(location): 提供内置/外置GPS，基站，WIFI定位查询功能。
@@ -23,19 +23,11 @@
 |--code
     |--aliyun_object_model.json
     |--main.py
-    |--quec_object_model.json
     |--settings.py
-    |--settings_alicloud.py
-    |--settings_jtt808.py
+    |--settings_cloud.py
     |--settings_loc.py
-    |--settings_queccloud.py
-    |--settings_sys.py
     |--settings_user.py
-    |--test_tracker.py
-    |--tracker.py
-    |--tracker_collector.py
-    |--tracker_controller.py
-    |--tracker_devicecheck.py
+    |--tracker_tb.py
     |--modules
         |--aliyunIot.py
         |--battery.py
@@ -45,10 +37,10 @@
         |--location.py
         |--logging.py
         |--mpower.py
-        |--quecthing.py
         |--remote.py
         |--temp_humidity_sensor.py
         |--sensor.py
+        |--thingsboard.py
 ```
 
 ## 项目配置
@@ -87,25 +79,6 @@
 
 ![](./media/aliyun_export_lite_mode_object_model.png)
 
-#### 移远云
-
-1. [创建产品与设备](https://iot-cloud-docs.quectelcn.com/quickStart/ProductDevelop.html)
-
-![](./media/quec_create_project.png)
-![](./media/quec_create_device.png)
-
-2. [为产品定义物模型](https://iot-cloud-docs.quectelcn.com/quickStart/ProductDevelop.html)
-
-![](./media/quec_create_object_model.png)
-
-3. 项目提供了[物模型demo](https://gitee.com/qpy-solutions/tracker-v2/blob/dev/object_model_demo/quec_cloud_object_model.json), 可直接导入生成，无需手动创建
-
-![](./media/quec_import_object_model.png)
-
-4. 导出JSON格式的物模型, 重命名后, 放入项目根目录`code`下, 建议命名`quec_object_model.json`
-
-![](./media/quec_export_object_model.png)
-
 ### 设置项目配置参数
 
 #### 项目基础配置(settings_sys)
@@ -133,17 +106,6 @@ SERVER = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % PK  # 连接的服务器名
 client_id = ""  # 自定义阿里云连接id
 life_time = 120  # 通信之间允许的最长时间段(以秒为单位), 范围(60-1200)
 burning_method = _burning_method.one_machine_one_secret  # 一机一密，一型一密
-```
-
-#### 移远云配置(settings_queccloud)
-
-```python
-PK = "{ProductKey}"  # 产品KEY
-PS = "{ProductSecret}"  # 产品密钥
-DK = "{DeviceKey}"  # 设备名称
-DS = "{DeviceSecret}"  # 设备密钥
-SERVER = "iot-south.quectel.com:1883"  # 连接的服务器名称
-life_time = 120  # 通信之间允许的最长时间段(以秒为单位), 范围(60-1200)
 ```
 
 #### 定位功能配置(settings_loc)
@@ -328,62 +290,6 @@ ota_status = {
 
 ![](./media/aliyun_ota_sota_upgrade_process.png)
 
-### 移远云
-
-> **项目文件升级包，建议以压缩包的形式打包多个项目文件上传云端**
-
-#### 固件升级
-
-1. 制作固件升级差分包(联系固件开发人员);
-2. 创建OTA升级模型，添加固件组件，MCU组件(用于项目升级)
-    + 固件类型的组件标识以设备平台名称命名，如: `EC600N-CNLC`.
-    + MCU类型的组件标识以`settings.py`中`PROJECT_NAME`命名，如: `QuecPython-Tracker`.
-
-![](./media/quec_ota_model.png)
-
-3. 创建固件版本升级包
-
-![](./media/quec_ota_fota_version_package.png)
-
-4. 创建固件升级计划
-
-![](./media/quec_ota_fota_plain.png)
-
-5. 等待设备升级，查看升级结果
-
-    + 当设备开启OTA升级和OTA自动升级，则等待设备升级完成，查看升级结果;
-    + 当设备开启OTA升级，但未开启自动升级时，可通过在线调试模块下发`user_ota_action=1`的物模型设置指令，进行OTA升级。
-
-![](./media/quec_ota_fota_upgrade_process.png)
-
-#### 项目升级
-
-1. 将项目文件打包成压缩包，打包指令: `tar -zcvf sotaFile.tar.gz *.py`;
-2. 创建OTA升级模型，添加固件组件，MCU组件(用于项目升级)
-    + 固件类型的组件标识以设备平台名称命名，如: `EC600N-CNLC`.
-    + MCU类型的组件标识以`settings.py`中`PROJECT_NAME`命名，如: `QuecPython-Tracker`.
-
-![](./media/quec_ota_model.png)
-
-3. 如果在创建OTA模型时未创建MCU组件，可在模型中添加组件
-
-![](./media/quec_ota_model_add_mcu_module.png)
-
-4. 创建项目版本升级包
-
-![](./media/quec_ota_sota_version_package.png)
-
-4. 创建项目升级计划
-
-![](./media/quec_ota_sota_plain.png)
-
-5. 等待设备升级，查看升级结果
-
-    + 当设备开启OTA升级和OTA自动升级，则等待设备升级完成，查看升级结果;
-    + 当设备开启OTA升级，但未开启自动升级时，可通过在线调试模块下发`user_ota_action=1`的物模型设置指令，进行OTA升级。
-
-![](./media/quec_ota_sota_upgrade_process.png)
-
 ## 功能模块注册流程
 
 ### 功能注册说明流程图
@@ -417,20 +323,7 @@ devicecheck.add_module(sensor)
 
 ### 云模块初始化 ###
 cloud_init_params = current_settings["cloud"]
-if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
-    cloud = QuecThing(
-        cloud_init_params["PK"],
-        cloud_init_params["PS"],
-        cloud_init_params["DK"],
-        cloud_init_params["DS"],
-        cloud_init_params["SERVER"],
-        mcu_name=PROJECT_NAME,
-        mcu_version=PROJECT_VERSION
-    )
-    # Cloud object model init
-    cloud_om = QuecObjectModel()
-    cloud.set_object_model(cloud_om)
-elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
+if current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
     client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
     cloud = AliYunIot(
         cloud_init_params["PK"],
@@ -596,22 +489,7 @@ locator = Location(current_settings["LocConfig"]["gps_mode"], current_settings["
 
 ### 云模块初始化 ###
 cloud_init_params = current_settings["cloud"]
-if current_settings["sys"]["cloud"] & SYSConfig._cloud.quecIot:
-    # 初始化移远云服务模块
-    cloud = QuecThing(
-        cloud_init_params["PK"],
-        cloud_init_params["PS"],
-        cloud_init_params["DK"],
-        cloud_init_params["DS"],
-        cloud_init_params["SERVER"],
-        mcu_name=PROJECT_NAME,
-        mcu_version=PROJECT_VERSION
-    )
-    # 转化物模型json为对象
-    cloud_om = QuecObjectModel()
-    # 将物模型实例对象注册到云服务对象中
-    cloud.set_object_model(cloud_om)
-elif current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
+if current_settings["sys"]["cloud"] & SYSConfig._cloud.AliYun:
     client_id = cloud_init_params["client_id"] if cloud_init_params.get("client_id") else modem.getDevImei()
     # 初始化阿里云服务模块
     cloud = AliYunIot(
