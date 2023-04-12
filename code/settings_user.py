@@ -17,8 +17,8 @@ class UserConfig(object):
 
     class _cloud(object):
         none = 0x0
-        AliYun = 0x2
-        ThingsBoard = 0x10
+        AliYun = 0x1
+        ThingsBoard = 0x2
 
     class _loc_method(object):
         none = 0x0
@@ -50,13 +50,13 @@ class UserConfig(object):
         sys = 0x1
         app = 0x2
 
-    debug = True
+    debug = 1
 
     log_level = "DEBUG"
 
     checknet_timeout = 60
 
-    cloud = _cloud.ThingsBoard
+    cloud = _cloud.AliYun
 
     phone_num = ""
 
@@ -66,25 +66,25 @@ class UserConfig(object):
 
     over_speed_threshold = 50
 
-    sw_ota = True
+    sw_ota = 1
 
-    sw_ota_auto_upgrade = True
+    sw_ota_auto_upgrade = 1
 
-    sw_voice_listen = False
+    sw_voice_listen = 0
 
-    sw_voice_record = False
+    sw_voice_record = 0
 
-    sw_fault_alert = True
+    sw_fault_alert = 1
 
-    sw_low_power_alert = True
+    sw_low_power_alert = 1
 
-    sw_over_speed_alert = True
+    sw_over_speed_alert = 1
 
-    sw_sim_abnormal_alert = True
+    sw_sim_abnormal_alert = 1
 
-    sw_disassemble_alert = True
+    sw_disassemble_alert = 1
 
-    sw_drive_behavior_alert = True
+    sw_drive_behavior_alert = 1
 
     drive_behavior_code = _drive_behavior_code.none
 

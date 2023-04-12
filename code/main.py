@@ -12,6 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+@file      :main.py
+@author    :Jack Sun (jack.sun@quectel.com)
+@brief     :Project start.
+@version   :1.0.2
+@date      :2022-10-31 14:42:25
+@copyright :Copyright (c) 2022
+"""
+
 from usr.tracker_tb import main
 
 

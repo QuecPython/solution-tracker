@@ -37,7 +37,7 @@ from usr.modules.net_manage import NetManage
 from usr.modules.mpower import LowEnergyManage
 # from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.modules.thingsboard import TBDeviceMQTTClient
-from usr.modules.location import CoordinateSystemConvert, NMEAParse, GPS, CellLocator, WiFiLocator
+from usr.modules.location import CoordinateSystemConvert, NMEAParse, GNSS, CellLocator, WiFiLocator
 from usr.settings_user import UserConfig
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, LOWENERGYMAP
 
@@ -357,7 +357,7 @@ class Tracker:
         elif isinstance(module, Battery):
             self.__battery = module
             return True
-        elif isinstance(module, GPS):
+        elif isinstance(module, GNSS):
             self.__gps = module
             return True
         elif isinstance(module, History):
@@ -498,7 +498,7 @@ def main():
     # 初始化GPS原始数据解析模块
     nema_parse = NMEAParse()
     # 初始化GPS模块
-    gps = GPS(**_settings["loc_cfg"]["gps_cfg"])
+    gps = GNSS(**_settings["loc_cfg"]["gps_cfg"])
     coor_sys_convert = CoordinateSystemConvert()
 
     # 初始化移远云与OTA模块

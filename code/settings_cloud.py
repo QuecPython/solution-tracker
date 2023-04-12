@@ -12,40 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 @file      :settings_cloud.py
 @author    :Jack Sun (jack.sun@quectel.com)
-@brief     :<description>
-@version   :1.0.0
-@date      :2022-10-31 14:42:25
+@brief     :Cloud config.
+@version   :1.0.2
+@date      :2023-04-11 11:25:09
 @copyright :Copyright (c) 2022
 """
 
 
-class AliCloudConfig(object):
+class AliCloudConfig:
 
-    class _burning_method(object):
-        one_type_one_secret = 0x0
-        one_machine_one_secret = 0x1
-
-    pk = "h3nqn03lil0"
-    ps = "UH9muaJIoAlpvnqE"
-    dk = "TrackerDevJack"
-    ds = "2980b4b86fb011375739a150c23bc252"
-
-    server = "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % pk
-    client_id = dk
-    life_time = 120
-    burning_method = _burning_method.one_machine_one_secret
+    product_key = ""
+    product_secret = ""
+    device_name = ""
+    device_secret = ""
+    server = "iot-as-mqtt.cn-shanghai.aliyuncs.com"
+    qos = 1
 
 
 class ThingsBoardConfig:
-    host = "111.230.64.210"
+
+    host = ""
     port = 10021
-    username = "J2tD4KKfSSi2xpC81RxM"
-    quality_of_service = 0
-    client_id = "cacc2ac0-3333-11ed-a97b-cdc783a0f67e"
+    username = ""
+    qos = 0
+    client_id = ""
     chunk_size = 0
