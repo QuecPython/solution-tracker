@@ -21,7 +21,7 @@
 @copyright :Copyright (c) 2022
 """
 
-from usr.tracker_tb import main
+from usr.tracker_ali import main
 
 
 if __name__ == "__main__":

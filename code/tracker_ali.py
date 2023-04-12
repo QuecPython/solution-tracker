@@ -482,7 +482,7 @@ class Tracker:
             self.__cloud.disconnect()
 
 
-def running():
+def main():
     net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
     settings = Settings()
     battery = Battery()
@@ -522,4 +522,4 @@ def running():
 
 
 if __name__ == "__main__":
-    running()
+    main()
