@@ -26,7 +26,6 @@
 
 import utime
 import _thread
-import osTimer
 import usys as sys
 from misc import Power
 from queue import Queue
@@ -67,7 +66,6 @@ class Tracker:
         self.__business_tid = None
         self.__business_rtc = RTC()
         self.__business_queue = Queue()
-        self.__business_timer = osTimer()
         self.__business_tag = 0
         self.__running_tag = 0
         self.__cloud_ota_flag = 0
