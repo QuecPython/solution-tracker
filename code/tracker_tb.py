@@ -179,7 +179,7 @@ class Tracker:
                     if self.__cloud.status:
                         break
                     self.__cloud.disconnect()
-                    if self.__cloud.connect() == 0 or count >= retry:
+                    if self.__cloud.connect() or count >= retry:
                         break
                     count += 1
                     utime.sleep_ms(100)
