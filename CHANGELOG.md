@@ -30,3 +30,27 @@
 ### Added
 
 - 添加了Tracker整个项目的功能代码，tracker业务模块，阿里云模块，移远云模块，电池模块，公共模块，LED模块，定位模块，日志模块，低功耗模块，OTA模块，云端交互中间层模块，传感器模块，定时器模块，配置模块
+
+## [v2.2.0] - 2023-04-14
+
+### Added
+
+- **net_manage.py**, 添加网络功能管理模块;
+- **power_manage.py**, 添加低功耗管理功能模块, 用于替换之前的`mpower.py`;
+- **thingsboard.py**, 添加对接ThingsBoard平台MQTT协议客户端代码;
+
+### Changed
+
+- 整个项目架构进行调整, 单个平台单个业务功能逻辑, 如阿里云则对应`tracker_ali.py`, ThingsBoard平台则对应`tracker_tb.py`;
+- 优化模块功能代码, 优化模块有:
+    + **aliyunIot.py**
+    + **battery.py**
+    + **buzzer.py**
+    + **common.py**
+    + **led.py**
+    + **location.py**
+    + **logging.py**
+
+### Removed
+
+- 移除了移远云模块
