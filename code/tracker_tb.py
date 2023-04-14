@@ -12,34 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 @file      :tracker_tb.py
 @author    :Jack Sun (jack.sun@quectel.com)
-@brief     :<description>
-@version   :1.0.0
-@date      :2022-10-31 11:15:57
+@brief     :Tracker by ThingsBoard.
+@version   :2.2.0
+@date      :2023-04-14 14:30:13
 @copyright :Copyright (c) 2022
 """
-import gc
-import sim
+
 import utime
-import modem
 import _thread
-# from machine import I2C
+import usys as sys
 from misc import Power
+from queue import Queue
+from machine import RTC, I2C
+
+from usr.settings_user import UserConfig
+from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION
 from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManage
-from usr.modules.mpower import LowEnergyManage
-# from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.modules.thingsboard import TBDeviceMQTTClient
-from usr.modules.location import CoordinateSystemConvert, NMEAParse, GNSS, CellLocator, WiFiLocator
-from usr.settings_user import UserConfig
-from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION, LOWENERGYMAP
+from usr.modules.power_manage import PowerManage, PMLock
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
+from usr.modules.location import GNSS, CellLocator, WiFiLocator, NMEAParse, CoordinateSystemConvert
 
 log = getLogger(__name__)
 
@@ -47,491 +45,265 @@ log = getLogger(__name__)
 class Tracker:
 
     def __init__(self):
-        self.__settings = None
-        self.__cell = None
-        self.__wifi = None
-        self.__gps = None
-        self.__nmea_parse = None
+        self.__cloud = None
+        self.__cloud_ota = None
         self.__battery = None
         self.__history = None
+        self.__gnss = None
+        self.__cell = None
+        self.__wifi = None
+        self.__nmea_parse = None
+        self.__csc = None
         self.__net_manage = None
-        self.__tb_ota = None
-        self.__tb_cloud = None
-        self.__tb_objmodel = None
-        self.__low_energy_manage = None
-        self.__temp_humidity_sensor = None
-        self.__wakeup = True
-        self.__coor_sys_convert = None
+        self.__pm = None
+        self.__temp_sensor = None
+        self.__settings = None
 
-    def __format_loc_method(self, data):
-        loc_method = "%04d" % int(bin(data)[2:])
-        _loc_method = {
-            "gps": bool(int(loc_method[-1])),
-            "cell": bool(int(loc_method[-2])),
-            "wifi": bool(int(loc_method[-3])),
-        }
-        return _loc_method
+        self.__business_lock = PMLock("block")
+        self.__business_tid = None
+        self.__business_rtc = RTC()
+        self.__business_queue = Queue()
+        self.__business_tag = 0
+        self.__running_tag = 0
+        self.__cloud_ota_flag = 0
 
-    def __get_local_time(self):
-        return str(utime.mktime(utime.localtime()) * 1000)
+    def __business_start(self):
+        if not self.__business_tid:
+            _thread.stack_size(0x2000)
+            self.__business_tid = _thread.start_new_thread(self.__business_running, ())
 
-    def __get_location(self):
-        res = {}
-        loc_method = self.__settings.get()["user_cfg"]["loc_method"]
-        map_coordinate_system = self.__settings.get()["loc_cfg"]["map_coordinate_system"]
-        Longitude, Latitude, Speed = [None] * 3
-        if loc_method & UserConfig._loc_method.gps:
-            gps_res = self.__gps.read(retry=300)
-            if gps_res[0] == 0:
-                self.__nmea_parse.set_gps_data(gps_res[1])
-                Longitude = self.__nmea_parse.Longitude
-                Latitude = self.__nmea_parse.Latitude
-                Speed = self.__nmea_parse.Speed
-        if Longitude and Latitude:
-            if map_coordinate_system == "GCJ02":
-                Longitude, Latitude = self.__coor_sys_convert.wgs84_to_gcj02(Longitude, Latitude)
-        res = {
-            "longitude": Longitude,
-            "latitude": Latitude,
-            "speed": Speed
-        }
-        return res
+    def __business_stop(self):
+        if self.__business_tid and _thread.threadIsRunning(self.__business_tid):
+            try:
+                _thread.stop_thread(self.__business_tid)
+            except Exception as e:
+                sys.print_exception(e)
+        self.__business_tid = None
 
-    def __init_report_data(self, power_switch=True):
-        _data = {}
-        # _settings = self.__settings.get()
+    def __business_running(self):
+        while True:
+            data = self.__business_queue.get()
+            with self.__business_lock:
+                self.__business_tag = 1
+                if data[0] == 0:
+                    if data[1] == "loc_report":
+                        self.__loc_report()
+                    elif data[1] == "into_sleep":
+                        _thread.stack_size(0x1000)
+                        _thread.start_new_thread(self.__into_sleep, ())
+                if data[0] == 1:
+                    self.__cloud_option(*data[1])
+                self.__business_tag = 0
 
-        # _data.update({
-        #     "power_switch": power_switch,
-        #     "local_time": self.__get_local_time(),
-        #     "gps_mode": _settings["loc_cfg"]["gps_cfg"]["gps_mode"]
-        # })
-
-        # _data.update(_settings["user_cfg"])
-        # _data.update({"loc_method": self.__format_loc_method(_settings["user_cfg"]["loc_method"])})
-
-        _data.update(self.__get_location())
-
-        # temperature, humidity = self.__temp_humidity_sensor.read() if self.__temp_humidity_sensor else (None, None)
-        # _data.update({
-        #     "temperature": temperature if temperature is not None else "",
-        #     "humidity": humidity if humidity is not None else "",
-        # })
-
-        # self.__battery.set_temp(temperature if temperature is not None else 20)
-        # _data.update({
-        #     "energy": self.__battery.energy,
-        #     "voltage": self.__battery.voltage,
-        # })
-
-        # _data.update(self.__init_alarm_data(_data))
-        # log.debug("report_data: %s" % _data)
-
-        return _data
-
-    def __init_alarm_data(self, data):
-        alarm_data = {}
-        _settings = self.__settings.get()
-        if _settings["user_cfg"]["sw_low_power_alert"]:
-            if data["energy"] <= _settings["user_cfg"]["low_power_alert_threshold"]:
-                alarm_data["low_power_alert"] = {"local_time": self.__get_local_time()}
-
-        # if data["energy"] <= _settings["user_cfg"]["low_power_shutdown_threshold"]:
-        #     alarm_data["power_switch"] = False
-        #     self.__wakeup = False
-
-        if _settings["user_cfg"]["sw_over_speed_alert"] and data.get("gps"):
-            vtg_data = self.__nmea_parse.GxVTGData
-            alarm_data["current_speed"] = float(vtg_data[7]) if vtg_data else -1.0
-            if alarm_data["current_speed"] >= _settings["user_cfg"]["over_speed_threshold"]:
-                alarm_data["over_speed_alert"] = {"local_time": self.__get_local_time()}
-
-        net_status = self.__net_manage.status
-        alarm_data["device_module_status"] = {}
-        alarm_data["device_module_status"]["net"] = 1 if net_status else 0
-        if self.__gps or self.__cell or self.__wifi:
-            alarm_data["device_module_status"]["location"] = 1 if data.get("gps") or data.get("cell") or data.get("wifi") else 0
-        if self.__temp_humidity_sensor:
-            alarm_data["device_module_status"]["temp_sensor"] = 1 if data.get("temperature") is not None and data.get("humidity") is not None else 0
-
-        # TODO: Add light-Sensor, G-Senor, Mike modules.
-
-        if 0 in alarm_data["device_module_status"].values():
-            alarm_data["fault_alert"] = {"local_time": self.__get_local_time()}
-        if sim.getStatus() != 1:
-            alarm_data["sim_abnormal_alert"] = {"local_time": self.__get_local_time()}
-
-        return alarm_data
-
-    def __data_report(self, data):
-        res = False
-        if self.__cloud_conn_status():
-            log.debug("send_telemetry data: %s" % str(data))
-            res = self.__tb_cloud.send_telemetry(data)
-        log.debug("Ali object model report %s." % ("success" if res else "falied"))
-        if not res:
-            self.__history.write([data])
-        return res
+    def __loc_report(self):
+        properties = self.__get_device_infos()
+        if self.__net_connect():
+            self.__history_report()
+            res = self.__cloud.send_telemetry(properties)
+            if not res:
+                self.__history.write([properties])
 
     def __history_report(self):
-        if self.__history and self.__tb_cloud and self.__tb_objmodel:
-            history_data = self.__history.read()["data"]
-            if history_data:
-                for index, _data in enumerate(history_data):
-                    if not self.__data_report(data=_data):
-                        break
-                self.__history.write(history_data[index + 1:])
+        failed_datas = []
+        his_datas = self.__history.read()
+        if his_datas["data"]:
+            for item in his_datas["data"]:
+                res = self.__cloud.send_telemetry(item)
+                if not res:
+                    failed_datas.append(item)
+        if failed_datas:
+            self.__history.write(failed_datas)
 
-    def __set_config(self, data):
-        _settings = self.__settings.get()
-        for k, v in data.items():
-            mode = ""
-            if k in _settings["user_cfg"].keys():
-                mode = "user_cfg"
-                if k == "user_ota_action":
-                    if _settings["user_cfg"]["sw_ota"] and not _settings["user_cfg"]["sw_ota_auto_upgrade"]:
-                        if not (_settings["user_cfg"]["ota_status"]["upgrade_status"] == 1 and
-                                _settings["user_cfg"]["user_ota_action"] == -1):
-                            continue
-                if k == "loc_method":
-                    v = (int(v.get("wifi", 0)) << 2) + (int(v.get("cell", 0)) << 1) + int(v.get("gps", 0))
-                res = self.__settings.set(mode, k, v)
-                if k == "user_ota_action":
-                    self.__tb_cloud.ota_search()
-            elif k in _settings["cloud_cfg"].keys():
-                mode = "cloud_cfg"
-                res = self.__settings.set(mode, k, v)
-            else:
-                log.warn("Key %s is not find in settings. Value: %s" % (k, v))
+    def __get_device_infos(self):
+        properties = self.__get_loc_data()
+        return properties
 
-            if mode:
-                log.debug("Settings set %s %s to %s %s" % (mode, k, v, "success" if res else "falied"))
-        self.__settings.save()
+    def __get_loc_data(self):
+        loc_state = 0
+        loc_data = {
+            "Longitude": 181,
+            "Latitude": 91,
+            "Altitude": -1,
+            "Speed": -1,
+        }
+        loc_cfg = self.__settings.read("loc")
+        user_cfg = self.__settings.read("user")
+        if user_cfg["loc_method"] & UserConfig._loc_method.gps:
+            res = self.__gnss.read(user_cfg["loc_gps_read_timeout"])
+            if res[0] == 0:
+                gnss_data = res[1]
+                self.__nmea_parse.set_gps_data(gnss_data)
+                loc_data["Longitude"] = float(self.__nmea_parse.Longitude)
+                loc_data["Latitude"] = float(self.__nmea_parse.Latitude)
+                loc_data["Altitude"] = float(self.__nmea_parse.Altitude)
+                loc_data["current_speed"] = float(self.__nmea_parse.Speed)
+                loc_state = 1
+        if loc_state == 0 and user_cfg["loc_method"] & UserConfig._loc_method.cell:
+            res = self.__cell.read()
+            if res:
+                loc_data["Longitude"] = res[0]
+                loc_data["Latitude"] = res[1]
+                loc_state = 1
+        if loc_state == 0 and user_cfg["loc_method"] & UserConfig._loc_method.wifi:
+            res = self.__wifi.read()
+            if res:
+                loc_data["Longitude"] = res[0]
+                loc_data["Latitude"] = res[1]
+                loc_state = 1
+        if loc_state == 1 and loc_cfg["map_coordinate_system"] == "GCJ02":
+            lng, lat = self.__csc.wgs84_to_gcj02(loc_data["Longitude"], loc_data["Latitude"])
+            loc_data["Longitude"] = lng
+            loc_data["Latitude"] = lat
+        return loc_data
 
-    def __set_objmodel(self, data):
-        data = self.__tb_objmodel.convert_to_client(data)
-        log.debug("set_objmodel data: %s" % str(data))
-        self.__set_config(data)
-        if "power_switch" in data.keys():
-            _data = self.__init_report_data(power_switch=bool(data["power_switch"]))
-            self.__data_report(_data)
-            if bool(data["power_switch"]) is False:
-                Power.powerDown()
-        if "power_restart" in data.keys():
-            _data = self.__init_report_data(power_switch=False)
-            self.__data_report(_data)
-            Power.powerRestart()
-        if "work_cycle_period" in data.keys():
-            self.__low_energy_manage.stop()
-            self.__low_energy_manage.set_period(data["work_cycle_period"])
-            method = self.init_low_energy_method(data["work_cycle_period"])
-            self.__low_energy_manage.set_method(method)
-            self.__low_energy_manage.set_callback(self.running)
-            self.__low_energy_manage.start()
-
-    def __query_objmodel(self, data):
-        objmodel_codes = [self.__tb_objmodel.id_code.get(i) for i in data if self.__tb_objmodel.id_code.get(i)]
-        log.debug("query_objmodel ids: %s, codes: %s" % (str(data, str(objmodel_codes))))
-        report_data = self.__init_report_data()
-        self.__data_report(report_data)
-
-    def __set_ota_status(self, target_module, target_version, status):
-        ota_status = self.__settings.get()["user_cfg"]["ota_status"]
-        ota_info = {}
-        pass_flag = False
-        if ota_status["sys_target_version"] == "--" and ota_status["app_target_version"] == "--":
-            if target_module == DEVICE_FIRMWARE_NAME:
-                if target_version != DEVICE_FIRMWARE_VERSION:
-                    ota_info["upgrade_module"] = 1
-                    ota_info["sys_target_version"] = target_version
-                else:
-                    pass_flag = True
-            elif target_module == PROJECT_NAME:
-                if target_version != PROJECT_VERSION:
-                    ota_info["upgrade_module"] = 2
-                    ota_info["app_target_version"] = target_version
-                else:
-                    pass_flag = True
-        if pass_flag is False:
-            ota_info["upgrade_status"] = status
-        ota_status.update(ota_info)
-        self.__set_config({"ota_status": ota_status})
-
-    def __ota_plain_check(self, target_module, target_version, battery_limit, min_signal_intensity, use_space):
-        _settings = self.__settings.get()
-        if _settings["user_cfg"]["sw_ota"]:
-            self.__set_ota_status(target_module, target_version, 1)
-            if _settings["user_cfg"]["sw_ota_auto_upgrade"] or _settings["user_cfg"]["user_ota_action"] != -1:
-                if _settings["user_cfg"]["sw_ota_auto_upgrade"]:
-                    _ota_action = 1
-                else:
-                    if _settings["user_cfg"]["user_ota_action"] != -1:
-                        _ota_action = _settings["user_cfg"]["user_ota_action"]
-                    else:
-                        return
-            upgrade_module = 1 if target_module == DEVICE_FIRMWARE_NAME else 2
-            source_version = DEVICE_FIRMWARE_VERSION if target_module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
-            if _settings['user_cfg']['ota_status']['upgrade_module'] == upgrade_module and \
-                    _settings['user_cfg']['ota_status']['upgrade_status'] <= 1 and \
-                    target_version != source_version:
-                if _ota_action == 1:
-                    # TODO: Check battery_limit, min_signal_intensity, use_space
-                    pass
-                self.__tb_cloud.ota_action(action=_ota_action)
-        else:
-            self.__tb_cloud.ota_action(action=0)
-
-    def __ota(self, errcode, data):
-        if errcode == 10700 and data:
-            data = eval(data)
-            target_module = data[0]
-            # source_version = data[1]
-            target_version = data[2]
-            battery_limit = data[3]
-            min_signal_intensity = data[4]
-            use_space = data[5]
-            self.__ota_plain_check(target_module, target_version, battery_limit, min_signal_intensity, use_space)
-        elif errcode == 10701:
-            data = eval(data)
-            target_module = data[0]
-            length = data[1]
-            md5 = data[2]
-            self.__set_ota_status(None, None, 2)
-            self.__tb_ota.set_ota_info(length, md5)
-        elif errcode == 10702:
-            self.__set_ota_status(None, None, 2)
-        elif errcode == 10703:
-            data = eval(data)
-            target_module = data[0]
-            length = data[1]
-            start_addr = data[2]
-            piece_length = data[3]
-            self.__set_ota_status(None, None, 2)
-            self.__tb_ota.start_ota(start_addr, piece_length)
-        elif errcode == 10704:
-            self.__set_ota_status(None, None, 3)
-        elif errcode == 10705:
-            self.__set_ota_status(None, None, 4)
-        elif errcode == 10706:
-            self.__set_ota_status(None, None, 4)
-
-    def __cloud_conn_status(self):
-        if not self.__tb_cloud.status:
+    def __net_connect(self, retry=2):
+        res = False
+        if not self.__net_manage.status:
+            log.debug("Net not connect, try to reconnect.")
             self.__net_manage.reconnect()
-        if not self.__tb_cloud.status:
-            disconn_res = self.__tb_cloud.disconnect()
-            conn_res = self.__tb_cloud.connect()
-            log.debug("Quec cloud reconnect. disconnect: %s connect: %s" % (disconn_res, conn_res))
-        return self.__tb_cloud.status
+            self.__net_manage.wait_connect()
 
-    def __init_ota_status(self):
-        _settings = self.__settings.get()
-        ota_status = _settings["user_cfg"]["ota_status"]
-        log.debug("ota_status_init ota_status: %s" % str(ota_status))
-        save_flag = False
-        if ota_status["sys_target_version"] != "--":
-            if ota_status["sys_target_version"] == DEVICE_FIRMWARE_VERSION:
-                if ota_status["upgrade_status"] != 3:
-                    ota_status["upgrade_status"] = 3
-                    save_flag = True
-            else:
-                if ota_status["upgrade_status"] != 4:
-                    ota_status["upgrade_status"] = 4
-                    save_flag = True
-        if ota_status["app_target_version"] != "--":
-            if ota_status["app_target_version"] == PROJECT_VERSION:
-                if ota_status["upgrade_status"] != 3:
-                    ota_status["upgrade_status"] = 3
-                    save_flag = True
-            else:
-                if ota_status["upgrade_status"] != 4:
-                    ota_status["upgrade_status"] = 4
-                    save_flag = True
-        if save_flag:
-            self.__set_config({"ota_status": ota_status})
+        if self.__net_manage.sim_status == 1:
+            count = 0
+            while not self.__net_manage.status:
+                log.debug("Net reconnect times %s" % count)
+                self.__net_manage.reconnect()
+                self.__net_manage.wait_connect()
+                if self.__net_manage.status or count >= retry:
+                    break
+                count += 1
+            if self.__net_manage.status:
+                self.__net_manage.sync_time()
+                count = 0
+                while True:
+                    if self.__cloud.status:
+                        break
+                    self.__cloud.disconnect()
+                    if self.__cloud.connect() == 0 or count >= retry:
+                        break
+                    count += 1
+                    utime.sleep_ms(100)
+            res = self.__cloud.status
+        else:
+            log.debug("Sim card is not ready.")
+        return res
+
+    def __into_sleep(self):
+        while True:
+            if self.__business_queue.size() == 0 and self.__business_tag == 0:
+                break
+            utime.sleep_ms(500)
+        user_cfg = self.__settings.read("user")
+        if user_cfg["work_cycle_period"] < user_cfg["work_mode_timeline"]:
+            self.__pm.autosleep(1)
+        else:
+            self.__pm.set_psm(mode=1, tau=user_cfg["work_cycle_period"], act=5)
+        self.__set_rtc(user_cfg["work_cycle_period"], self.running)
+
+    def __set_rtc(self, period, callback):
+        self.__business_rtc.enable_alarm(0)
+        if callback and callable(callback):
+            self.__business_rtc.register_callback(callback)
+        atime = utime.localtime(utime.mktime(utime.localtime()) + period)
+        alarm_time = (atime[0], atime[1], atime[2], atime[6], atime[3], atime[4], atime[5], 0)
+        _res = self.__business_rtc.set_alarm(alarm_time)
+        log.debug("alarm_time: %s, set_alarm res %s." % (str(alarm_time), _res))
+        return self.__business_rtc.enable_alarm(1) if _res == 0 else -1
+
+    def __cloud_option(self, topic, data):
+        # TODO:
+        pass
+
+    def __power_restart(self):
+        log.debug("__power_restart")
+        Power.powerRestart()
 
     def add_module(self, module):
-        if isinstance(module, Settings):
-            self.__settings = module
-            return True
+        if isinstance(module, TBDeviceMQTTClient):
+            self.__cloud = module
         elif isinstance(module, Battery):
             self.__battery = module
-            return True
-        elif isinstance(module, GNSS):
-            self.__gps = module
-            return True
         elif isinstance(module, History):
             self.__history = module
-            return True
-        elif isinstance(module, NetManage):
-            self.__net_manage = module
-            return True
-        # elif isinstance(module, TempHumiditySensor):
-        #     self.__temp_humidity_sensor = module
-        #     return True
-        elif isinstance(module, LowEnergyManage):
-            self.__low_energy_manage = module
-            return True
-        elif isinstance(module, TBDeviceMQTTClient):
-            self.__tb_cloud = module
-            return True
-        elif isinstance(module, NMEAParse):
-            self.__nmea_parse = module
-            return True
+        elif isinstance(module, GNSS):
+            self.__gnss = module
         elif isinstance(module, CellLocator):
             self.__cell = module
-            return True
         elif isinstance(module, WiFiLocator):
             self.__wifi = module
-            return True
+        elif isinstance(module, NMEAParse):
+            self.__nmea_parse = module
         elif isinstance(module, CoordinateSystemConvert):
-            self.__coor_sys_convert = module
-            return True
-        return False
-
-    def running(self, args):
-        log.debug("[tracker][running][start] gc.mem_alloc(): %skb" % (gc.mem_alloc() / 1024))
-        # Init device ota infomation.
-        self.__init_ota_status()
-        # Check device net.
-        if not self.__net_manage.status:
-            if self.__net_manage.wait_connect != (3, 1):
-                self.__net_manage.reconnect()
-        _settings = self.__settings.get()
-        # # QuecIot connect and save device secret.
-        # if _settings["cloud_cfg"]["dk"] and not _settings["cloud_cfg"]["ds"] and self.__tb_cloud.device_secret:
-        #     self.__set_config({"ds": self.__tb_cloud.device_secret})
-        # Histort report
-        self.__history_report()
-        # Data report
-        power_switch = True if args != "POWERDOWN" else False
-        report_data = self.__init_report_data(power_switch=power_switch)
-        self.__data_report(report_data)
-        # OTA status reset
-        if _settings["user_cfg"]["ota_status"]["upgrade_status"] in (3, 4):
-            cfg_data = {
-                "ota_status": {
-                    "sys_current_version": DEVICE_FIRMWARE_VERSION,
-                    "sys_target_version": "--",
-                    "app_current_version": PROJECT_VERSION,
-                    "app_target_version": "--",
-                    "upgrade_module": 0,
-                    "upgrade_status": 0,
-                }
-            }
-            if _settings["user_cfg"]["user_ota_action"] != -1:
-                cfg_data["user_ota_action"] = -1
-            self.__set_config(cfg_data)
-        # Device version report and OTA plain search
-        # if self.__cloud_conn_status():
-        #     _res = self.__tb_cloud.device_report()
-        #     log.debug("Quec device report %s" % "success" if _res else "falied")
-        #     _res = self.__tb_cloud.ota_request()
-        #     log.debug("Quec ota request %s" % "success" if _res else "falied")
-        # Device need to powerdown and not to wakeup
-        if self.__wakeup:
-            _res = self.__low_energy_manage.start()
-            log.debug("Module start low enenery manage %s." % ("success" if _res else "falied"))
+            self.__csc = module
+        elif isinstance(module, NetManage):
+            self.__net_manage = module
+        elif isinstance(module, PowerManage):
+            self.__pm = module
+        elif isinstance(module, TempHumiditySensor):
+            self.__temp_sensor = module
+        elif isinstance(module, Settings):
+            self.__settings = module
         else:
-            _res = self.__low_energy_manage.stop()
-            log.debug("Module stop low enenery manage %s." % ("success" if _res else "falied"))
-        # Device powerdown
-        # if report_data["power_switch"] is False:
-        #     Power.powerDown()
-        log.debug("[tracker][running][end] gc.mem_alloc(): %skb" % (gc.mem_alloc() / 1024))
-        gc.collect()
-        log.debug("[tracker][running][collect over] gc.mem_alloc(): %skb" % (gc.mem_alloc() / 1024))
+            return False
+        return True
 
-    def execute(self, args):
-        if args[0] == 5 and args[1] == 10200:
-            log.debug("transparent data: %s" % args[1])
-        elif args[0] == 5 and args[1] == 10210:
-            self.__set_objmodel(args[2])
-        elif args[0] == 5 and args[1] == 10220:
-            self.__query_objmodel(args[2])
-        elif args[0] == 7:
-            log.debug("QuecIot OTA errcode[%s] data[%s]" % tuple(args[1:]))
-            self.__ota(*args[1:])
-        else:
-            log.error("Mode %s is not support. data: %s" % (str(args[0]), str(args[1])))
+    def running(self, args=None):
+        if self.__running_tag == 1:
+            return
+        self.__running_tag = 1
 
-    def init_low_energy_method(self, period):
-        device_model = modem.getDevModel()
-        support_methods = [_method for _method in LOWENERGYMAP.keys() if device_model in LOWENERGYMAP[_method]]
-        method = "NULL"
-        if support_methods:
-            if period >= self.__settings.get()["user_cfg"]["work_mode_timeline"]:
-                if "PSM" in support_methods:
-                    method = "PSM"
-                elif "POWERDOWN" in support_methods:
-                    method = "POWERDOWN"
-                elif "PM" in support_methods:
-                    method = "PM"
-            else:
-                if "PM" in support_methods:
-                    method = "PM"
-        log.debug("init_low_energy_method: %s" % method)
-        return method
+        # Disable sleep.
+        self.__pm.autosleep(0)
+        self.__pm.set_psm(mode=0)
+
+        self.__business_start()
+        self.__business_queue.put((0, "loc_report"))
+        self.__business_queue.put((0, "into_sleep"))
+        self.__running_tag = 0
+
+    def cloud_callback(self, args):
+        self.__business_queue.put((1, args))
+
+    def net_callback(self, args):
+        log.debug("net_callback args: %s" % str(args))
+        if args[1] == 0:
+            self.__cloud.disconnect()
 
 
 def main():
-    log.debug("[main] [start] gc.mem_alloc(): %skb" % (gc.mem_alloc() / 1024))
-    _thread.stack_size(1024 * 8)
-    log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
-    log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
-
-    # 初始化配置参数模块
-    settings = Settings()
-    _settings = settings.get()
-    log.debug("_settings: %s" % str(_settings))
-    # 初始化电池模块
-    battery = Battery()
-    # 初始化历史信息模块
-    history = History()
-    # 初始化网络管理模块
     net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
-    # 初始化温湿度传感器模块
-    # temp_humidity_sensor = TempHumiditySensor(I2C.I2C1, I2C.STANDARD_MODE)
-    # 初始化低功耗管理模块
-    low_energy_manage = LowEnergyManage()
+    settings = Settings()
+    battery = Battery()
+    history = History()
+    cloud_cfg = settings.read("cloud")
+    cloud = TBDeviceMQTTClient(**cloud_cfg)
+    power_manage = PowerManage()
+    temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
+    loc_cfg = settings.read("loc")
+    gnss = GNSS(**loc_cfg["gps_cfg"])
+    cell = CellLocator(**loc_cfg["cell_cfg"])
+    wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
+    nmea_parse = NMEAParse()
+    cyc = CoordinateSystemConvert()
 
-    # 初始化GPS原始数据解析模块
-    nema_parse = NMEAParse()
-    # 初始化GPS模块
-    gps = GNSS(**_settings["loc_cfg"]["gps_cfg"])
-    coor_sys_convert = CoordinateSystemConvert()
-
-    # 初始化移远云与OTA模块
-    tb_cloud = TBDeviceMQTTClient(**_settings["cloud_cfg"])
-
-    # Tracker 实例化对象
     tracker = Tracker()
-    # 注册功能模块
     tracker.add_module(settings)
     tracker.add_module(battery)
     tracker.add_module(history)
     tracker.add_module(net_manage)
-    # tracker.add_module(temp_humidity_sensor)
-    tracker.add_module(low_energy_manage)
-    tracker.add_module(tb_cloud)
-    tracker.add_module(nema_parse)
-    tracker.add_module(gps)
-    tracker.add_module(coor_sys_convert)
+    tracker.add_module(cloud)
+    tracker.add_module(power_manage)
+    tracker.add_module(temp_sensor)
+    tracker.add_module(gnss)
+    tracker.add_module(cell)
+    tracker.add_module(wifi)
+    tracker.add_module(nmea_parse)
+    tracker.add_module(cyc)
 
-    # 云端设置下行消息回调函数
-    tb_cloud.set_callback(tracker.execute)
-    res = tb_cloud.connect()
-    log.debug("TB cloud connect %s" % res)
+    net_manage.set_callback(tracker.net_callback)
+    cloud.set_callback(tracker.cloud_callback)
 
-    # 低功耗设置唤醒回调函数
-    low_energy_manage.set_callback(tracker.running)
-    low_energy_manage.set_period(_settings["user_cfg"]["work_cycle_period"])
-    # low_energy_manage.set_method(tracker.init_low_energy_method(_settings["user_cfg"]["work_cycle_period"]))
-    low_energy_manage.set_method("NULL")
-
-    # 启动Tracker业务功能(循环设备状态检测与信息上报, 进入低功耗模式)
-    tracker.running(None)
-    log.debug("[main] [end] gc.mem_alloc(): %skb" % (gc.mem_alloc() / 1024))
+    tracker.running()
 
 
 if __name__ == "__main__":

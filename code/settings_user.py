@@ -12,40 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+@file      :settings_user.py
+@author    :Jack Sun (jack.sun@quectel.com)
+@brief     :User setting config.
+@version   :2.2.0
+@date      :2023-04-11 11:43:11
+@copyright :Copyright (c) 2022
+"""
 
-class UserConfig(object):
 
-    class _cloud(object):
+class UserConfig:
+
+    class _cloud:
         none = 0x0
         AliYun = 0x1
         ThingsBoard = 0x2
 
-    class _loc_method(object):
+    class _loc_method:
         none = 0x0
         gps = 0x1
         cell = 0x2
         wifi = 0x4
         all = 0x7
 
-    class _work_mode(object):
+    class _work_mode:
         cycle = 0x1
         intelligent = 0x2
 
-    class _drive_behavior_code(object):
+    class _drive_behavior_code:
         none = 0x0
         sharply_start = 0x1
         sharply_stop = 0x2
         sharply_turn_left = 0x3
         sharply_turn_right = 0x4
 
-    class _ota_upgrade_status(object):
+    class _ota_upgrade_status:
         none = 0x0
         to_be_updated = 0x1
         updating = 0x2
         update_successed = 0x3
         update_failed = 0x4
 
-    class _ota_upgrade_module(object):
+    class _ota_upgrade_module:
         none = 0x0
         sys = 0x1
         app = 0x2

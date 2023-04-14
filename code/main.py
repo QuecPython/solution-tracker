@@ -16,7 +16,7 @@
 @file      :main.py
 @author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Project start.
-@version   :1.0.2
+@version   :2.2.0
 @date      :2022-10-31 14:42:25
 @copyright :Copyright (c) 2022
 """

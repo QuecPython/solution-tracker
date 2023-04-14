@@ -16,7 +16,7 @@
 @file      :settings_cloud.py
 @author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Cloud config.
-@version   :1.0.2
+@version   :2.2.0
 @date      :2023-04-11 11:25:09
 @copyright :Copyright (c) 2022
 """

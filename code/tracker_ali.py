@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 @file      :tracker_ali.py
 @author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Tracker by aliyun.
-@version   :1.0.2
+@version   :2.2.0
 @date      :2023-04-11 11:43:11
 @copyright :Copyright (c) 2022
 """
@@ -116,7 +113,7 @@ class Tracker:
                 if not res:
                     his_data["events"].append(alarm)
         if his_data["properties"] or his_data["events"]:
-            self.__history.write(his_data)
+            self.__history.write([his_data])
 
     def __history_report(self):
         failed_datas = []

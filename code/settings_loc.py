@@ -16,7 +16,7 @@
 @file      :settings_loc.py
 @author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Loction config.
-@version   :1.0.2
+@version   :2.2.0
 @date      :2023-04-11 11:26:16
 @copyright :Copyright (c) 2022
 """
