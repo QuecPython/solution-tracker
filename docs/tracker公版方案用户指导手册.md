@@ -302,7 +302,7 @@ ota_status = {
 
 ![](./media/tracker_modules_registration_process.png)
 
-### 代码样例
+### 示例(以阿里云为例)
 
 ```python
 # 基础模块初始化
