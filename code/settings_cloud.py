@@ -39,4 +39,3 @@ class ThingsBoardConfig:
     username = ""
     qos = 0
     client_id = ""
-    chunk_size = 0
