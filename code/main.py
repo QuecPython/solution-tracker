@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from usr.tracker_tb import main
+"""
+@file      :main.py
+@author    :Jack Sun (jack.sun@quectel.com)
+@brief     :Project start.
+@version   :2.2.0
+@date      :2022-10-31 14:42:25
+@copyright :Copyright (c) 2022
+"""
+
+from usr.tracker_ali import main
 
 
 if __name__ == "__main__":
