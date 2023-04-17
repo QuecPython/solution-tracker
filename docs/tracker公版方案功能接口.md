@@ -317,7 +317,7 @@ res = settings.save({"cloud": cloud_cfg})
 
 **示例:**
 
-```json
+```python
 {
     "UARTn": 1,
     "buadrate": 115200,
@@ -327,9 +327,9 @@ res = settings.save({"cloud": cloud_cfg})
     "flowctl": 0,
     "gps_mode": 1,
     "nmea": 0b010111,
-    "PowerPin": null,
-    "StandbyPin": null,
-    "BackupPin": null,
+    "PowerPin": None,
+    "StandbyPin": None,
+    "BackupPin": None,
 }
 ```
 
@@ -345,7 +345,7 @@ res = settings.save({"cloud": cloud_cfg})
 
 样例:
 
-```json
+```python
 {
     "serverAddr": "www.queclocator.com",
     "port": 80,
@@ -363,7 +363,7 @@ res = settings.save({"cloud": cloud_cfg})
 
 样例:
 
-```json
+```python
 {
     "token": "XXX"
 }
