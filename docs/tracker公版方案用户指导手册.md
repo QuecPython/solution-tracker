@@ -379,4 +379,4 @@ tracker.running()
 
 ## 简单demo样例
 
-> 可参考[`tracker_tb.py`](../code/tracker_tb.py), 该模块提供了简单的周期性定位数据上报的样例。
+> 可参考[`tracker_ali.py`](../code/tracker_ali.py)或[`tracker_tb.py`](../code/tracker_tb.py), 该模块提供了简单的周期性定位数据上报的样例。
