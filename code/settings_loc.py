@@ -12,21 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+@file      :settings_loc.py
+@author    :Jack Sun (jack.sun@quectel.com)
+@brief     :Loction config.
+@version   :2.2.0
+@date      :2023-04-11 11:26:16
+@copyright :Copyright (c) 2022
+"""
+
 from machine import UART
 
 
-class LocConfig(object):
+class LocConfig:
 
-    class _gps_mode(object):
+    class _gps_mode:
         none = 0x0
         internal = 0x1
         external = 0x2
 
-    class _map_coordinate_system(object):
+    class _map_coordinate_system:
         WGS84 = "WGS84"
         GCJ02 = "GCJ02"
 
-    class _gps_sleep_mode(object):
+    class _gps_sleep_mode:
         none = 0x0
         pull_off = 0x1
         backup = 0x2
@@ -39,7 +48,7 @@ class LocConfig(object):
     gps_sleep_mode = _gps_sleep_mode.none
 
     gps_cfg = {
-        "UARTn": UART.UART2,
+        "UARTn": UART.UART1,
         "buadrate": 115200,
         "databits": 8,
         "parity": 0,
@@ -55,11 +64,11 @@ class LocConfig(object):
     cell_cfg = {
         "serverAddr": "www.queclocator.com",
         "port": 80,
-        "token": "xGP77d2z0i91s67n",
+        "token": "xxxxxxxxxx",
         "timeout": 3,
         "profileIdx": profile_idx,
     }
 
     wifi_cfg = {
-        "token": "xGP77d2z0i91s67n"
+        "token": "xxxxxxxxxx"
     }
