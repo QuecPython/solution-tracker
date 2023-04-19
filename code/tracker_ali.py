@@ -330,7 +330,7 @@ class Tracker:
         elif topic.find("/thing/service/") != -1:
             service = topic.split("/")[-1]
             self.__cloud_service_response(service, data)
-        elif topic.startswith("/ota/device/inform/") or topic.endswith("/ota/firmware/get_reply"):
+        elif topic.startswith("/ota/device/upgrade/") or topic.endswith("/ota/firmware/get_reply"):
             user_cfg = self.__settings.read("user")
             if self.__cloud_ota_flag == 0:
                 if user_cfg["sw_ota"] == 1:
