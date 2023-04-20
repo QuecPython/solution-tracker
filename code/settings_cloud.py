@@ -35,7 +35,7 @@ class AliCloudConfig:
 class ThingsBoardConfig:
 
     host = ""
-    port = 10021
+    port = 1883
     username = ""
     qos = 0
     client_id = ""
