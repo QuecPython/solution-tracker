@@ -34,7 +34,7 @@ from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManage
-from usr.modules.aliyunIot import AliYunIot, AliYunOTA
+from usr.modules.aliyunIot import AliIot, AliIotOTA
 from usr.modules.power_manage import PowerManage, PMLock
 from usr.modules.temp_humidity_sensor import TempHumiditySensor
 from usr.modules.location import GNSS, CellLocator, WiFiLocator, NMEAParse, CoordinateSystemConvert
@@ -45,8 +45,8 @@ log = getLogger(__name__)
 class Tracker:
 
     def __init__(self):
-        self.__cloud = None
-        self.__cloud_ota = None
+        self.__server = None
+        self.__server_ota = None
         self.__battery = None
         self.__history = None
         self.__gnss = None
@@ -65,7 +65,7 @@ class Tracker:
         self.__business_queue = Queue()
         self.__business_tag = 0
         self.__running_tag = 0
-        self.__cloud_ota_flag = 0
+        self.__server_ota_flag = 0
 
     def __business_start(self):
         if not self.__business_tid:
@@ -92,11 +92,11 @@ class Tracker:
                         _thread.stack_size(0x1000)
                         _thread.start_new_thread(self.__into_sleep, ())
                     elif data[1] == "check_ota":
-                        self.__cloud_check_ota()
+                        self.__server_check_ota()
                     elif data[1] == "ota_refresh":
                         self.__ota_cfg_refresh()
                 if data[0] == 1:
-                    self.__cloud_option(*data[1])
+                    self.__server_option(*data[1])
                 self.__business_tag = 0
 
     def __loc_report(self):
@@ -105,11 +105,11 @@ class Tracker:
         alarms = self.__get_alarms(properties)
         if self.__net_connect():
             self.__history_report()
-            res = self.__cloud.properties_report(properties)
+            res = self.__server.properties_report(properties)
             if not res:
                 his_data["properties"] = properties
             for alarm in alarms:
-                res = self.__cloud.event_report(alarm, {})
+                res = self.__server.event_report(alarm, {})
                 if not res:
                     his_data["events"].append(alarm)
         if his_data["properties"] or his_data["events"]:
@@ -121,11 +121,11 @@ class Tracker:
         if his_datas["data"]:
             for item in his_datas["data"]:
                 faile_data = {"properties": {}, "events": []}
-                res = self.__cloud.properties_report(item["properties"])
+                res = self.__server.properties_report(item["properties"])
                 if not res:
                     faile_data["properties"] = item["properties"]
                 for alarm in item["events"]:
-                    res = self.__cloud.event_report(alarm, {})
+                    res = self.__server.event_report(alarm, {})
                     if not res:
                         faile_data["events"].append(alarm)
                 if faile_data["properties"] or faile_data["events"]:
@@ -268,15 +268,15 @@ class Tracker:
                 self.__net_manage.sync_time()
                 count = 0
                 while True:
-                    if self.__cloud.status:
+                    if self.__server.status:
                         break
-                    self.__cloud.disconnect()
-                    if self.__cloud.connect() == 0 or count >= retry:
-                        self.__cloud_cfg_save(self.__cloud.auth_info)
+                    self.__server.disconnect()
+                    if self.__server.connect() == 0 or count >= retry:
+                        self.__server_cfg_save(self.__server.auth_info)
                         break
                     count += 1
                     utime.sleep_ms(100)
-            res = self.__cloud.status
+            res = self.__server.status
         else:
             log.debug("Sim card is not ready.")
         return res
@@ -303,79 +303,79 @@ class Tracker:
         log.debug("alarm_time: %s, set_alarm res %s." % (str(alarm_time), _res))
         return self.__business_rtc.enable_alarm(1) if _res == 0 else -1
 
-    def __cloud_cfg_save(self, data):
+    def __server_cfg_save(self, data):
         save_tag = 0
-        cloud_cfg = self.__settings.read("cloud")
-        if cloud_cfg["product_key"] != data["product_key"]:
-            cloud_cfg["product_key"] = data["product_key"]
+        server_cfg = self.__settings.read("server")
+        if server_cfg["product_key"] != data["product_key"]:
+            server_cfg["product_key"] = data["product_key"]
             save_tag = 1
-        if cloud_cfg["product_secret"] != data["product_secret"]:
-            cloud_cfg["product_secret"] = data["product_secret"]
+        if server_cfg["product_secret"] != data["product_secret"]:
+            server_cfg["product_secret"] = data["product_secret"]
             save_tag = 1
-        if cloud_cfg["device_name"] != data["device_name"]:
-            cloud_cfg["device_name"] = data["device_name"]
+        if server_cfg["device_name"] != data["device_name"]:
+            server_cfg["device_name"] = data["device_name"]
             save_tag = 1
-        if cloud_cfg["device_secret"] != data["device_secret"]:
-            cloud_cfg["device_secret"] = data["device_secret"]
+        if server_cfg["device_secret"] != data["device_secret"]:
+            server_cfg["device_secret"] = data["device_secret"]
             save_tag = 1
         if save_tag == 1:
-            self.__settings.save({"cloud": cloud_cfg})
+            self.__settings.save({"server": server_cfg})
 
-    def __cloud_option(self, topic, data):
+    def __server_option(self, topic, data):
         if topic.endswith("/property/set"):
-            self.__cloud_property_set(data)
+            self.__server_property_set(data)
         elif topic.find("/rrpc/request/") != -1:
             msg_id = topic.split("/")[-1]
-            self.__cloud_rrpc_response(msg_id, data)
+            self.__server_rrpc_response(msg_id, data)
         elif topic.find("/thing/service/") != -1:
             service = topic.split("/")[-1]
-            self.__cloud_service_response(service, data)
+            self.__server_service_response(service, data)
         elif topic.startswith("/ota/device/upgrade/") or topic.endswith("/ota/firmware/get_reply"):
             user_cfg = self.__settings.read("user")
-            if self.__cloud_ota_flag == 0:
+            if self.__server_ota_flag == 0:
                 if user_cfg["sw_ota"] == 1:
-                    self.__cloud_ota_flag = 1
+                    self.__server_ota_flag = 1
                     if user_cfg["sw_ota_auto_upgrade"] == 1 or user_cfg["user_ota_action"] == 1:
-                        self.__cloud_ota_process(data)
+                        self.__server_ota_process(data)
                     else:
-                        self.__cloud_ota_flag = 0
-                        self.__cloud_ota.set_ota_data(data["data"])
-                        ota_info = self.__cloud_ota.get_ota_info()
+                        self.__server_ota_flag = 0
+                        self.__server_ota.set_ota_data(data["data"])
+                        ota_info = self.__server_ota.get_ota_info()
                         ota_info["ota_status"] = 1
-                        self.__cloud_ota_state_save(**ota_info)
+                        self.__server_ota_state_save(**ota_info)
                 else:
                     module = data.get("data", {}).get("module")
-                    self.__cloud.ota_device_progress(-1, "Device is not alowed ota.", module)
+                    self.__server.ota_device_progress(-1, "Device is not alowed ota.", module)
 
-    def __cloud_property_set(self, data):
+    def __server_property_set(self, data):
         set_properties = data.get("params", {})
         user_cfg = self.__settings.read("user")
         user_cfg.update(set_properties)
         if self.__settings.save({"user": user_cfg}):
-            self.__cloud.property_set_reply(data.get("id"), 200, "success")
+            self.__server.property_set_reply(data.get("id"), 200, "success")
             self.__business_queue.put((0, "loc_report"))
         else:
-            self.__cloud.property_set_reply(data.get("id"), 9201, "save properties failed")
+            self.__server.property_set_reply(data.get("id"), 9201, "save properties failed")
 
-    def __cloud_ota_process(self, data):
+    def __server_ota_process(self, data):
         code = data.get("code")
         module = data.get("data", {}).get("module")
         if code in ("1000", 200) and module:
-            self.__cloud.ota_device_progress(1, "", module)
-            self.__cloud_ota.set_ota_data(data["data"])
-            ota_info = self.__cloud_ota.get_ota_info()
+            self.__server.ota_device_progress(1, "", module)
+            self.__server_ota.set_ota_data(data["data"])
+            ota_info = self.__server_ota.get_ota_info()
             ota_info["ota_status"] = 2
-            self.__cloud_ota_state_save(**ota_info)
-            if self.__cloud_ota.start():
+            self.__server_ota_state_save(**ota_info)
+            if self.__server_ota.start():
                 ota_info["ota_status"] = 3
-                self.__cloud_ota_state_save(**ota_info)
+                self.__server_ota_state_save(**ota_info)
                 self.__power_restart()
             else:
                 ota_info["ota_status"] = 4
-                self.__cloud_ota_state_save(**ota_info)
-        self.__cloud_ota_flag = 0
+                self.__server_ota_state_save(**ota_info)
+        self.__server_ota_flag = 0
 
-    def __cloud_ota_state_save(self, ota_module, ota_version, ota_status):
+    def __server_ota_state_save(self, ota_module, ota_version, ota_status):
         user_cfg = self.__settings.read("user")
         if ota_module == PROJECT_NAME:
             user_cfg["ota_status"]["upgrade_module"] = 2
@@ -387,23 +387,23 @@ class Tracker:
             user_cfg["ota_status"]["sys_target_version"] = ota_version
         self.__settings.save({"user": user_cfg})
 
-    def __cloud_check_ota(self):
-        if self.__cloud_ota_flag == 0 and self.__net_connect():
-            res = self.__cloud.ota_device_inform(PROJECT_VERSION, PROJECT_NAME)
+    def __server_check_ota(self):
+        if self.__server_ota_flag == 0 and self.__net_connect():
+            res = self.__server.ota_device_inform(PROJECT_VERSION, PROJECT_NAME)
             log.debug("ota_device_inform report project %s" % res)
-            res = self.__cloud.ota_device_inform(FIRMWARE_VERSION, FIRMWARE_NAME)
+            res = self.__server.ota_device_inform(FIRMWARE_VERSION, FIRMWARE_NAME)
             log.debug("ota_device_inform report firmware %s" % res)
-            res = self.__cloud.ota_firmware_get(PROJECT_NAME)
+            res = self.__server.ota_firmware_get(PROJECT_NAME)
             log.debug("ota_firmware_get project %s" % res)
-            res = self.__cloud.ota_firmware_get(FIRMWARE_NAME)
+            res = self.__server.ota_firmware_get(FIRMWARE_NAME)
             log.debug("ota_firmware_get firmware %s" % res)
 
-    def __cloud_rrpc_response(self, msg_id, data):
-        self.__cloud.rrpc_response(msg_id, data)
+    def __server_rrpc_response(self, msg_id, data):
+        self.__server.rrpc_response(msg_id, data)
 
-    def __cloud_service_response(self, service, data):
+    def __server_service_response(self, service, data):
         msg_id = data.get("id")
-        self.__cloud.service_response(service, 200, {}, msg_id, "success")
+        self.__server.service_response(service, 200, {}, msg_id, "success")
 
     def __power_restart(self):
         log.debug("__power_restart")
@@ -422,10 +422,10 @@ class Tracker:
         self.__settings.save({"user": user_cfg})
 
     def add_module(self, module):
-        if isinstance(module, AliYunIot):
-            self.__cloud = module
-        elif isinstance(module, AliYunOTA):
-            self.__cloud_ota = module
+        if isinstance(module, AliIot):
+            self.__server = module
+        elif isinstance(module, AliIotOTA):
+            self.__server_ota = module
         elif isinstance(module, Battery):
             self.__battery = module
         elif isinstance(module, History):
@@ -468,24 +468,25 @@ class Tracker:
         self.__business_queue.put((0, "into_sleep"))
         self.__running_tag = 0
 
-    def cloud_callback(self, args):
+    def server_callback(self, args):
         self.__business_queue.put((1, args))
 
     def net_callback(self, args):
         log.debug("net_callback args: %s" % str(args))
         if args[1] == 0:
-            self.__cloud.disconnect()
+            self.__server.disconnect()
 
 
 def main():
+    # Initialize base modules.
     net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
     settings = Settings()
     battery = Battery()
     history = History()
-    cloud_cfg = settings.read("cloud")
-    cloud = AliYunIot(**cloud_cfg)
-    cloud_ota = AliYunOTA(PROJECT_NAME, FIRMWARE_NAME)
-    cloud_ota.set_cloud(cloud)
+    server_cfg = settings.read("server")
+    server = AliIot(**server_cfg)
+    server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
+    server_ota.set_server(server)
     power_manage = PowerManage()
     temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
     loc_cfg = settings.read("loc")
@@ -495,13 +496,14 @@ def main():
     nmea_parse = NMEAParse()
     cyc = CoordinateSystemConvert()
 
+    # Initialize tracker business modules.
     tracker = Tracker()
     tracker.add_module(settings)
     tracker.add_module(battery)
     tracker.add_module(history)
     tracker.add_module(net_manage)
-    tracker.add_module(cloud)
-    tracker.add_module(cloud_ota)
+    tracker.add_module(server)
+    tracker.add_module(server_ota)
     tracker.add_module(power_manage)
     tracker.add_module(temp_sensor)
     tracker.add_module(gnss)
@@ -510,9 +512,11 @@ def main():
     tracker.add_module(nmea_parse)
     tracker.add_module(cyc)
 
+    # Set net and server callback.
     net_manage.set_callback(tracker.net_callback)
-    cloud.set_callback(tracker.cloud_callback)
+    server.set_callback(tracker.server_callback)
 
+    # Tracker start.
     tracker.running()
 
 

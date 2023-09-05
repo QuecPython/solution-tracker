@@ -45,8 +45,8 @@ log = getLogger(__name__)
 class Tracker:
 
     def __init__(self):
-        self.__cloud = None
-        self.__cloud_ota = None
+        self.__server = None
+        self.__server_ota = None
         self.__battery = None
         self.__history = None
         self.__gnss = None
@@ -65,7 +65,7 @@ class Tracker:
         self.__business_queue = Queue()
         self.__business_tag = 0
         self.__running_tag = 0
-        self.__cloud_ota_flag = 0
+        self.__server_ota_flag = 0
 
     def __business_start(self):
         if not self.__business_tid:
@@ -92,14 +92,14 @@ class Tracker:
                         _thread.stack_size(0x1000)
                         _thread.start_new_thread(self.__into_sleep, ())
                 if data[0] == 1:
-                    self.__cloud_option(*data[1])
+                    self.__server_option(*data[1])
                 self.__business_tag = 0
 
     def __loc_report(self):
         properties = self.__get_device_infos()
         if self.__net_connect():
             self.__history_report()
-            res = self.__cloud.send_telemetry(properties)
+            res = self.__server.send_telemetry(properties)
             if not res:
                 self.__history.write([properties])
 
@@ -108,7 +108,7 @@ class Tracker:
         his_datas = self.__history.read()
         if his_datas["data"]:
             for item in his_datas["data"]:
-                res = self.__cloud.send_telemetry(item)
+                res = self.__server.send_telemetry(item)
                 if not res:
                     failed_datas.append(item)
         if failed_datas:
@@ -176,14 +176,14 @@ class Tracker:
                 self.__net_manage.sync_time()
                 count = 0
                 while True:
-                    if self.__cloud.status:
+                    if self.__server.status:
                         break
-                    self.__cloud.disconnect()
-                    if self.__cloud.connect() or count >= retry:
+                    self.__server.disconnect()
+                    if self.__server.connect() or count >= retry:
                         break
                     count += 1
                     utime.sleep_ms(100)
-            res = self.__cloud.status
+            res = self.__server.status
         else:
             log.debug("Sim card is not ready.")
         return res
@@ -210,7 +210,7 @@ class Tracker:
         log.debug("alarm_time: %s, set_alarm res %s." % (str(alarm_time), _res))
         return self.__business_rtc.enable_alarm(1) if _res == 0 else -1
 
-    def __cloud_option(self, topic, data):
+    def __server_option(self, topic, data):
         # TODO:
         pass
 
@@ -220,7 +220,7 @@ class Tracker:
 
     def add_module(self, module):
         if isinstance(module, TBDeviceMQTTClient):
-            self.__cloud = module
+            self.__server = module
         elif isinstance(module, Battery):
             self.__battery = module
         elif isinstance(module, History):
@@ -261,13 +261,13 @@ class Tracker:
         self.__business_queue.put((0, "into_sleep"))
         self.__running_tag = 0
 
-    def cloud_callback(self, args):
+    def server_callback(self, args):
         self.__business_queue.put((1, args))
 
     def net_callback(self, args):
         log.debug("net_callback args: %s" % str(args))
         if args[1] == 0:
-            self.__cloud.disconnect()
+            self.__server.disconnect()
 
 
 def main():
@@ -275,8 +275,8 @@ def main():
     settings = Settings()
     battery = Battery()
     history = History()
-    cloud_cfg = settings.read("cloud")
-    cloud = TBDeviceMQTTClient(**cloud_cfg)
+    server_cfg = settings.read("server")
+    server = TBDeviceMQTTClient(**server_cfg)
     power_manage = PowerManage()
     temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
     loc_cfg = settings.read("loc")
@@ -291,7 +291,7 @@ def main():
     tracker.add_module(battery)
     tracker.add_module(history)
     tracker.add_module(net_manage)
-    tracker.add_module(cloud)
+    tracker.add_module(server)
     tracker.add_module(power_manage)
     tracker.add_module(temp_sensor)
     tracker.add_module(gnss)
@@ -301,7 +301,7 @@ def main():
     tracker.add_module(cyc)
 
     net_manage.set_callback(tracker.net_callback)
-    cloud.set_callback(tracker.cloud_callback)
+    server.set_callback(tracker.server_callback)
 
     tracker.running()
 

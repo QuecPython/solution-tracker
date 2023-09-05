@@ -13,16 +13,16 @@
 # limitations under the License.
 
 """
-@file      :settings_cloud.py
+@file      :settings_server.py
 @author    :Jack Sun (jack.sun@quectel.com)
-@brief     :Cloud config.
+@brief     :Server config.
 @version   :2.2.0
 @date      :2023-04-11 11:25:09
 @copyright :Copyright (c) 2022
 """
 
 
-class AliCloudConfig:
+class AliIotConfig:
 
     product_key = ""
     product_secret = ""

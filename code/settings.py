@@ -28,9 +28,9 @@ import _thread
 import usys as sys
 
 try:
-    from usr.dev_settings_cloud import AliCloudConfig, ThingsBoardConfig
+    from usr.dev_settings_server import AliIotConfig, ThingsBoardConfig
 except ImportError:
-    from usr.settings_cloud import AliCloudConfig, ThingsBoardConfig
+    from usr.settings_server import AliIotConfig, ThingsBoardConfig
 try:
     from usr.dev_settings_loc import LocConfig
 except ImportError:
@@ -63,11 +63,11 @@ class Settings:
                 self.__data["user"]["ota_status"]["app_current_version"] = PROJECT_VERSION
 
                 # CloudConfig init
-                self.__data["cloud"] = {}
-                if self.__data["user"]["cloud"] == UserConfig._cloud.AliYun:
-                    self.__data["cloud"] = {k: v for k, v in AliCloudConfig.__dict__.items() if not k.startswith("_")}
-                elif self.__data["user"]["cloud"] == UserConfig._cloud.ThingsBoard:
-                    self.__data["cloud"] = {k: v for k, v in ThingsBoardConfig.__dict__.items() if not k.startswith("_")}
+                self.__data["server"] = {}
+                if self.__data["user"]["server"] == UserConfig._server.AliYun:
+                    self.__data["server"] = {k: v for k, v in AliIotConfig.__dict__.items() if not k.startswith("_")}
+                elif self.__data["user"]["server"] == UserConfig._server.ThingsBoard:
+                    self.__data["server"] = {k: v for k, v in ThingsBoardConfig.__dict__.items() if not k.startswith("_")}
 
                 # LocConfig init
                 self.__data["loc"] = {k: v for k, v in LocConfig.__dict__.items() if not k.startswith("_")}
