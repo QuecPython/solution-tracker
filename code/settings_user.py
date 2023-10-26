@@ -97,7 +97,7 @@ class UserConfig:
 
     drive_behavior_code = _drive_behavior_code.none
 
-    loc_method = _loc_method.all
+    loc_method = _loc_method.gps
 
     loc_gps_read_timeout = 300
 

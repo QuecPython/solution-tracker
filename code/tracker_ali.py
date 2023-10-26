@@ -26,7 +26,7 @@ import _thread
 import usys as sys
 from misc import Power
 from queue import Queue
-from machine import RTC, I2C
+from machine import RTC
 
 from usr.settings_user import UserConfig
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, FIRMWARE_NAME, FIRMWARE_VERSION
@@ -36,8 +36,7 @@ from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManage
 from usr.modules.aliyunIot import AliIot, AliIotOTA
 from usr.modules.power_manage import PowerManage, PMLock
-from usr.modules.temp_humidity_sensor import TempHumiditySensor
-from usr.modules.location import GNSS, CellLocator, WiFiLocator, NMEAParse, CoordinateSystemConvert
+from usr.modules.location import GNSS, GNSSInternal, GNSSExternal, CellLocator, WiFiLocator, CoordinateSystemConvert
 
 log = getLogger(__name__)
 
@@ -52,11 +51,9 @@ class Tracker:
         self.__gnss = None
         self.__cell = None
         self.__wifi = None
-        self.__nmea_parse = None
         self.__csc = None
         self.__net_manage = None
         self.__pm = None
-        self.__temp_sensor = None
         self.__settings = None
 
         self.__business_lock = PMLock("block")
@@ -179,7 +176,6 @@ class Tracker:
         }
         properties.update(self.__get_loc_data())
         properties["device_module_status"]["location"] = 1 if properties["GeoLocation"]["Longitude"] else 0
-        properties.update(self.__get_temp_humitity())
         properties["device_module_status"]["temp_sensor"] = 1 if properties.get("temperature") is not None or properties.get("humidity") is not None else 0
         properties["device_module_status"]["net"] = int(self.__net_manage.status)
         return properties
@@ -193,20 +189,18 @@ class Tracker:
                 "Altitude": 0.0,
                 "CoordinateSystem": 1,
             },
-            "current_speed": -1,
+            "current_speed": 0,
         }
         loc_cfg = self.__settings.read("loc")
         loc_data["GeoLocation"]["CoordinateSystem"] = 1 if loc_cfg["map_coordinate_system"] == "WGS84" else 2
         user_cfg = self.__settings.read("user")
         if user_cfg["loc_method"] & UserConfig._loc_method.gps:
-            res = self.__gnss.read(user_cfg["loc_gps_read_timeout"])
-            if res[0] == 0:
-                gnss_data = res[1]
-                self.__nmea_parse.set_gps_data(gnss_data)
-                loc_data["GeoLocation"]["Longitude"] = float(self.__nmea_parse.Longitude)
-                loc_data["GeoLocation"]["Latitude"] = float(self.__nmea_parse.Latitude)
-                loc_data["GeoLocation"]["Altitude"] = float(self.__nmea_parse.Altitude)
-                loc_data["current_speed"] = float(self.__nmea_parse.Speed)
+            res = self.__gnss.read()
+            if res["state"] == "A":
+                loc_data["GeoLocation"]["Latitude"] = float(res["lat"]) * (1 if res["lat_dir"] == "N" else -1)
+                loc_data["GeoLocation"]["Longitude"] = float(res["lng"]) * (1 if res["lng_dir"] == "E" else -1)
+                loc_data["GeoLocation"]["Altitude"] = res["altitude"]
+                loc_data["current_speed"] = res["speed"]
                 loc_state = 1
         if loc_state == 0 and user_cfg["loc_method"] & UserConfig._loc_method.cell:
             res = self.__cell.read()
@@ -225,15 +219,6 @@ class Tracker:
             loc_data["GeoLocation"]["Longitude"] = lng
             loc_data["GeoLocation"]["Latitude"] = lat
         return loc_data
-
-    def __get_temp_humitity(self):
-        data = {}
-        res = self.__temp_sensor.read()
-        if res[0]:
-            data["temperature"] = res[0]
-        if res[1]:
-            data["humidity"] = res[1]
-        return data
 
     def __get_alarms(self, properties):
         alarms = []
@@ -430,22 +415,18 @@ class Tracker:
             self.__battery = module
         elif isinstance(module, History):
             self.__history = module
-        elif isinstance(module, GNSS):
+        elif isinstance(module, (GNSS, GNSSInternal, GNSSExternal)):
             self.__gnss = module
         elif isinstance(module, CellLocator):
             self.__cell = module
         elif isinstance(module, WiFiLocator):
             self.__wifi = module
-        elif isinstance(module, NMEAParse):
-            self.__nmea_parse = module
         elif isinstance(module, CoordinateSystemConvert):
             self.__csc = module
         elif isinstance(module, NetManage):
             self.__net_manage = module
         elif isinstance(module, PowerManage):
             self.__pm = module
-        elif isinstance(module, TempHumiditySensor):
-            self.__temp_sensor = module
         elif isinstance(module, Settings):
             self.__settings = module
         else:
@@ -488,13 +469,11 @@ def main():
     server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
     server_ota.set_server(server)
     power_manage = PowerManage()
-    temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
     loc_cfg = settings.read("loc")
     gnss = GNSS(**loc_cfg["gps_cfg"])
     cell = CellLocator(**loc_cfg["cell_cfg"])
     wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
-    nmea_parse = NMEAParse()
-    cyc = CoordinateSystemConvert()
+    csc = CoordinateSystemConvert()
 
     # Initialize tracker business modules.
     tracker = Tracker()
@@ -505,12 +484,10 @@ def main():
     tracker.add_module(server)
     tracker.add_module(server_ota)
     tracker.add_module(power_manage)
-    tracker.add_module(temp_sensor)
     tracker.add_module(gnss)
     tracker.add_module(cell)
     tracker.add_module(wifi)
-    tracker.add_module(nmea_parse)
-    tracker.add_module(cyc)
+    tracker.add_module(csc)
 
     # Set net and server callback.
     net_manage.set_callback(tracker.net_callback)

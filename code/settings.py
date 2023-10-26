@@ -64,7 +64,7 @@ class Settings:
 
                 # CloudConfig init
                 self.__data["server"] = {}
-                if self.__data["user"]["server"] == UserConfig._server.AliYun:
+                if self.__data["user"]["server"] == UserConfig._server.AliIot:
                     self.__data["server"] = {k: v for k, v in AliIotConfig.__dict__.items() if not k.startswith("_")}
                 elif self.__data["user"]["server"] == UserConfig._server.ThingsBoard:
                     self.__data["server"] = {k: v for k, v in ThingsBoardConfig.__dict__.items() if not k.startswith("_")}

@@ -26,7 +26,7 @@ import _thread
 import usys as sys
 from misc import Power
 from queue import Queue
-from machine import RTC, I2C
+from machine import RTC  # , I2C
 
 from usr.settings_user import UserConfig
 from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION
@@ -36,8 +36,7 @@ from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManage
 from usr.modules.thingsboard import TBDeviceMQTTClient
 from usr.modules.power_manage import PowerManage, PMLock
-from usr.modules.temp_humidity_sensor import TempHumiditySensor
-from usr.modules.location import GNSS, CellLocator, WiFiLocator, NMEAParse, CoordinateSystemConvert
+from usr.modules.location import GNSS, GNSSInternal, GNSSExternal, CellLocator, WiFiLocator, CoordinateSystemConvert
 
 log = getLogger(__name__)
 
@@ -52,11 +51,9 @@ class Tracker:
         self.__gnss = None
         self.__cell = None
         self.__wifi = None
-        self.__nmea_parse = None
         self.__csc = None
         self.__net_manage = None
         self.__pm = None
-        self.__temp_sensor = None
         self.__settings = None
 
         self.__business_lock = PMLock("block")
@@ -121,32 +118,31 @@ class Tracker:
     def __get_loc_data(self):
         loc_state = 0
         loc_data = {
-            "Longitude": 181,
-            "Latitude": 91,
-            "Altitude": -1,
-            "Speed": -1,
+            "Longitude": 0.0,
+            "Latitude": 0.0,
+            "Altitude": 0.0,
+            "Speed": 0.0,
         }
         loc_cfg = self.__settings.read("loc")
         user_cfg = self.__settings.read("user")
         if user_cfg["loc_method"] & UserConfig._loc_method.gps:
-            res = self.__gnss.read(user_cfg["loc_gps_read_timeout"])
-            if res[0] == 0:
-                gnss_data = res[1]
-                self.__nmea_parse.set_gps_data(gnss_data)
-                loc_data["Longitude"] = float(self.__nmea_parse.Longitude)
-                loc_data["Latitude"] = float(self.__nmea_parse.Latitude)
-                loc_data["Altitude"] = float(self.__nmea_parse.Altitude)
-                loc_data["current_speed"] = float(self.__nmea_parse.Speed)
+            res = self.__gnss.read()
+            log.debug("gnss read %s" % str(res))
+            if res["state"] == "A":
+                loc_data["Latitude"] = float(res["lat"]) * (1 if res["lat_dir"] == "N" else -1)
+                loc_data["Longitude"] = float(res["lng"]) * (1 if res["lng_dir"] == "E" else -1)
+                loc_data["Altitude"] = res["altitude"]
+                loc_data["current_speed"] = res["speed"]
                 loc_state = 1
         if loc_state == 0 and user_cfg["loc_method"] & UserConfig._loc_method.cell:
             res = self.__cell.read()
-            if res:
+            if isinstance(res, tuple):
                 loc_data["Longitude"] = res[0]
                 loc_data["Latitude"] = res[1]
                 loc_state = 1
         if loc_state == 0 and user_cfg["loc_method"] & UserConfig._loc_method.wifi:
             res = self.__wifi.read()
-            if res:
+            if isinstance(res, tuple):
                 loc_data["Longitude"] = res[0]
                 loc_data["Latitude"] = res[1]
                 loc_state = 1
@@ -225,22 +221,18 @@ class Tracker:
             self.__battery = module
         elif isinstance(module, History):
             self.__history = module
-        elif isinstance(module, GNSS):
+        elif isinstance(module, (GNSS, GNSSInternal, GNSSExternal)):
             self.__gnss = module
         elif isinstance(module, CellLocator):
             self.__cell = module
         elif isinstance(module, WiFiLocator):
             self.__wifi = module
-        elif isinstance(module, NMEAParse):
-            self.__nmea_parse = module
         elif isinstance(module, CoordinateSystemConvert):
             self.__csc = module
         elif isinstance(module, NetManage):
             self.__net_manage = module
         elif isinstance(module, PowerManage):
             self.__pm = module
-        elif isinstance(module, TempHumiditySensor):
-            self.__temp_sensor = module
         elif isinstance(module, Settings):
             self.__settings = module
         else:
@@ -278,12 +270,12 @@ def main():
     server_cfg = settings.read("server")
     server = TBDeviceMQTTClient(**server_cfg)
     power_manage = PowerManage()
-    temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
     loc_cfg = settings.read("loc")
     gnss = GNSS(**loc_cfg["gps_cfg"])
+    gnss.set_trans(0)
+    gnss.start()
     cell = CellLocator(**loc_cfg["cell_cfg"])
     wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
-    nmea_parse = NMEAParse()
     cyc = CoordinateSystemConvert()
 
     tracker = Tracker()
@@ -293,11 +285,9 @@ def main():
     tracker.add_module(net_manage)
     tracker.add_module(server)
     tracker.add_module(power_manage)
-    tracker.add_module(temp_sensor)
     tracker.add_module(gnss)
     tracker.add_module(cell)
     tracker.add_module(wifi)
-    tracker.add_module(nmea_parse)
     tracker.add_module(cyc)
 
     net_manage.set_callback(tracker.net_callback)

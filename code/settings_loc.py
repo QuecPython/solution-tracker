@@ -55,7 +55,6 @@ class LocConfig:
         "stopbits": 1,
         "flowctl": 0,
         "gps_mode": _gps_mode.external,
-        "nmea": 0b010111,
         "PowerPin": None,
         "StandbyPin": None,
         "BackupPin": None,
