@@ -21,9 +21,10 @@
 @copyright :Copyright (c) 2022
 """
 
+import sys
 import utime
 import _thread
-import usys as sys
+import osTimer
 from misc import Power
 from queue import Queue
 from machine import RTC
@@ -33,7 +34,7 @@ from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, FIRMWARE_NAME,
 from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
-from usr.modules.net_manage import NetManage
+from usr.modules.net_manage import NetManager
 from usr.modules.aliyunIot import AliIot, AliIotOTA
 from usr.modules.power_manage import PowerManage, PMLock
 from usr.modules.location import GNSS, GNSSInternal, GNSSExternal, CellLocator, WiFiLocator, CoordinateSystemConvert
@@ -52,7 +53,7 @@ class Tracker:
         self.__cell = None
         self.__wifi = None
         self.__csc = None
-        self.__net_manage = None
+        self.__net_manager = None
         self.__pm = None
         self.__settings = None
 
@@ -63,6 +64,10 @@ class Tracker:
         self.__business_tag = 0
         self.__running_tag = 0
         self.__server_ota_flag = 0
+        self.__server_reconn_timer = osTimer()
+        self.__server_conn_tag = 0
+        self.__server_reconn_count = 0
+        self.__reset_tag = 0
 
     def __business_start(self):
         if not self.__business_tid:
@@ -85,9 +90,8 @@ class Tracker:
                 if data[0] == 0:
                     if data[1] == "loc_report":
                         self.__loc_report()
-                    elif data[1] == "into_sleep":
-                        _thread.stack_size(0x1000)
-                        _thread.start_new_thread(self.__into_sleep, ())
+                    elif data[1] == "server_connect":
+                        self.__server_connect()
                     elif data[1] == "check_ota":
                         self.__server_check_ota()
                     elif data[1] == "ota_refresh":
@@ -98,10 +102,10 @@ class Tracker:
 
     def __loc_report(self):
         his_data = {"properties": {}, "events": []}
-        properties = self.__get_device_infos()
+        loc_state, properties = self.__get_device_infos()
         alarms = self.__get_alarms(properties)
-        if self.__net_connect():
-            self.__history_report()
+        res = False
+        if self.__server.status:
             res = self.__server.properties_report(properties)
             if not res:
                 his_data["properties"] = properties
@@ -109,8 +113,18 @@ class Tracker:
                 res = self.__server.event_report(alarm, {})
                 if not res:
                     his_data["events"].append(alarm)
+
+        if loc_state and not self.__server.status:
+            his_data["properties"] = properties
+            his_data["events"] = alarms
+
         if his_data["properties"] or his_data["events"]:
             self.__history.write([his_data])
+
+        self.__history_report()
+
+        user_cfg = self.__settings.read("user")
+        self.__set_rtc(user_cfg["work_cycle_period"], self.loc_report)
 
     def __history_report(self):
         failed_datas = []
@@ -174,11 +188,12 @@ class Tracker:
                 # "mike": 0,
             },
         }
-        properties.update(self.__get_loc_data())
+        loc_state, loc_data = self.__get_loc_data()
+        properties.update(loc_data)
         properties["device_module_status"]["location"] = 1 if properties["GeoLocation"]["Longitude"] else 0
         properties["device_module_status"]["temp_sensor"] = 1 if properties.get("temperature") is not None or properties.get("humidity") is not None else 0
-        properties["device_module_status"]["net"] = int(self.__net_manage.status)
-        return properties
+        properties["device_module_status"]["net"] = int(self.__net_manager.net_status())
+        return (loc_state, properties)
 
     def __get_loc_data(self):
         loc_state = 0
@@ -200,7 +215,7 @@ class Tracker:
                 loc_data["GeoLocation"]["Latitude"] = float(res["lat"]) * (1 if res["lat_dir"] == "N" else -1)
                 loc_data["GeoLocation"]["Longitude"] = float(res["lng"]) * (1 if res["lng_dir"] == "E" else -1)
                 loc_data["GeoLocation"]["Altitude"] = res["altitude"]
-                loc_data["current_speed"] = res["speed"]
+                loc_data["current_speed"] = float(res["speed"])
                 loc_state = 1
         if loc_state == 0 and user_cfg["loc_method"] & UserConfig._loc_method.cell:
             res = self.__cell.read()
@@ -218,65 +233,20 @@ class Tracker:
             lng, lat = self.__csc.wgs84_to_gcj02(loc_data["GeoLocation"]["Longitude"], loc_data["GeoLocation"]["Latitude"])
             loc_data["GeoLocation"]["Longitude"] = lng
             loc_data["GeoLocation"]["Latitude"] = lat
-        return loc_data
+        return (loc_state, loc_data)
 
     def __get_alarms(self, properties):
         alarms = []
         user_cfg = self.__settings.read("user")
         if user_cfg["sw_over_speed_alert"] and properties["current_speed"] >= user_cfg["over_speed_threshold"]:
             alarms.append("over_speed_alert")
-        if user_cfg["sw_sim_abnormal_alert"] and self.__net_manage.sim_status != 1:
+        if user_cfg["sw_sim_abnormal_alert"] and self.__net_manager.sim_status() != 1:
             alarms.append("sim_abnormal_alert")
         if user_cfg["sw_low_power_alert"] and properties["energy"] < user_cfg["low_power_alert_threshold"]:
             alarms.append("low_power_alert")
         if user_cfg["sw_fault_alert"] and 0 in properties["device_module_status"].values():
             alarms.append("fault_alert")
         return alarms
-
-    def __net_connect(self, retry=2):
-        res = False
-        if not self.__net_manage.status:
-            log.debug("Net not connect, try to reconnect.")
-            self.__net_manage.reconnect()
-            self.__net_manage.wait_connect()
-
-        if self.__net_manage.sim_status == 1:
-            count = 0
-            while not self.__net_manage.status:
-                log.debug("Net reconnect times %s" % count)
-                self.__net_manage.reconnect()
-                self.__net_manage.wait_connect()
-                if self.__net_manage.status or count >= retry:
-                    break
-                count += 1
-            if self.__net_manage.status:
-                self.__net_manage.sync_time()
-                count = 0
-                while True:
-                    if self.__server.status:
-                        break
-                    self.__server.disconnect()
-                    if self.__server.connect() == 0 or count >= retry:
-                        self.__server_cfg_save(self.__server.auth_info)
-                        break
-                    count += 1
-                    utime.sleep_ms(100)
-            res = self.__server.status
-        else:
-            log.debug("Sim card is not ready.")
-        return res
-
-    def __into_sleep(self):
-        while True:
-            if self.__business_queue.size() == 0 and self.__business_tag == 0:
-                break
-            utime.sleep_ms(500)
-        user_cfg = self.__settings.read("user")
-        if user_cfg["work_cycle_period"] < user_cfg["work_mode_timeline"]:
-            self.__pm.autosleep(1)
-        else:
-            self.__pm.set_psm(mode=1, tau=user_cfg["work_cycle_period"], act=5)
-        self.__set_rtc(user_cfg["work_cycle_period"], self.running)
 
     def __set_rtc(self, period, callback):
         self.__business_rtc.enable_alarm(0)
@@ -287,6 +257,23 @@ class Tracker:
         _res = self.__business_rtc.set_alarm(alarm_time)
         log.debug("alarm_time: %s, set_alarm res %s." % (str(alarm_time), _res))
         return self.__business_rtc.enable_alarm(1) if _res == 0 else -1
+
+    def __server_connect(self):
+        if self.__net_manager.net_status():
+            self.__server.disconnect()
+            self.__server.connect()
+        if not self.__server.status:
+            self.__server_reconn_timer.stop()
+            self.__server_reconn_timer.start(60 * 1000, 0, self.server_connect)
+            self.__server_reconn_count += 1
+        else:
+            self.__server_reconn_count = 0
+
+        # When server not connect success after 20 miuntes, to reset device.
+        if self.__server_reconn_count >= 20:
+            _thread.stack_size(0x1000)
+            _thread.start_new_thread(self.__power_restart, ())
+        self.__server_conn_tag = 0
 
     def __server_cfg_save(self, data):
         save_tag = 0
@@ -373,7 +360,7 @@ class Tracker:
         self.__settings.save({"user": user_cfg})
 
     def __server_check_ota(self):
-        if self.__server_ota_flag == 0 and self.__net_connect():
+        if self.__server_ota_flag == 0 and self.__server.status:
             res = self.__server.ota_device_inform(PROJECT_VERSION, PROJECT_NAME)
             log.debug("ota_device_inform report project %s" % res)
             res = self.__server.ota_device_inform(FIRMWARE_VERSION, FIRMWARE_NAME)
@@ -423,10 +410,8 @@ class Tracker:
             self.__wifi = module
         elif isinstance(module, CoordinateSystemConvert):
             self.__csc = module
-        elif isinstance(module, NetManage):
-            self.__net_manage = module
-        elif isinstance(module, PowerManage):
-            self.__pm = module
+        elif isinstance(module, NetManager):
+            self.__net_manager = module
         elif isinstance(module, Settings):
             self.__settings = module
         else:
@@ -434,20 +419,11 @@ class Tracker:
         return True
 
     def running(self, args=None):
-        if self.__running_tag == 1:
-            return
-        self.__running_tag = 1
-
-        # Disable sleep.
-        self.__pm.autosleep(0)
-        self.__pm.set_psm(mode=0)
-
         self.__business_start()
+        self.server_connect(None)
         self.__business_queue.put((0, "ota_refresh"))
-        self.__business_queue.put((0, "loc_report"))
+        self.loc_report(None)
         self.__business_queue.put((0, "check_ota"))
-        self.__business_queue.put((0, "into_sleep"))
-        self.__running_tag = 0
 
     def server_callback(self, args):
         self.__business_queue.put((1, args))
@@ -456,46 +432,64 @@ class Tracker:
         log.debug("net_callback args: %s" % str(args))
         if args[1] == 0:
             self.__server.disconnect()
+            self.__server_reconn_timer.stop()
+            self.__server_reconn_timer.start(30 * 1000, 0, self.server_connect)
+        else:
+            self.__server_reconn_timer.stop()
+            self.server_connect(None)
+
+    def loc_report(self, args):
+        self.__business_queue.put((0, "loc_report"))
+
+    def server_connect(self, args):
+        if self.__server_conn_tag == 0:
+            self.__server_conn_tag = 1
+            self.__business_queue.put((0, "server_connect"))
 
 
-def main():
-    # Initialize base modules.
-    net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
+if __name__ == "__main__":
+    # Init settings.
     settings = Settings()
+    # Init battery.
     battery = Battery()
+    # Init history
     history = History()
+    # Init power manage and set device low energy.
+    power_manage = PowerManage()
+    power_manage.autosleep(1)
+    # Init net modules and start net connect.
+    net_manager = NetManager()
+    _thread.stack_size(0x1000)
+    _thread.start_new_thread(net_manager.net_connect, ())
+    # Init GNSS modules and start reading and parsing gnss data.
+    loc_cfg = settings.read("loc")
+    gnss = GNSS(**loc_cfg["gps_cfg"])
+    gnss.set_trans(0)
+    gnss.start()
+    # Init cell and wifi location modules.
+    cell = CellLocator(**loc_cfg["cell_cfg"])
+    wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
+    # Init coordinate system convert modules.
+    csc = CoordinateSystemConvert()
+    # Init server modules.
     server_cfg = settings.read("server")
     server = AliIot(**server_cfg)
     server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
     server_ota.set_server(server)
-    power_manage = PowerManage()
-    loc_cfg = settings.read("loc")
-    gnss = GNSS(**loc_cfg["gps_cfg"])
-    cell = CellLocator(**loc_cfg["cell_cfg"])
-    wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
-    csc = CoordinateSystemConvert()
-
     # Initialize tracker business modules.
     tracker = Tracker()
     tracker.add_module(settings)
     tracker.add_module(battery)
     tracker.add_module(history)
-    tracker.add_module(net_manage)
+    tracker.add_module(net_manager)
     tracker.add_module(server)
     tracker.add_module(server_ota)
-    tracker.add_module(power_manage)
     tracker.add_module(gnss)
     tracker.add_module(cell)
     tracker.add_module(wifi)
     tracker.add_module(csc)
-
     # Set net and server callback.
-    net_manage.set_callback(tracker.net_callback)
+    net_manager.set_callback(tracker.net_callback)
     server.set_callback(tracker.server_callback)
-
     # Tracker start.
     tracker.running()
-
-
-if __name__ == "__main__":
-    main()

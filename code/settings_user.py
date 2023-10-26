@@ -65,7 +65,7 @@ class UserConfig:
 
     checknet_timeout = 60
 
-    server = _server.AliIot
+    server = _server.ThingsBoard
 
     phone_num = ""
 
@@ -105,7 +105,7 @@ class UserConfig:
 
     work_mode_timeline = 3600
 
-    work_cycle_period = 30
+    work_cycle_period = 10
 
     user_ota_action = -1
 
