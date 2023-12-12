@@ -65,7 +65,7 @@ class UserConfig:
 
     checknet_timeout = 60
 
-    server = _server.ThingsBoard
+    server = _server.AliIot
 
     phone_num = ""
 

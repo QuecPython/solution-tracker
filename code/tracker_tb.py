@@ -36,7 +36,7 @@ from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManager
 from usr.modules.thingsboard import TBDeviceMQTTClient
 from usr.modules.power_manage import PowerManage, PMLock
-from usr.modules.location import GNSS, GNSSInternal, GNSSExternal, CellLocator, WiFiLocator, CoordinateSystemConvert
+from usr.modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
 
 log = getLogger(__name__)
 
@@ -204,7 +204,7 @@ class Tracker:
             self.__battery = module
         elif isinstance(module, History):
             self.__history = module
-        elif isinstance(module, (GNSS, GNSSInternal, GNSSExternal)):
+        elif isinstance(module, GNSSBase):
             self.__gnss = module
         elif isinstance(module, CellLocator):
             self.__cell = module
