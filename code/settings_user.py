@@ -24,9 +24,9 @@
 
 class UserConfig:
 
-    class _cloud:
+    class _server:
         none = 0x0
-        AliYun = 0x1
+        AliIot = 0x1
         ThingsBoard = 0x2
 
     class _loc_method:
@@ -65,7 +65,7 @@ class UserConfig:
 
     checknet_timeout = 60
 
-    cloud = _cloud.AliYun
+    server = _server.AliIot
 
     phone_num = ""
 
@@ -105,7 +105,7 @@ class UserConfig:
 
     work_mode_timeline = 3600
 
-    work_cycle_period = 30
+    work_cycle_period = 10
 
     user_ota_action = -1
 

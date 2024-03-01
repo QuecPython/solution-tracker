@@ -27,9 +27,9 @@ from machine import UART
 class LocConfig:
 
     class _gps_mode:
-        none = 0x0
         internal = 0x1
-        external = 0x2
+        external_uart = 0x2
+        external_i2c = 0x3
 
     class _map_coordinate_system:
         WGS84 = "WGS84"
@@ -54,8 +54,7 @@ class LocConfig:
         "parity": 0,
         "stopbits": 1,
         "flowctl": 0,
-        "gps_mode": _gps_mode.external,
-        "nmea": 0b010111,
+        "gps_mode": _gps_mode.external_uart,
         "PowerPin": None,
         "StandbyPin": None,
         "BackupPin": None,
