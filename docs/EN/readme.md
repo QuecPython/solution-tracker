@@ -1,4 +1,4 @@
-[中文](README_zh.md) | **English** |
+[中文](../../readme.md) | **English** |
 
 ## Revision History
 
