@@ -1,3 +1,5 @@
+[中文](README_zh.md) | **English** |
+
 ## Revision History
 
 | Version | **Date**   | **Author** | Description |

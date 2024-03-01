@@ -1,3 +1,5 @@
+**中文** | [English](./docs/EN/readme.md) | 
+
 ## 修订历史
 
 | Version | **Date**   | **Author** | **Change expression** |
