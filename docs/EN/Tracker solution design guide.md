@@ -1,3 +1,5 @@
+[中文](../CN/定位器方案设计指导.md) | **English** |
+
 # Tracker Solution Design Guide
 
 ## Introduction

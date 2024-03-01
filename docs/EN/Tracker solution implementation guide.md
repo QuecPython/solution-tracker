@@ -1,3 +1,5 @@
+[中文](../CN/定位器方案应用指导.md) | **English** |
+
 # Tracker Solution Application Note
 
 ## Introduction
