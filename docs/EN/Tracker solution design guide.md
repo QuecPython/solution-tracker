@@ -1,99 +1,99 @@
-# 定位器方案设计指导
+# Tracker Solution Design Guide
 
-## 引言
+## Introduction
 
-本文档主要描述移远通信QuecPython定位器的设计框架, 包含软硬件系统框架、关键组件功能描述、系统初始化流程和业务流程的介绍以及功能示例, 方便用户快速了解QuecPython定位器的整体架构与功能。
+This document describes the design framework of Quecel smart tracker in the QuecPython solution, including the software and hardware system framework, description of key components, system initialization process, business process introduction, and functional examples, to help you quickly understand the overall architecture and functions of Quectel smart tracker.
 
-## 功能简介
+## Function Overview
 
-智能定位器方案中的软件功能介绍如下图所示, 方案根据定位器实际业务进行功能拆分, 模块化开发实现。
+The software functions in the smart tracker solution are demonstrated in the diagram below. The solution is divided into functions based on the actual business of the tracker and developed in a modular way.
 
 ![solution-tracker-101](./media/solution-tracker-101.png)
 
-- 传输协议解析
-    + 阿里Iot平台连接与数据交互
-    + ThingsBoard平台连接与数据交互
-    + GT06协议
-    + JT/T808协议
-- 网络管理
-    + MQTT协议(阿里Iot/ThingsBoard/其他平台)
-    + TCP/UDP协议(GT06/JTT808协议)
-    + APN设置(用于注网拨号)
-    + LTE NET(4G注网拨号)
-- 外设管理
-    + GNSS定位数据的读取, 使能, AGPS注入等
-    + G-Sensor传感器数据读取
-    + Charge IC充电管理, 获取设备充电状态
-    + Battery电池管理, 读取电池电压, 换算电量
-    + LED指示灯
-- 数据存储
-    + 系统配置参数存储
-    + 定位数据补传存储
-    + AGPS下载存储
-    + 日志信息存储
-- 设备升级
-    + OTA升级
-- 业务功能管理
-    + 网络与IoT 平台的连接与重连
-    + 设备数据采集与上报
-    + 报警检测与上报
-    + IoT 平台下行指令处理
-    + 设备低功耗休眠
+- Transmission Protocol Parsing
+    + Connection and data interaction with Alibaba IoT Platform
+    + Connection and data interaction with ThingsBoard
+    + GT06 protocol
+    + JT/T808 protocol
+- Network Management
+    + MQTT protocol (Alibaba IoT/ThingsBoard/other platforms)
+    + TCP/UDP protocol (GT06/JTT808 protocol)
+    + APN settings (network registration and data call)
+    + LTE NET (4G network registration and data call)
+- Peripheral Management
+    + GNSS: Turn on/off the GNSS module, read positioning data from the GNSS module, and inject AGPS data.
+    + G-sensor: Read data of sensors
+    + Charge IC: Charging management, obtaining device charging status
+    + Battery: Battery management, reading battery voltage and calculating battery level
+    + LED: LED indicator
+- Data Storage
+    + Storage of system configuration parameters
+    + Storage of location data backup
+    + AGPS download storage
+    + Log information storage
+- Device Upgrade
+    + OTA upgrade
+- Business Function Management
+    + Connection and reconnection of network and IoT platforms
+    + Device data acquisition and reporting
+    + Alarm detection and reporting
+    + Processing of IoT platform downlink commands
+    + Device low power consumption
 
-## 数据交互流程
+## Data Interaction Process
 
-模组、IoT 平台之间数据交互流程如下图介绍:
+The data interaction process between the module and the IoT platform is described in the following diagram.
 
 ![solution-tracker-102](./media/solution-tracker-102.png)
 
-流程描述：
+Process description:
 
-1. 手机APP发送指令到IoT 平台, 服务端通过TCP/UDP/MQTT协议下发指令数据到模组端接收, 模组进行解析处理;
-2. 模组通过TCP/UDP/MQTT协议上报数据到IoT 平台, IoT 平台进行处理, 同步显示到手机端
+1. The mobile app sends commands to the IoT platform. The server issues commands to the module through TCP/UDP/MQTT protocols, and the module parses the command data.
+2. The module reports data to the IoT platform through TCP/UDP/MQTT protocols. The IoT platform processes the data and synchronously displays it on the mobile app.
 
-## 软件框架
+## Software Framework
 
-### 设计思想与模式
+### Design Philosophy and Patterns
 
-- 本系统采用监听者模式设计，通过回调函数进行消息的传递事件的监听
-- 软件根据定位器业务需求对其功能进行拆分, 主要分模块来实现, 每个部分独立开发实现, 相互之间减少依赖, 可独立调试运行, 达到解耦合的效果;
-- 功能之间的事件交互都通过回调函数来完成, 所有的业务功能处理全部在`Tracker`类中进行处理, 如下行的指令处理, 报警检测, 数据采集与上报, 设备的控制等。
+- This system is designed as a listener pattern, that is, transmit messages and listen for events through callback functions.
+- The software functions are split according to the tracker's business requirements, which are implemented by blocks. Each part is independently developed to reduce dependencies and can be debugged and run independently, thus achieving decoupling effects.
+- Interactions between functions are realized through callback functions. All business function processing, such as downlink command processing, alarm detection, data acquisition and reporting, and device control, is done in the `Tracker` class.
 
 ![solution-tracker-104](./media/solution-tracker-104.png)
 
-1. 所有的功能模块通过`Tracker.add_module`注册到`Tracker`类中进行控制
-2. Server模块(IoT 平台交互模块)通过回调将服务型下行的数据传递到`Tracker.server_callback`中进行处理
-3. NetManage模块通过回调将网络断开连接事件传递到`Tracker.net_callback`中进行处理
+1. All functional objects are registered in the `Tracker` class through `Tracker.add_module`.
+2. The Server object (IoT platform interaction object) transmits service downlink data to `Tracker.server_callback()` for processing through callback functions.
+3. The NetManage object transmits network disconnection events to `Tracker.net_callback` for processing through callback functions.
 
-### 软件架构图
+### Software Architecture Diagram
 
-软件系统框架介绍描述如下:
+The software system framework is described as follows:
 
-- 展现层, 对接不同的 IoT 平台
-- 传输层, 使用不同的协议进行交互
-- 业务层, 主要用于采集设备数据, 控制设备模块, 接收处理IoT 平台下行指令, 数据的整合上报
-- 设备层,  主要是定位数据的获取与解析, 传感器数据的读取, 电池管理, 历史数据存储等功能, 设备数据的信息的采集与设备功能设置, 如设备的版本信息, IMEI号, APN设置, 网络拨号, 设备低功耗等
+- Display layer, connection with different IoT platforms
+- Transport layer, data interaction over different protocols
+- Business layer, mainly used for device data acquisition, device control, downlink commands receiving and processing, and data integration and reporting.
+- Device layer, functions including obtaining and parsing location data, reading sensor data, battery management, historical data storage, acquiring device information, and setting device functions such as device version, IMEI number, APN settings, network data call and device low power consumption.
 
 ![solution-tracker-107](./media/solution-tracker-107.png)
 
-## 功能组件介绍
+## Component Introduction
 
-### 核心业务模块(Tracker)
+### Core Business Object (Tracker)
 
-1. 功能描述：
+1. Function Description
 
-实现核心业务逻辑, 与服务端的数据交互解析, 设备模块的控制, 所有功能以事件的形式, 传入业务事件消息队列子线程中处理。
+Implement core business logic, interact with the server and parse the data, and control device objects. All functions are passed and processed in the sub-thread of the business event message queue as events.
 
-2. 实现原理：
+2. Implementation Principle
 
-- 通过注册功能模块, 获取各个功能模块的数据, 如定位信息, 电池信息, 传感器信息等；
+- Register functional objects to obtain data from various functional objects, such as location information, battery information, and sensor information.
 
 ```python
 class Tracker:
     ...
 
     def add_module(self, module):
-        # 将各个功能模块注册到Tracker类中，在Tracker类中进行控制
+        # Register various functional objects to the Tracker class for control in the Tracker class
         if isinstance(module, AliIot):
             self.__server = module
         elif isinstance(module, AliIotOTA):
@@ -128,30 +128,30 @@ class Tracker:
         if self.__running_tag == 1:
             return
         self.__running_tag = 1
-        # 禁用设备休眠
+        # Disable device sleep
         self.__pm.autosleep(0)
         self.__pm.set_psm(mode=0)
-        # 启动业务事件消息队列监听子线程
+        # Start the sub-thread of listening for business event message queues
         self.__business_start()
-        # 发送OTA版本刷新指令到事件队列中进行执行
+        # Send version OTA upgrade command to the event queue for execution
         self.__business_queue.put((0, "ota_refresh"))
-        # 发送上报定位数据事件(包含网络的连接，设备数据的采集，设备数据的上报)
+        # Send location data reporting event (including network connection, device data acquisition and device data reporting)
         self.__business_queue.put((0, "loc_report"))
-        # 发送OTA升级查询指令事件
+        # Send the event of querying OTA upgrade
         self.__business_queue.put((0, "check_ota"))
-        # 发送设备休眠事件
+        # Send the device sleep event
         self.__business_queue.put((0, "into_sleep"))
         self.__running_tag = 0
 ```
 
-- 通过回调监听服务端下发的指令消息, 进行业务处理；
+- Listen for the commands issued by the server through callback functions and perform business processing.
 
 ```python
-class  Tracker:
+class Tracker:
     ...
 
     def server_callback(self, args):
-        # 服务端下行消息传入业务事件消息队列中进行处理
+        # Pass the server's downlink message to the business event message queue for processing
         self.__business_queue.put((1, args))
 ```
 
@@ -165,7 +165,7 @@ class Tracker:
             with self.__business_lock:
                 self.__business_tag = 1
                 ...
-                # 处理IoT 平台下行指令功能
+                # Process IoT platform downlink commands
                 if data[0] == 1:
                     self.__server_option(*data[1])
                 self.__business_tag = 0
@@ -177,24 +177,24 @@ class Tracker:
 
     def __server_option(self, topic, data):
         if topic.endswith("/property/set"):
-            # 处理属性设置的下行消息
+            # Process the downlink message of setting properties
             self.__server_property_set(data)
         elif topic.find("/rrpc/request/") != -1:
-            # 处理透传数据的下行消息
+            # Process the downlink message of transparent transmission data
             msg_id = topic.split("/")[-1]
             self.__server_rrpc_response(msg_id, data)
         elif topic.find("/thing/service/") != -1:
-            # 处理服务数据的下行消息
+            # Process the downlink message of service data
             service = topic.split("/")[-1]
             self.__server_service_response(service, data)
         elif topic.startswith("/ota/device/upgrade/") or topic.endswith("/ota/firmware/get_reply"):
-            # 处理OTA升级的下行消息
+            # Process the downlink message of OTA upgrades
             user_cfg = self.__settings.read("user")
             if self.__server_ota_flag == 0:
                 if user_cfg["sw_ota"] == 1:
                     self.__server_ota_flag = 1
                     if user_cfg["sw_ota_auto_upgrade"] == 1 or user_cfg["user_ota_action"] == 1:
-                        # 满足OTA升级条件，执行OTA升级流程
+                        # Perform the OTA upgrade after the conditions for the OTA upgrade have been met
                         self.__server_ota_process(data)
                     else:
                         self.__server_ota_flag = 0
@@ -207,7 +207,7 @@ class Tracker:
                     self.__server.ota_device_progress(-1, "Device is not alowed ota.", module)
 ```
 
-- 通过RTC回调唤醒操作, 唤醒设备休眠, 进行业务数据上报.
+- Wake up the device from sleep through the RTC callback function and report business data.
 
 ```python
 class Tracker:
@@ -219,16 +219,16 @@ class Tracker:
                 break
             utime.sleep_ms(500)
         user_cfg = self.__settings.read("user")
-        # 根据休眠时长自动调整休眠模式，autosleep或者psm
+        # Automatically adjust the sleep mode (auto-sleep or PSM) based on the sleep duration
         if user_cfg["work_cycle_period"] < user_cfg["work_mode_timeline"]:
             self.__pm.autosleep(1)
         else:
             self.__pm.set_psm(mode=1, tau=user_cfg["work_cycle_period"], act=5)
-        # 启动RTC定时唤醒设备
+        # Enable RTC to wake up the device at a specified time
         self.__set_rtc(user_cfg["work_cycle_period"], self.running)
 
     def __set_rtc(self, period, callback):
-        # 设置RTC唤醒时钟，唤醒设备
+        # Set the RTC to wake up the device
         self.__business_rtc.enable_alarm(0)
         if callback and callable(callback):
             self.__business_rtc.register_callback(callback)
@@ -239,43 +239,42 @@ class Tracker:
         return self.__business_rtc.enable_alarm(1) if _res == 0 else -1
 ```
 
-3. 注册功能模块与回调函数配置
-
-```python
+3. Registration of functional objects and callback function configuration
+``````python
 def main():
-    # 初始化网络功能模块
+    # Initialize the network management object
     net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
-    # 初始化配置参数功能模块
+    # Initialize the configuration parameter object
     settings = Settings()
-    # 初始化电池检测功能模块
+    # Initialize the battery detection object
     battery = Battery()
-    # 初始化历史数据功能模块
+    # Initialize the historical data object
     history = History()
-    # 初始化IoT 平台(阿里Iot)功能模块
+    # Initialize the IoT platform (AliIot) object
     server_cfg = settings.read("server")
     server = AliIot(**server_cfg)
-    # 初始化IoT 平台(阿里Iot)OTA功能模块
+    # Initialize the IoT platform (AliIot) OTA object
     server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
     server_ota.set_server(server)
-    # 初始化低功耗功能模块
+    # Initialize the low power consumption object
     power_manage = PowerManage()
-    # 初始化温湿度传感器功能模块
+    # Initialize the temperature and humidity sensor object
     temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
     loc_cfg = settings.read("loc")
-    # 初始化GNSS定位功能模块
+    # Initialize the GNSS positioning object
     gnss = GNSS(**loc_cfg["gps_cfg"])
-    # 初始化基站定位功能模块
+    # Initialize the LBS positioning object
     cell = CellLocator(**loc_cfg["cell_cfg"])
-    # 初始化Wifi定位功能模块
+    # Initialize the Wi-Fi positioning object
     wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
-    # 初始化GNSS定位数据解析功能模块
+    # Initialize the GNSS positioning data parsing object
     nmea_parse = NMEAParse()
-    # 初始化WGS84与GCJ02坐标系转换功能模块
+    # Initialize the WGS84 to GCJ02 coordinate system conversion object
     cyc = CoordinateSystemConvert()
 
-    # 初始化Tracker业务功能模块
+    # Initialize the Tracker business object
     tracker = Tracker()
-    # 将基础功能模块注册到Tracker类中进行控制
+    # Register the basic objects to the Tracker class for control
     tracker.add_module(settings)
     tracker.add_module(battery)
     tracker.add_module(history)
@@ -290,29 +289,29 @@ def main():
     tracker.add_module(nmea_parse)
     tracker.add_module(cyc)
 
-    # 设置网络模块的回调, 当网络断开，进行业务处理
+    # Set the callback function for the network object, which processes business when the network is disconnected
     net_manage.set_callback(tracker.net_callback)
-    # 设置服务端下行数据接收的回调，当服务端下发指令时，进行业务处理
+    # Set the callback function for receiving downlink data from the server, which processes business when the server issues commands
     server.set_callback(tracker.server_callback)
 
-    # 启动Tracker项目业务功能.
+    # Start the Tracker project business functions
     tracker.running()
 
 
 if __name__ == "__main__":
-    # 主文件启动
+    # Run the main file
     main()
 ```
 
-### 定位模块(loction)
+### location
 
-1. 功能描述：
+1. Function Description
 
-通过内置或外挂GNSS, 基站, Wifi获取当前设备定位信息。
+Obtain the current device location information through built-in or external GNSS, LBS, and Wi-Fi.
 
-2.  实现原理：
+2. Implementation Principle
 
-- 内置GNSS通过quecgnss接口开启与读取GNSS数据；
+- Turn on the GNSS module to read the location data from the built-in GNSS through *quecgnss.read()*.
 
 ```python
 class GNSS:
@@ -320,10 +319,10 @@ class GNSS:
 
     def __internal_read(self):
         log.debug("__internal_read start.")
-        # 开启GNSS
+        # Turn on GNSS
         self.__internal_open()
 
-        # 清除串口缓存的GNSS历史数据
+        # Clear the historical GNSS data cached in the serial port
         while self.__break == 0:
             gnss_data = quecgnss.read(1024)
             if gnss_data[0] == 0:
@@ -333,7 +332,7 @@ class GNSS:
         self.__gps_nmea_data_clean()
         self.__gps_data_check_timer.start(2000, 1, self.__gps_data_check_callback)
         cycle = 0
-        # 读取GNSS原始数据
+        # Read raw GNSS data
         while self.__break == 0:
             gnss_data = quecgnss.read(1024)
             if gnss_data and gnss_data[1]:
@@ -350,25 +349,25 @@ class GNSS:
         self.__gps_data_check_timer.stop()
         self.__break = 0
 
-        self.__gps_data_check_callback(None)
-        # 关闭GNSS
+self.__gps_data_check_callback(None)
+        # Turn off GNSS
         self.__internal_close()
         log.debug("__internal_read %s." % ("success" if self.__get_gps_data() else "failed"))
         return self.__get_gps_data()
 ```
 
-- 外挂GNSS通过UART串口读取GNSS数据；
+- Read the location data from the external GNSS module through the UART.
 
 ```python
 class GNSS:
     ...
 
     def __external_read(self):
-        # 开启GNSS UART串口
+        # Open the UART for the external GNSS module
         self.__external_open()
         log.debug("__external_read start")
 
-        # 清除串口缓存的GNSS历史数据
+        # Clear the historical GNSS data cached in the UART
         while self.__break == 0:
             self.__gps_timer.start(50, 0, self.__gps_timer_callback)
             signal = self.__external_retrieve_queue.get()
@@ -384,7 +383,7 @@ class GNSS:
         self.__gps_nmea_data_clean()
         self.__gps_data_check_timer.start(2000, 1, self.__gps_data_check_callback)
         cycle = 0
-        # 读取GNSS原始数据
+        # Read raw GNSS data
         while self.__break == 0:
             self.__gps_timer.start(1500, 0, self.__gps_timer_callback)
             signal = self.__external_retrieve_queue.get()
@@ -406,15 +405,15 @@ class GNSS:
         self.__gps_data_check_timer.stop()
         self.__break = 0
 
-        # To check GPS data is usable or not.
+        # Check if GPS data is usable or not
         self.__gps_data_check_callback(None)
-        # 关闭GNSS串口
+        # Close the UART for the external GNSS module
         self.__external_close()
         log.debug("__external_read %s." % ("success" if self.__get_gps_data() else "failed"))
         return self.__get_gps_data()
 ```
 
-- 基站定位通过cellLocator基站定位接口获取基站定位经纬度, 精度等信息；
+- Read the location data, including the latitude, longitude and accuracy, from the LBS through *cellLocator.getLocation()*.
 
 ```python
 class CellLocator:
@@ -423,7 +422,7 @@ class CellLocator:
     def __read_thread(self):
         loc_data = ()
         try:
-            # 读取基站定位信息
+            # Read LBS-positioning data
             loc_data = cellLocator.getLocation(
                 self.__serverAddr,
                 self.__port,
@@ -437,16 +436,16 @@ class CellLocator:
         self.__queue.put(loc_data)
 ```
 
-- Wifi定位通过wifilocator和wifiScan接口获取定位经纬度, 精度, mac地址等信息。
+- Read the location data, including the latitude, longitude, accuracy and MAC address, from the Wi-Fi through *self.__wifilocator_obj.getwifilocator()*.
 
 ```python
 class WiFiLocator:
-    ...
+    ... 
 
-    def __read_thread(self):
+def __read_thread(self):
         loc_data = ()
         try:
-            # 读取Wifi定位信息
+            # Read Wifi-positioning data
             loc_data = self.__wifilocator_obj.getwifilocator()
             loc_data = loc_data if isinstance(loc_data, tuple) and loc_data[0] and loc_data[1] else ()
         except Exception as e:
@@ -454,30 +453,30 @@ class WiFiLocator:
         self.__queue.put(loc_data)
 ```
 
-### 电池模块(battery)
+### battery
 
-1. 功能描述
+1. Function Description
 
-读取电池的电量, 电压, 获取电池的充电状态, 通过回调函数通知用户电池充电状态变化。
+Read the battery level and voltage. Get the charging status of the battery and notify you of the status changes through callback functions.
 
-2.  实现原理：
+2. Implementation Principles
 
-- 电池电压的获取方式有两种
-    + 通过Power模块获取电源电压
-    + 通过ADC获取电压进行计算
-    
+- There are two ways to read the battery voltage
+    + Get voltage through *Power.getVbatt()*
+    + Calculate the voltage obtained through ADC
+
 ```python
 class Battery(object):
     ...
 
     def __get_power_vbatt(self):
         """Get vbatt from power"""
-        # 通过Power模块获取电源电压
+        # Get voltage through Power.getVbatt()
         return int(sum([Power.getVbatt() for i in range(100)]) / 100)
 
     def __get_adc_vbatt(self):
         """Get vbatt from adc"""
-        # 通过ADC获取电压进行计算
+        # Calculate the voltage obtained through ADC
         self.__adc.open()
         utime.sleep_ms(self.__adc_period)
         adc_list = list()
@@ -492,7 +491,7 @@ class Battery(object):
         return vbatt_value
 ```
 
-- 电池电量目前只提供模拟计算, 录入了一个电压, 温度对应电池电量的数据关系表进行模糊计算
+- The calculation of battery level is only an analog currently. You can get the fuzzy value based on the following table of data relationships between voltage, temperature, and battery level.
 
 ```python
 BATTERY_OCV_TABLE = {
@@ -548,7 +547,7 @@ class Battery:
             return self.__get_soc_from_dict(20, volt_arg)
 ```
 
-- 电池的充电状态是通过引脚中断与获取引脚的电平高低判断当前设备的充电状态
+- The battery's state of charge is determined by interrupting the pin and obtaining the high and low levels of the pin.
 
 ```python
 class Battery:
@@ -586,20 +585,20 @@ class Battery:
 
 ```
 
-### 低功耗模块(power_manage)
+### power_manage
 
-1. 功能描述：
+1. Function Description
 
-周期性唤醒设备并进行业务处理, 业务处理完成后, 设备进入休眠模式
+Wake up the device periodically and process business logic. After the business processing is completed, the device enters sleep mode.
 
-当前支持的休眠模式有：
+Two sleep modes are supported currently.
 
-- autosleep
-- psm
+- auto-sleepauto-sleep
+- PSM
 
-2.  实现原理：
+2. Implementation Principle
 
-设置对应的休眠模式, 使设备进入休眠, 通过RTC定时器进行设备唤醒
+Set the corresponding sleep mode to make the device enter sleep mode, and wake up the device by RTC.
 
 ```python
 class PowerManage:
@@ -644,24 +643,24 @@ class PowerManage:
             return res
 ```
 
-### 阿里Iot(aliyunIot)
+### aliyunIot
 
-1. 功能描述：
+1. Function Description
 
-通过MQTT协议与阿里Iot物联网模块进行交互
+Interact with Alibaba IoT Platform over the MQTT protocol.
 
-- 设备连接登录平台
-- 发送物模型数据到服务端
-- 接收服务端下发的指令
-- OTA升级
+- Connect and log in to the platform
+- Send TSL model data to the server
+- Receive commands from the server
+- Perform OTA upgrade
 
-> 此处以阿里Iot MQTT协议为例, 实际应用以实际对接的IoT 平台与协议进行开发, 基本逻辑模式一致。
+> Alibaba IoT Platform over MQTT protocol is taken as an example here. The actual application should be developed according to the actual IoT platform and protocol being integrated with, but the basic logic is similar.
 
-2. 实现原理：
+2. Implementation Principle
 
-通过MQTT协议, 按照阿里Iot物联网模块的通信规则进行登录与数据交互。
+Log in to Alibaba IoT Platform and interact with it according to the communication rules over the MQTT protocol.
 
-- 注册登录
+- Register an account and log in
 
 ```python
 class AliIot:
@@ -685,14 +684,14 @@ class AliIot:
         return res
 ```
 
-- 数据上传
+- Report data
 
 ```python
 class AliIot:
     ...
 
     def properties_report(self, data):.
-        # 属性上报
+        # Report properties
         _timestamp = self.__timestamp
         _id = self.__id
         params = {key: {"value": val, "time": _timestamp} for key, val in data.items()}
@@ -709,7 +708,7 @@ class AliIot:
         return self.__get_post_res(_id) if pub_res is True else False
 
     def event_report(self, event, data):
-        # 事件上报
+        # Report events
         _timestamp = self.__timestamp
         _id = self.__id
         params = {"value": data, "time": _timestamp}
@@ -726,7 +725,7 @@ class AliIot:
         return self.__get_post_res(_id) if pub_res is True else False
 ```
 
-- 下行数据回传
+- Respond to the downlink data
 
 ```python
 class AliIot:
@@ -747,18 +746,18 @@ class AliIot:
             self.__put_post_res(data["id"], True if int(data["code"]) == 200 else False)
 
         if self.__callback and callable(self.__callback):
-            # 传入Tracker.server_callback中进行处理
+            # Pass the data to Tracker.server_callback() for processing
             self.__callback((topic, data))
 ```
 
-- OTA升级
+- OTA Upgrade
 
 ```python
 class AliIotOTA:
     ...
 
     def start(self):
-        # 开始OTA升级
+        # Start an OTA upgrade
         if self.__module == self.__project_name:
             self.__start_sota()
         elif self.__module == self.__firmware_name:
@@ -788,42 +787,45 @@ class AliIotOTA:
             return False
 ```
 
-### UML类图
+### UML Class Diagram
 
-项目软件代码中各组件对象之间存在依赖关系与继承关系, 我们可以将定位器这个产品作为顶层对象, 它由若干个对应的功能所组成, 本章节通过UML类图将其与所依赖的组件对象建立了关联, 具体如下图所示。
+The following is a UML class figure depicting the dependencies and inheritance relationships of all
+component objects in the project software codes. "Tracker" is the top-level object and is
+associated with the dependent component objects.
 
 ![solution-tracker-104](./media/solution-tracker-104.png)
 
-## 事件流程描述
+## Event Flow Description
 
-### 业务流程
+### Business Process
 
 ![solution-tracker-105](media/solution-tracker-105.png)
 
-业务流程说明：
+Business Process Description:
 
-1. 设备上电启动
-2. 网络(APN)配置与(驻网拨号)连接，IoT 平台配置与连接，失败重试
-3. 设备模块启动检测与数据采集
-    - GNSS定位模块启动，等待定位数据
-    - G-Sensor三轴加速传感器模块启动与校准检测
-    - LED指示灯(网络状态/定位状态/充电状态等)启动
-    - 电池电量采集与充电状态检测
-    - 报警检测(超速检测/震动检测/围栏检测/低电检测等)
-4. IoT 平台连接成功后，检测是否有历史数据需要上报进行上报
-5. IoT 平台连接成功，上报当前设备信息(定位/告警)
-6. IoT 平台连接失败则存储当前设备信息(定位/告警)
-7. 设备无任务，进入低功耗模式，定时唤醒设备进行设备信息检测与上报
-8. IoT 平台连接成功后，等待IoT 平台下发指令信息
-9. 指令信息的解析
-    - 设备控制指令，如修改设备业务参数，控制设备关机重启等
-    - 下发OTA升级指令，进行OTA升级
-    - 设备信息查询指令，应答设备信息
+1. Power on the device.
 
-### 系统初始化流程
+2. Configure APN and connect to the network (network registration and data call); Configure IoT platform configuration and establish a connection, with retry on failure.
+3. Detect the boot of objects and acquire data.
+    - Power on the GNSS object and wait for positioning data.
+    - Power on the G-Sensor and detect the calibration.
+    - Turn on LED indicators (network status/positioning status/charging status, etc.).
+    - Acquire battery level and detect charging status.
+    - Detect alarms (overspeed/vibration/geo-fence/low battery level, etc.).
+4. After connecting to the IoT platform, check if there is any historical data that needs to be reported and proceed with reporting.
+5. Upon successful connection to the IoT platform, report current device information (location/alarms).
+6. If the connection to the IoT platform fails, store the current device information (location/alarms).
+7. When the device has no tasks, enter low power mode and wake up the device periodically to detect device information and report it.
+8. After connecting to the IoT platform, wait for commands to be issued by the IoT platform
+9. Parse commands
+    - Device control commands, such as modifying device business parameters and controlling device shutdown or reboot.
+    - OTA upgrade commands for OTA upgrades
+    - Device information query commands, which should be responded with device information
+
+### System Initialization Process
 
 ![solution-tracker-106](media/solution-tracker-106.png)
 
-1.  基础功能模块初始化, 低功耗管理, 配置参数, 电池, 历史文件, 定位, 传感器。
-2.  初始化IoT 平台客户端模块, 阿里Iot或ThingsBoard平台或私有服务平台(GT06、JT/T808等)
-3.  初始化核心业务模块（Tracker）, 将各个功能模块通过add_module接口添加到Tracker对象中, 再将Tracker.server_callback注册到Server对象中, 用于接收服务端下行的消息指令。
+1. Initialize basic functional objects, such as low power management, configuration parameters, battery, historical files, positioning, and sensors.
+2. Initialize IoT platform server object, such as Alibaba IoT Platform, ThingsBoard, or other private service platform (GT06, JT/T808, etc.).
+3. Initialize the core business object (Tracker), and add various functional objects to the Tracker object through *tracker.add_module()*, then register *Tracker.server_callback()* to the Server object for receiving downlink messages and commands from the server.

@@ -1,78 +1,78 @@
-# 定位器方案应用指导
+# Tracker Solution Application Note
 
-## 引言
+## Introduction
 
-本文档用于介绍如何在模组或设备上运行我们提供的定位器方案程序, 当前文档操作基于EG915U型号模组进行展示。
+This document introduces how to run the tracker solution program we provided on modules or devices. The operations demonstrated in this document are based on Quectel EG915U series module.
 
-## 方案资源获取
+## Get Solution Resource
 
-定位器解决方案资源下载地址: https://github.com/QuecPython/solution-tracker
+Tracker solution resources can be downloaded from [https://github.com/QuecPython/solution-tracker](https://github.com/QuecPython/solution-tracker)
 
-> 该方案项目有一个`modules`子仓库, 在下载时需要注意同步下载
+> The solution project has a sub-project named `modules`. Do not forget to download the sub-project together.
 > 
-> 子仓库同步下载指令`git clone --recursive https://github.com/QuecPython/solution-tracker.git`
+> The command for downloading the sub-project synchronously: `git clone --recursive https://github.com/QuecPython/solution-tracker.git`
 
-资源包目录展示:
+Resource package directory:
 
 ![solution-tracker-001](./media/solution-tracker-001.png)
 
-- code 文件夹:
+- *code*
 
-该目录下包含软件方案代码
+This directory contains the software solution code.
 
 ![solution-tracker-002](./media/solution-tracker-002.png)
 
-- docs 文件夹:
+- *docs*
 
-该目录下包含用户指导手册与功能接口说明的项目文档
+This directory contains project documents such as user guides and functional interface specifications.
 
 ![solution-tracker-003](./media/solution-tracker-003.png)
 
-- object_model_demo 文件夹:
+- *object_model_demo*
 
-该目录下提供了一个阿里Iot平台的物模型文件, 可以直接导入阿里Iot平台, 方便调试
+This directory contains a TSL model file of the Alibaba IoT Platform, which can be directly imported into the Alibaba IoT Platform for debugging.
 
-## 方案说明
+## Solution Overview
 
-此方案为定位器公版方案, 不包含全部业务功能, 方案提供定位器业务核心组件的功能实现以及与服务端完成数据交互, 事件转发等功能, 使用者应基于此框架继续开发业务功能, 当前软件框架完成功能如下:
+This is a public version of the tracker solution, which does not include all features. The solution provides the functional implementation of the core components of the tracker and features such as data interaction, and event forwarding with the server. You can continue to develop business features based on this framework. The current software framework has the following features:
 
-- MQTT协议通讯（当前方案支持阿里Iot平台/ThingsBoard平台）
-- 配置文件读写
-- OTA远程升级
-- LED指示灯
-- 设备网络管理
-- 设备信息管理
-- 电池电量与充电管理
-- 备份信息存储
-- GNSS定位/基站定位/Wifi定位
-- 低功耗管理
-- 日志存储记录
+- Data interaction over MQTT (Alibaba IoT Platform and ThingsBoard are supported currently.)
+- Read and write configuration file
+- OTA upgrade
+- LED indicator
+- Device network management
+- Device information management
+- Battery level and charging management
+- Backup data storage
+- GNSS positioning/LBS positioning/Wi-Fi positioning
+- Low power management
+- Log storage and recording
 
-## 环境搭建
+## Set up Environment 
 
-### USB驱动安装
+### Install USB Driver
 
-请根据调试模组平台进行驱动下载安装, [点击此处下载](https://python.quectel.com/download)
+Please download and install the driver according to the platform of the module to be debugged. [Click here to download USB Drivers](https://python.quectel.com/download)
 
 ![solution-tracker-004](./media/solution-tracker-004.png)
 
-### 开发调试工具
+### Download Development and Debugging Tool
 
-推荐使用QPYcom进行开发调试, 此文档中的流程介绍均使用该工具进行, 且成功安装USB驱动
+It is recommended to use QPYcom for development and debugging. The processes described in this document are under the premise that QPYcom is used and USB driver installation is successful.
 
-工具下载链接: [点击此处下载](https://python.quectel.com/download)
+[Click here to download QPYcom](https://python.quectel.com/download)
 
 ![solution-tracker-005](./media/solution-tracker-005.png)
 
-工具使用说明: [点击此处访问](https://python.quectel.com/doc/Application_guide/en/dev-tools/QPYcom/qpycom-gui.html)
+[Click here to view QPYcom User Guide](https://python.quectel.com/doc/Application_guide/en/dev-tools/QPYcom/qpycom-gui.html)
 
-### 代码配置参数修改
+### Modify Code Configuration Parameters
 
-目前方案代码使用的配置参数未进行配置, 请按照下面说明进行更改。
+The configuration parameters used in the current solution code are not configured. Please make changes according to the instructions below.
 
-找到code中的以`settings_`开头的配置文件进行配置, 根据实际参数进行调整, 如下图:
+Find the configuration files starting with `settings_` in the *code* folder and modify the configuration based on actual parameters, as shown below.
 
-- `settings_server.py` 用于配置连接的 IoT 平台连接信息
+- `settings_server.py` is used to configure the IoT platform connection information.
 
 ```python
 class AliIotConfig:
@@ -94,7 +94,7 @@ class ThingsBoardConfig:
     client_id = ""
 ```
 
-- `settings_loc.py` 用于配置定位模块的配置信息(外挂GNSS串口, 基站/Wifi定位的认证信息)
+- `settings_loc.py` is used to configure the information of the module used for positioning (UART port of the external GNSS module, authentication information for LBS/Wi-Fi positioning).
 
 ```python
 gps_cfg = {
@@ -124,7 +124,7 @@ wifi_cfg = {
 }
 ```
 
-- `settings_user.py` 用于配置用户业务功能的相关配置参数(如报警开关, 低电阈值等)
+- `settings_user.py` is used to configure parameters related to user business functions (e.g., alarm switch, low battery level threshold).
 
 ```python
 class _server:
@@ -142,8 +142,7 @@ class _drive_behavior_code:
 class _ota_upgrade_module:
     none = 0x0
     sys = 0x1
-    app = 0x2
-
+    app = 0x2```markdown
 debug = 1
 log_level = "DEBUG"
 checknet_timeout = 60
@@ -179,58 +178,59 @@ ota_status = {
 }
 ```
 
-### 烧录固件
+### Download Firmware
 
-根据当前调试模组型号下载对应QuecPython固件, 并使用Qpycom工具进行烧录
+Download the corresponding QuecPython firmware according to the current debugging module model from the QuecPython official website, and download the firmware into the module with QPYcom.
 
-固件下载地址: [点击此处访问](https://python.quectel.com/download)
+[Click here to download firmware](https://python.quectel.com/download)
 
 ![solution-tracker-006](./media/solution-tracker-006.png)
 
-使用QPYcom工具下载固件
+Use QPYcom to download firmware.
 
-1. 选择固件
+1. Select firmware
 
 ![solution-tracker-007](./media/solution-tracker-007.png)
 
-2. 下载固件
+2. Download firmware
 
 ![solution-tracker-008](./media/solution-tracker-008.png)
 
-3. 等待固件烧录
+3. Wait for the completion of firmware download
 
 ![solution-tracker-009](./media/solution-tracker-009.png)
 
-4. 烧录成功
+4. Successful download
 
 ![solution-tracker-010](./media/solution-tracker-010.png)
 
-5. 连接交互口
+5. Connect to the interactive port
 
 ![solution-tracker-011](./media/solution-tracker-011.png)
 
-6. 查看烧录信息
+6. View the download information
 
 ![solution-tracker-012](./media/solution-tracker-012.png)
 
-### 烧录代码
+### Download Code
 
-- 建议在下载代码前将文件中的`main.py`重命名为`_main.py`, 因为`main.py`会上电自运行, 不方便调试, 我们测试阶段可以手动执行`_main.py`来运行, 方便调试问题
+- It is recommended to rename the *`main.py`* file to *`_main.py`* before downloading the code because the *`main.py`* file will run automatically when the module is powered on, which is not convenient for debugging. During the testing, we can manually run the *`_main.py`* file for easier debugging.
 
-- 通过USB下载代码需要设备预留USB接口或测试点, 或使用开发板进行调试, 并提前安装好驱动
+- When downloading the code via USB, you need to reserve a USB port or test point for the device, use an EVB for debugging, and install the driver in advance.
 
-1. 选择`Quectel USB NMEA PORT`, 该串口为交互口, 程序LOG也会通过该串口输出
+1. Select "**`Quectel USB NMEA PORT`**". This serial port is for interaction, and QPYcom logs will also be output through this serial port.
 
 ![solution-tracker-013](./media/solution-tracker-013.png)
 
-2. 将业务功能代码批量烧录设备, 点击下载脚本后等待下载完成, 下载完成后在文件中查看
+2. Download the business functional code to the device in batches. Click "**Download script**" and wait for the download to complete. After the download is complete, view the result on the "File" page.
 
 ![solution-tracker-014](./media/solution-tracker-014.png)
 
-3. 烧录成功后建议重启设备, 然后运行功能(如烧录了`main.py`, 则重启设备后, 功能会自动运行, 如已将`main.py`重命名后烧录, 则需手动运行`_main.py`启动功能)
+3. After successful download, it is recommended to reboot the device and run the function (If the *`main.py`* file was downloaded, the function will run automatically after the device is rebooted; if the *`main.py`* file was renamed to *`_main.py`* before downloading, you need to manually run the *`_main.py`* file to start the function).
 
 ![solution-tracker-015](./media/solution-tracker-015.png)
 
-4. 运行结果展示
+4. View the running result
 
 ![solution-tracker-016](./media/solution-tracker-016.png)
+

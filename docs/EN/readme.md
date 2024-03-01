@@ -1,147 +1,148 @@
-## 修订历史
+## Revision History
 
-| Version | **Date**   | **Author** | **Change expression** |
+| Version | **Date**   | **Author** | Description |
 | :------ | ---------- | ---------- | --------------------- |
-| 2.0     | 2022-03-15 | 孙健       | 初始版本               |
-| 2.1     | 2022-04-18 | 孙健       | 添加拉取完整代码工程    |
-| 2.2     | 2023-04-14 | 孙健       | 调整Tracker功能架构    |
+| 2.0     | 2022-03-15 | Jack SUN | Initial       |
+| 2.1     | 2022-04-18 | Jack SUN | Added the chapter "Download Complete Code Project" |
+| 2.2     | 2023-04-14 | Jack SUN | Adjusted Tracker functionality architecture |
 
-## Tracker智能定位器介绍
+## Introduction to Smart Tracker 
 
-### 产品概述
+### Overview
 
-- Tracker智能定位器。
-- 终端设备功能涵盖绝大部分定位器应用场景
-- 可视化运营平台+手机APP, 设备管理和数据查看更方便
+- Smart tracker
+- Terminal device functions meet the majority of requirements in tracker application scenarios
+- The visual operation platform and the mobile app make device management and data viewing more convenient.
 
 ![](./media/tracker_process.png)
 
-### 产品功能
-- 多重定位、安全围栏、危险报警、紧急求救、语音监听、录音、轨迹回放、远程控制等
-- 智能定位
-    - 系统利用4G通信/多重定位/分布式服务等技术, 为智能定位器行业提供从端到服务的一站式解决方案
-- 全平台支持
-    - 设备运营平台和手机APP功能齐全, 终端设备厂商无需自行搭建服务平台即可快速实现对设备和终端用户的管理
-- 可靠稳定
-    - 终端设备定位精度高、危险感知灵敏度高、功耗低、运行稳定, 终端设备厂商可套壳即用, 极大缩短硬件开发周期
+### Features
+
+- Multi-technology geolocation, geo-fence alarm, danger alarm, SOS alarm reporting, voice monitoring, recording, historical track playback, remote control, etc.
+- Smart positioning
+    - The system utilizes 4G communication/multi-technology geolocation/distributed services to provide a one-stop solution from end to service for the smart tracker industry.
+- All-platform support
+    - The device operation platform and mobile app have complete functions, enabling terminal device manufacturers to quickly manage devices and end users without the need to build your own service platforms.
+- Reliable and stable
+    - The terminal device has high positioning accuracy, high sensitivity to danger perception, low power consumption, and stable operation. Terminal device manufacturers can develop customized solutions directly based on the public version, greatly shortening the hardware development cycle.
 
 ![](./media/tracker_funcion.png)
 
-### 产品特点
+### Characteristics
 
-- 位置信息、危险警情智能感知、识别和上报
-- 支持阿里Iot平台、ThingsBoard、私有服务等多种Iot平台对接
-- QuecPython二次开发, 模块化、定制化、缩短开发周期
-- 可视化运营平台、手机APP控制终端
+- Intelligent perception, recognition, and reporting of location information and danger alarms.
+- Support integration with various IoT platforms such as Alibaba IoT Platform, ThingsBoard, and other private services.
+- Secondary development with QuecPython to formulate modular and customizable solutions, thus shortening development cycles.
+- Visual operation platform and mobile app to control terminal devices.
 
-### 应用行业
+### Applications
 
-- 车载定位
-- 物流货运
-- 人员定位
-- 电子学生证
-- 宠物定位
-- 特殊行业(农业灌溉, 稀有物种监控等)
+- Vehicle tracking
+- Logistics and transportation
+- People tracking
+- Electronic student ID card
+- Pet tracking
+- Special industries (agricultural irrigation, rare species monitoring, etc.)
 
 ![](./media/tracker_application.png)
 
-## 移远Tracker智能定位器及其能力
+## Quectel Smart Tracker and Capabilities
 
-### 产品能力
+### Capabilities
 
-- **通道支持阿里Iot平台、ThingsBoard、私有服务平台等多种平台(目前暂只支持阿里Iot平台和ThingsBoard平台, 其他平台正在开发中)**
-- **支持本地和远程参数配置**
-- **支持OTA升级**
-- **支持数据离线存储**
-    - 在网络连接不稳定情况下, 将发送失败的数据暂存至本地, 在网络恢复后优先将本地数据发送至服务端
-    - 离线存储的数据量可通过配置文件配置
-- **支持常用的传感器和输入设备**
-    - 传感器:
-        - 照度传感器
-        - 三轴加速度传感器
-        - 温湿度传感器
+- **Support multiple platforms such as Alibaba IoT Platform, ThingsBoard, and private service platforms (Only Alibaba IoT Platform and ThingsBoard are supported currently, while others are under development)**
+- **Support local and remote parameter configuration**
+- **Support OTA upgrades**
+- **Support offline data storage**
+    - In unstable network connections, data that fails to be sent will be temporarily stored locally and prioritized for transmission to the server when the network is restored.
+    - The amount of data stored offline can be configured through a configuration file.
+- **Support common sensors and input devices**
+    - Sensors
+        - Ambient light sensor
+        - Three-axis acceleration sensor
+        - Temperature and humidity sensor
         - ...
-    - 输入设备
-        - 麦克风
+    - Input devices
+        - Microphone
         - ...
-- **支持QuecPython, 可以使用Python代码快速实现二次开发**
+- **Support QuecPython, enabling rapid secondary development with Python**
 
-### 产品配套组件
+### Supporting Component
 
-#### QPYcom工具
+#### QPYcom
 
-QPYcom工具是一个集**QuecPython repl交互、PC和模组间文件传输、文件系统镜像制作并打包到固件包、及固件烧录等各种功能**于一体的强大利器。
+QPYcom is a powerful tool that integrates **QuecPython REPL interaction, file transfer between PC and module, file system image making and packaging into the firmware, and firmware downloading**.
 
-用户如需进行二次开发, 使用QPYcom将会大大提高开发的效率。
+If you want to conduct secondary development, QPYcom will greatly improve your development efficiency.
 
-[点此下载QPYCom工具。](https://python.quectel.com/download)
+[Click here to download QPYCom](https://python.quectel.com/download)
 
-QPYCom的使用文档, 参见安装目录下的`docs`文件夹。
+For the QPYCom user guide, refer to the `docs` folder in the installation directory.
 
 ![](./media/QPYCom_V3.3.0.png)
 
-### 产品优势
+### Advantages
 
-- **GNSS**
-    - 支持GPS、BD、GLONASS、Galileo, 支持Wi-Fi、基站定位, 世界任意角落, 都能精准定位
-- **1000mah**
-    - 超低功耗, 超长待机, 理论待机>8000天
-- **传感器**
-    - 加速传感器、温湿度传感器、光照传感器, 极大扩展使用场景, 冷链运输、物流监控, 不在话下
-- **宽电压支持**
-    - 最低9v, 最高108v, 不论是小轿车、大货车、新能源汽车, 还是两轮电动车, 统统支持
-- **疾速定位**
-    - AGPS加持, 疾速定位, 急脾气？别着急。定位器比你更“疾”
-- **隐蔽安装**
-    - 可磁吸、可粘扣、可固定、可移动, 定位效果无所遁形, 定位器杳无踪迹
-- **低成本开发**
-    - 可使用Python进行二次开发, 降低软件开发成本
+- **Multi-technology Geolocation**
+    - Support multiple technologies such as GPS, BD, GLONASS, Galileo, Wi-Fi and LBS to realize an accurate positioning in any corner of the world.
+- **1000 mAh**
+    - Ultra-low power consumption to realize ultra-long standby time (theoretical standby time longer than 8000 days).
+- **Sensors**
+    - Acceleration sensors, temperature and humidity sensors, and ambient light sensors greatly expand usage scenarios, including cold-chain transportation and logistics monitoring.
+- **Wide-range Voltage Support**
+    - Support voltage from 9 V to 108 V, covering small cars, large trucks, new energy vehicles and electric scooters.
+- **Fast Positioning**
+    - Support fast positioning with the help of AGPS.
+- **Concealed Installation**
+    - Magnetic, adhesive, fixed, and movable. The hidden tracker provides effective positioning. 
+- **Low-cost Development**
+    - Secondary development with Python reduces software development costs.
     ![C2Py.png](./media/C2Py.png)
-    - 我司多平台模组适用, 使用Python开发, 无需修改代码即可快速切换至不同模组
-- **强大的客户服务和技术支持能力**
+    - Applicable to multiple Quectel module models. Through Python development, you can quickly switch to different module models without modifying the code.
+- **Strong Customer Service and Technical Support Capabilities**
 
-## 移远Tracker智能定位器的工作流程
+## Workflow of Quectel Smart Tracker
 
-### 危险报警、紧急求救
+### Danger Alarm and SOS Alarm Reporting
 
 ![](./media/tracker_alert.png)
 
-### 远程控制
+### Remote Control
 
 ![](./media/solution-tracker-102.png)
 
-## 拉取完整代码工程
+## Download Complete Code Project
 
-### 说明
+### Description
 
-本项目包含有一个`modules`子项目, 拉取代码时需将子项目一并拉去下来进行使用。
+This project includes a sub-project named `modules`. When downloading the code, make sure to download the sub-project together.
 
-### 拉取步骤
+### Download Steps
 
-1 拉取主项目代码
+1. Download the main project code
 
 - `git clone https://github.com/QuecPython/solution-tracker.git`
 
-2 进入项目根目录
+2. Enter the project root directory
 
 - `cd solution-tracker/`
 
-3 切换对应的主项目分支
+3. Switch to the corresponding main project branch
 
 - `git checkout master`
 
-4 子项目初始化
+4. Initialize the sub-project
 
 - `git submodule init`
 
-5 子项目代码拉取
+5. Download the sub-project code
 
 - `git submodule update`
 
-6 进入子项目目录
+6. Enter the sub-project directory
 
 - `cd code/modules/`
 
-7 切换对应的子项目分支
+7. Switch to the corresponding sub-project branch
 
 - `git checkout master`
