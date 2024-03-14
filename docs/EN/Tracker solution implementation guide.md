@@ -50,7 +50,7 @@ This is a public version of the tracker solution, which does not include all fun
 - Low power management
 - Log storage and recording
 
-## Set up Environment 
+## Set up Environment
 
 ### Install USB Driver
 
@@ -235,4 +235,3 @@ Use QPYcom to download firmware.
 4. View the running result
 
 ![solution-tracker-016](./media/solution-tracker-016.png)
-
