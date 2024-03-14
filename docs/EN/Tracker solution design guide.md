@@ -242,7 +242,8 @@ class Tracker:
 ```
 
 3. Registration of functional modules and callback function configuration
-``````python
+
+```python
 def main():
     # Initialize the network management module
     net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
@@ -438,21 +439,21 @@ class CellLocator:
         self.__queue.put(loc_data)
 ```
 
-- Read the location data, including the latitude, longitude, accuracy and MAC address, from the Wi-Fi through *self.__wifilocator_obj.getwifilocator()*.
+- Read the location data, including the latitude, longitude, accuracy and MAC address, from the Wi-Fi through *wifilocator(token).getwifilocator()*.
 
 ```python
 class WiFiLocator:
-    ... 
 
-def __read_thread(self):
-        loc_data = ()
+    def __init__(self, token):
+        self.__wifilocator = wifilocator(token) if wifilocator else None
+
+    def read(self):
+        loc_data = -1
         try:
-            # Read Wifi-positioning data
-            loc_data = self.__wifilocator_obj.getwifilocator()
-            loc_data = loc_data if isinstance(loc_data, tuple) and loc_data[0] and loc_data[1] else ()
+            return self.__wifilocator.getwifilocator() if self.__wifilocator else -1
         except Exception as e:
             sys.print_exception(e)
-        self.__queue.put(loc_data)
+        return loc_data
 ```
 
 ### battery
@@ -549,7 +550,7 @@ class Battery:
             return self.__get_soc_from_dict(20, volt_arg)
 ```
 
-- The battery's state of charge is determined by interrupting the pin and obtaining the high and low levels of the pin.
+- The battery\'s state of charge is determined by interrupting the pin and obtaining the high and low levels of the pin.
 
 ```python
 class Battery:
@@ -804,7 +805,6 @@ The following is a UML class figure depicting the dependencies and inheritance r
 Business Process Description:
 
 1. Power on the device.
-
 2. Configure APN and connect to the network (network registration and data call); Configure IoT platform and establish a connection, with retry on failure.
 3. Detect the boot of objects and acquire data.
     - Power on the GNSS object and wait for positioning data.
