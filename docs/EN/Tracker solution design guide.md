@@ -4,11 +4,11 @@
 
 ## Introduction
 
-This document describes the design framework of Quecel smart tracker in the QuecPython solution, including the software and hardware system framework, description of key components, system initialization process, business process introduction, and functional examples, to help you quickly understand the overall architecture and functions of Quectel smart tracker.
+This document describes the design framework of Quecel smart tracker in the QuecPython solution, including the software and hardware system framework, description of key components, introduction and functional examples of system initialization process and business process, to help you quickly understand the overall architecture and functions of Quectel smart tracker.
 
 ## Function Overview
 
-The software functions in the smart tracker solution are demonstrated in the diagram below. The solution is divided into functions based on the actual business of the tracker and developed in a modular way.
+The software functions of smart tracker solution are demonstrated in the diagram below. The solution is divided into functions based on the actual business of the tracker and developed in a modular way.
 
 ![solution-tracker-101](./media/solution-tracker-101.png)
 
@@ -50,22 +50,22 @@ The data interaction process between the module and the IoT platform is describe
 
 Process description:
 
-1. The mobile app sends commands to the IoT platform. The server issues commands to the module through TCP/UDP/MQTT protocols, and the module parses the command data.
-2. The module reports data to the IoT platform through TCP/UDP/MQTT protocols. The IoT platform processes the data and synchronously displays it on the mobile app.
+1. The mobile APP sends commands to the IoT platform. The server issues commands to the module through TCP/UDP/MQTT protocols, and the module parses the command data.
+2. The module reports data to the IoT platform through TCP/UDP/MQTT protocols. The IoT platform processes the data and synchronously displays it on the mobile APP.
 
 ## Software Framework
 
 ### Design Philosophy and Patterns
 
 - This system is designed as a listener pattern, that is, transmit messages and listen for events through callback functions.
-- The software functions are split according to the tracker's business requirements, which are implemented by blocks. Each part is independently developed to reduce dependencies and can be debugged and run independently, thus achieving decoupling effects.
+- The software functions are split according to the tracker's business requirements, which are implemented based on functional modules. Each part is independently developed to reduce dependencies and can be debugged and run independently, thus achieving decoupling effects.
 - Interactions between functions are realized through callback functions. All business function processing, such as downlink command processing, alarm detection, data acquisition and reporting, and device control, is done in the `Tracker` class.
 
 ![solution-tracker-104](./media/solution-tracker-104.png)
 
-1. All functional objects are registered in the `Tracker` class through `Tracker.add_module`.
-2. The Server object (IoT platform interaction object) transmits service downlink data to `Tracker.server_callback()` for processing through callback functions.
-3. The NetManage object transmits network disconnection events to `Tracker.net_callback` for processing through callback functions.
+1. All functional modules are registered in the `Tracker` class through `Tracker.add_module`.
+2. The Server module (IoT platform interaction module) transmits service downlink data to `Tracker.server_callback()` for processing through callback functions.
+3. The NetManage module transmits network disconnection events to `Tracker.net_callback` for processing through callback functions.
 
 ### Software Architecture Diagram
 
@@ -73,29 +73,29 @@ The software system framework is described as follows:
 
 - Display layer, connection with different IoT platforms
 - Transport layer, data interaction over different protocols
-- Business layer, mainly used for device data acquisition, device control, downlink commands receiving and processing, and data integration and reporting.
-- Device layer, functions including obtaining and parsing location data, reading sensor data, battery management, historical data storage, acquiring device information, and setting device functions such as device version, IMEI number, APN settings, network data call and device low power consumption.
+- Business layer, mainly used for device data acquisition, device control, downlink commands receiving and processing of IoT platforms, and data integration and reporting.
+- Device layer, functions including obtaining and parsing location data, reading sensor data, battery management and historical data storage, and device information acquisition and device functions setting, such as device version, IMEI number, APN settings, network data call and device low power consumption.
 
 ![solution-tracker-107](./media/solution-tracker-107.png)
 
 ## Component Introduction
 
-### Core Business Object (Tracker)
+### Core Business Module (Tracker)
 
 1. Function Description
 
-Implement core business logic, interact with the server and parse the data, and control device objects. All functions are passed and processed in the sub-thread of the business event message queue as events.
+Implement core business logic, interact with the server and parse the data, and control device modules. All functions are passed and processed in the sub-thread of the business event message queue as events.
 
 2. Implementation Principle
 
-- Register functional objects to obtain data from various functional objects, such as location information, battery information, and sensor information.
+- Register functional modules to obtain data from various functional modules, such as location information, battery information, and sensor information.
 
 ```python
 class Tracker:
     ...
 
     def add_module(self, module):
-        # Register various functional objects to the Tracker class for control in the Tracker class
+        # Register various functional modules to the Tracker class for control in the Tracker class
         if isinstance(module, AliIot):
             self.__server = module
         elif isinstance(module, AliIotOTA):
@@ -241,40 +241,40 @@ class Tracker:
         return self.__business_rtc.enable_alarm(1) if _res == 0 else -1
 ```
 
-3. Registration of functional objects and callback function configuration
+3. Registration of functional modules and callback function configuration
 ``````python
 def main():
-    # Initialize the network management object
+    # Initialize the network management module
     net_manage = NetManage(PROJECT_NAME, PROJECT_VERSION)
-    # Initialize the configuration parameter object
+    # Initialize the configuration parameter module
     settings = Settings()
-    # Initialize the battery detection object
+    # Initialize the battery detection module
     battery = Battery()
-    # Initialize the historical data object
+    # Initialize the historical data module
     history = History()
-    # Initialize the IoT platform (AliIot) object
+    # Initialize the IoT platform (AliIot) module
     server_cfg = settings.read("server")
     server = AliIot(**server_cfg)
-    # Initialize the IoT platform (AliIot) OTA object
+    # Initialize the IoT platform (AliIot) OTA module
     server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
     server_ota.set_server(server)
-    # Initialize the low power consumption object
+    # Initialize the low power consumption module
     power_manage = PowerManage()
-    # Initialize the temperature and humidity sensor object
+    # Initialize the temperature and humidity sensor module
     temp_sensor = TempHumiditySensor(i2cn=I2C.I2C1, mode=I2C.FAST_MODE)
     loc_cfg = settings.read("loc")
-    # Initialize the GNSS positioning object
+    # Initialize the GNSS positioning module
     gnss = GNSS(**loc_cfg["gps_cfg"])
-    # Initialize the LBS positioning object
+    # Initialize the LBS positioning module
     cell = CellLocator(**loc_cfg["cell_cfg"])
-    # Initialize the Wi-Fi positioning object
+    # Initialize the Wi-Fi positioning module
     wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
-    # Initialize the GNSS positioning data parsing object
+    # Initialize the GNSS positioning data parsing module
     nmea_parse = NMEAParse()
-    # Initialize the WGS84 to GCJ02 coordinate system conversion object
+    # Initialize the WGS84 to GCJ02 coordinate system conversion module
     cyc = CoordinateSystemConvert()
 
-    # Initialize the Tracker business object
+    # Initialize the Tracker business module
     tracker = Tracker()
     # Register the basic objects to the Tracker class for control
     tracker.add_module(settings)
@@ -291,7 +291,7 @@ def main():
     tracker.add_module(nmea_parse)
     tracker.add_module(cyc)
 
-    # Set the callback function for the network object, which processes business when the network is disconnected
+    # Set the callback function for the network module, which processes business when the network is disconnected
     net_manage.set_callback(tracker.net_callback)
     # Set the callback function for receiving downlink data from the server, which processes business when the server issues commands
     server.set_callback(tracker.server_callback)
@@ -656,7 +656,7 @@ Interact with Alibaba IoT Platform over the MQTT protocol.
 - Receive commands from the server
 - Perform OTA upgrade
 
-> Alibaba IoT Platform over MQTT protocol is taken as an example here. The actual application should be developed according to the actual IoT platform and protocol being integrated with, but the basic logic is similar.
+> Alibaba IoT Platform over MQTT protocol is taken as an example here. The actual application should be developed according to the actual IoT platform and protocol and the basic logic is similar.
 
 2. Implementation Principle
 
@@ -791,9 +791,7 @@ class AliIotOTA:
 
 ### UML Class Diagram
 
-The following is a UML class figure depicting the dependencies and inheritance relationships of all
-component objects in the project software codes. "Tracker" is the top-level object and is
-associated with the dependent component objects.
+The following is a UML class figure depicting the dependencies and inheritance relationships of all component objects in the project software codes. "Tracker" is the top-level object and is associated with the dependent component objects.
 
 ![solution-tracker-104](./media/solution-tracker-104.png)
 
@@ -807,7 +805,7 @@ Business Process Description:
 
 1. Power on the device.
 
-2. Configure APN and connect to the network (network registration and data call); Configure IoT platform configuration and establish a connection, with retry on failure.
+2. Configure APN and connect to the network (network registration and data call); Configure IoT platform and establish a connection, with retry on failure.
 3. Detect the boot of objects and acquire data.
     - Power on the GNSS object and wait for positioning data.
     - Power on the G-Sensor and detect the calibration.

@@ -2,40 +2,41 @@
 
 ## Revision History
 
-| Version | **Date**   | **Author** | Description |
-| :------ | ---------- | ---------- | --------------------- |
-| 2.0     | 2022-03-15 | Jack SUN | Initial       |
-| 2.1     | 2022-04-18 | Jack SUN | Added the chapter "Download Complete Code Project" |
-| 2.2     | 2023-04-14 | Jack SUN | Adjusted Tracker functionality architecture |
+| Version | **Date**   | **Author** | Description                                                                   |
+| :------ | ---------- | ---------- | ----------------------------------------------------------------------------- |
+| 1.0     | 2022-01-01 | Jack SUN | First Release                                                                   |
+| 2.0     | 2022-03-15 | Jack SUN | Numerous changes were made to this document. It should be read in its entirety. |
+| 2.1     | 2022-04-18 | Jack SUN | Added the chapter "Download Complete Code Project"                              |
+| 2.2     | 2023-04-14 | Jack SUN | Adjusted Tracker functionality architecture                                     |
 
-## Introduction to Smart Tracker 
+## Introduction to Smart Tracker
 
 ### Overview
 
 - Smart tracker
 - Terminal device functions meet the majority of requirements in tracker application scenarios
-- The visual operation platform and the mobile app make device management and data viewing more convenient.
+- The visual operation platform and the mobile APP make device management and data viewing more convenient.
 
 ![](./media/tracker_process.png)
 
-### Features
+### Functions
 
-- Multi-technology geolocation, geo-fence alarm, danger alarm, SOS alarm reporting, voice monitoring, recording, historical track playback, remote control, etc.
+- Multi-technology positioning, geo-fence alarm, danger alarm, SOS alarm reporting, audio monitoring, recording, historical track playback, remote control, etc.
 - Smart positioning
-    - The system utilizes 4G communication/multi-technology geolocation/distributed services to provide a one-stop solution from end to service for the smart tracker industry.
+    - The system utilizes 4G communication/multi-technology positioning/distributed services to provide a one-stop solution from end to service for the smart tracker industry.
 - All-platform support
-    - The device operation platform and mobile app have complete functions, enabling terminal device manufacturers to quickly manage devices and end users without the need to build your own service platforms.
+    - The device operation platform and mobile APP have all-round functions, enabling terminal device manufacturers to quickly manage devices and end users without the need to build your own service platforms.
 - Reliable and stable
     - The terminal device has high positioning accuracy, high sensitivity to danger perception, low power consumption, and stable operation. Terminal device manufacturers can develop customized solutions directly based on the public version, greatly shortening the hardware development cycle.
 
 ![](./media/tracker_funcion.png)
 
-### Characteristics
+### Features
 
 - Intelligent perception, recognition, and reporting of location information and danger alarms.
 - Support integration with various IoT platforms such as Alibaba IoT Platform, ThingsBoard, and other private services.
 - Secondary development with QuecPython to formulate modular and customizable solutions, thus shortening development cycles.
-- Visual operation platform and mobile app to control terminal devices.
+- Visual operation platform and mobile APP to control terminal devices.
 
 ### Applications
 
@@ -56,7 +57,7 @@
 - **Support local and remote parameter configuration**
 - **Support OTA upgrades**
 - **Support offline data storage**
-    - In unstable network connections, data that fails to be sent will be temporarily stored locally and prioritized for transmission to the server when the network is restored.
+    - For unstable network connections, data that fails to be sent will be temporarily stored locally and prioritized for transmission to the server when the network is restored.
     - The amount of data stored offline can be configured through a configuration file.
 - **Support common sensors and input devices**
     - Sensors
@@ -85,14 +86,14 @@ For the QPYCom user guide, refer to the `docs` folder in the installation direct
 
 ### Advantages
 
-- **Multi-technology Geolocation**
-    - Support multiple technologies such as GPS, BD, GLONASS, Galileo, Wi-Fi and LBS to realize an accurate positioning in any corner of the world.
+- **Multi-technology Positioning**
+    - Support multiple technologies such as GPS, BDS, GLONASS, Galileo, Wi-Fi and LBS to realize an accurate positioning in any corner of the world.
 - **1000 mAh**
     - Ultra-low power consumption to realize ultra-long standby time (theoretical standby time longer than 8000 days).
 - **Sensors**
     - Acceleration sensors, temperature and humidity sensors, and ambient light sensors greatly expand usage scenarios, including cold-chain transportation and logistics monitoring.
 - **Wide-range Voltage Support**
-    - Support voltage from 9 V to 108 V, covering small cars, large trucks, new energy vehicles and electric scooters.
+    - Support voltage from 9 V to 108 V, covering cars, large trucks, new energy vehicles and electric scooters.
 - **Fast Positioning**
     - Support fast positioning with the help of AGPS.
 - **Concealed Installation**
