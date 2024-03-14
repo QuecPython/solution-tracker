@@ -36,7 +36,7 @@ This directory contains a TSL model file of the Alibaba IoT Platform, which can 
 
 ## Solution Overview
 
-This is a public version of the tracker solution, which does not include all features. The solution provides the functional implementation of the core components of the tracker and features such as data interaction, and event forwarding with the server. You can continue to develop business features based on this framework. The current software framework has the following features:
+This is a public version of the tracker solution, which does not include all functions. The solution provides the functional implementation of the core components of the tracker and functions such as data interaction, and event forwarding with the server. You can continue to develop business functions based on this framework. The current software framework has the following features:
 
 - Data interaction over MQTT (Alibaba IoT Platform and ThingsBoard are supported currently.)
 - Read and write configuration file
@@ -70,7 +70,7 @@ It is recommended to use QPYcom for development and debugging. The processes des
 
 ### Modify Code Configuration Parameters
 
-The configuration parameters used in the current solution code are not configured. Please make changes according to the instructions below.
+The configuration parameters used in the current solution code are not configured. Please modify configurations according to the instructions below.
 
 Find the configuration files starting with `settings_` in the *code* folder and modify the configuration based on actual parameters, as shown below.
 
@@ -96,7 +96,7 @@ class ThingsBoardConfig:
     client_id = ""
 ```
 
-- `settings_loc.py` is used to configure the information of the module used for positioning (UART port of the external GNSS module, authentication information for LBS/Wi-Fi positioning).
+- `settings_loc.py` is used to configure the information of the module used for positioning (UART port of the external GNSS communication, authentication information for LBS/Wi-Fi positioning).
 
 ```python
 gps_cfg = {
@@ -216,9 +216,9 @@ Use QPYcom to download firmware.
 
 ### Download Code
 
-- It is recommended to rename the *`main.py`* file to *`_main.py`* before downloading the code because the *`main.py`* file will run automatically when the module is powered on, which is not convenient for debugging. During the testing, we can manually run the *`_main.py`* file for easier debugging.
+- It is recommended to rename the *`main.py`* file to *`_main.py`* before downloading the code because the *`main.py`* file will run automatically when the module is powered on, which is not convenient for debugging. During the test, we can manually run the *`_main.py`* file for easier debugging.
 
-- When downloading the code via USB, you need to reserve a USB port or test point for the device, use an EVB for debugging, and install the driver in advance.
+- When downloading the code via USB, you need to reserve a USB port or test point for the device. Or you can use an EVB for debugging, and install the driver in advance.
 
 1. Select "**`Quectel USB NMEA PORT`**". This serial port is for interaction, and QPYcom logs will also be output through this serial port.
 
