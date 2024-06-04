@@ -12,18 +12,86 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
-@file      :main.py
+@file      :_main.py
 @author    :Jack Sun (jack.sun@quectel.com)
-@brief     :<description>
-@version   :1.0.0
-@date      :2023-01-11 13:16:21
+@brief     :Project start.
+@version   :2.2.0
+@date      :2022-10-31 14:42:25
 @copyright :Copyright (c) 2022
 """
-from usr.tracker import main
 
-if __name__ == "__main__":
-    main()
+import _thread
+
+from usr.modules.battery import Battery
+from usr.modules.history import History
+from usr.modules.logging import getLogger
+from usr.modules.net_manage import NetManager
+from usr.modules.thingsboard import TBDeviceMQTTClient
+from usr.modules.power_manage import PowerManage
+from usr.modules.aliyunIot import AliIot, AliIotOTA
+from usr.modules.location import GNSS, CellLocator, WiFiLocator, CoordinateSystemConvert
+
+from usr.settings_user import UserConfig
+from usr.tracker_tb import Tracker as TBTracker
+from usr.tracker_ali import Tracker as AliTracker
+from usr.settings import Settings, PROJECT_NAME, FIRMWARE_NAME
+
+log = getLogger(__name__)
+
+log.debug("[x] Main start.")
+
+# Init settings.
+settings = Settings()
+# Init battery.
+battery = Battery()
+# Init history
+history = History()
+# Init power manage and set device low energy.
+power_manage = PowerManage()
+power_manage.autosleep(1)
+# Init net modules and start net connect.
+net_manager = NetManager()
+_thread.stack_size(0x1000)
+_thread.start_new_thread(net_manager.net_connect, ())
+# Init GNSS modules and start reading and parsing gnss data.
+loc_cfg = settings.read("loc")
+gnss = GNSS(**loc_cfg["gps_cfg"])
+gnss.set_trans(0)
+gnss.start()
+# Init cell and wifi location modules.
+cell = CellLocator(**loc_cfg["cell_cfg"])
+wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
+cyc = CoordinateSystemConvert()
+# Init tracker business modules.
+user_cfg = settings.read("user")
+server_cfg = settings.read("server")
+# Init coordinate system convert modules.
+if user_cfg["server"] == UserConfig._server.AliIot:
+    server = AliIot(**server_cfg)
+    server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
+    server_ota.set_server(server)
+    tracker = AliTracker()
+elif user_cfg["server"] == UserConfig._server.ThingsBoard:
+    # Init server modules.
+    server = TBDeviceMQTTClient(**server_cfg)
+    tracker = TBTracker()
+else:
+    raise ValueError("User config server is not compared.")
+tracker.add_module(settings)
+tracker.add_module(battery)
+tracker.add_module(history)
+tracker.add_module(net_manager)
+tracker.add_module(server)
+tracker.add_module(gnss)
+tracker.add_module(cell)
+tracker.add_module(wifi)
+tracker.add_module(cyc)
+# Set net modules callback.
+net_manager.set_callback(tracker.net_callback)
+# Set server modules callback.
+server.set_callback(tracker.server_callback)
+# Start tracker business.
+tracker.running()
+
+log.debug("[x] Main over.")

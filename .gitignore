@@ -108,3 +108,6 @@ venv.bak/
 .mypy_cache/
 
 tracker_settings.json
+
+dev_settings_*.py
+.test/
