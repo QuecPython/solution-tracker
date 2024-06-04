@@ -1,80 +1,105 @@
 # Smart Tracker Solution for QuecPython
 
-## Tracker Introduction
+[中文](readme_zh.md) | English
 
-### Product Overview
+## Introduction to Smart Tracker
 
-- **Tracker**: An intelligent tracking device.
-- **Comprehensive Functionality**: Covers a wide range of tracker application scenarios.
-- **Visual Platform + Mobile App**: Enhances device management and data visualization.
+### Overview
+
+- Smart tracker
+- Terminal device functions meet the majority of requirements in tracker application scenarios
+- The visual operation platform and the mobile APP make device management and data viewing more convenient.
 
 ![](./docs/en/media/tracker_process.png)
 
-### Product Functions
-- **Multi-Mode Positioning**: Includes safety zones, danger alerts, emergency calls, voice monitoring, recording, playback, and remote control.
-- **Smart Positioning System**: Leverages 4G communication, multi-mode positioning, and cloud technology for an all-in-one solution in the tracker industry.
-- **Full Platform Compatibility**: A fully featured device operation platform and mobile app, enabling device manufacturers to skip building their own cloud infrastructure.
-- **Rugged Reliability**: Offers high-precision location, sensitive danger detection, low power consumption, and stable operation, facilitating rapid hardware adoption with ready-made enclosures.
+### Functions
+
+- Multi-technology positioning, geo-fence alarm, danger alarm, SOS alarm reporting, audio monitoring, recording, historical track playback, remote control, etc.
+- Smart positioning
+    - The system utilizes 4G communication/multi-technology positioning/distributed services to provide a one-stop solution from end to service for the smart tracker industry.
+- All-platform support
+    - The device operation platform and mobile APP have all-round functions, enabling terminal device manufacturers to quickly manage devices and end users without the need to build your own service platforms.
+- Reliable and stable
+    - The terminal device has high positioning accuracy, high sensitivity to danger perception, low power consumption, and stable operation. Terminal device manufacturers can develop customized solutions directly based on the public version, greatly shortening the hardware development cycle.
 
 ![](./docs/en/media/tracker_funcion.png)
 
-### Product Features
-- Intelligent recognition and reporting of location data and hazardous situations.
-- Supports integration with various cloud platforms, including QuecCloud, AliCloud, and Tencent Cloud.
-- Second-Stage Development: Allows modular and tailored development, reducing development timelines.
-- Terminal control through a visual platform and mobile app.
+### Features
 
-### Application Industries
-- Vehicle Tracking
-- Logistics and Freight
-- Personnel Localization
-- Electronic Student IDs
-- Pet Tracking
-- Specialized Sectors (like agricultural irrigation and rare species monitoring)
+- Intelligent perception, recognition, and reporting of location information and danger alarms.
+- Support integration with various IoT platforms such as Alibaba IoT Platform, ThingsBoard, and other private services.
+- Secondary development with QuecPython to formulate modular and customizable solutions, thus shortening development cycles.
+- Visual operation platform and mobile APP to control terminal devices.
+
+### Applications
+
+- Vehicle tracking
+- Logistics and transportation
+- People tracking
+- Electronic student ID card
+- Pet tracking
+- Special industries (agricultural irrigation, rare species monitoring, etc.)
 
 ![](./docs/en/media/tracker_application.png)
 
-## QuecTracker Capabilities
+## Quectel Smart Tracker and Capabilities
 
-### Product Capabilities
-- **Multi-Cloud Integration**: Works with Alibaba Cloud, Tencent Cloud, and ThingsBoard (currently ThingsBoard only, others in progress).
-- **Local and Remote Configuration**.
-- **OTA Upgrades**.
-- **Offline Data Handling**:
-  - Stores data locally during network outages and sends it upon recovery.
-  - Adjustable local storage capacity.
-- **Sensor and Input Device Support**:
-  - Sensors: Light, 3-axis accelerometer, temperature & humidity, etc.
-  - Inputs: Microphone, etc.
-- **QuecPython Enablement**: Secondary development empowered by Python scripting.
+### Capabilities
 
-### Ancillary Tools
+- **Support multiple platforms such as Alibaba IoT Platform, ThingsBoard, and private service platforms (Only Alibaba IoT Platform and ThingsBoard are supported currently, while others are under development)**
+- **Support local and remote parameter configuration**
+- **Support OTA upgrades**
+- **Support offline data storage**
+    - For unstable network connections, data that fails to be sent will be temporarily stored locally and prioritized for transmission to the server when the network is restored.
+    - The amount of data stored offline can be configured through a configuration file.
+- **Support common sensors and input devices**
+    - Sensors
+        - Ambient light sensor
+        - Three-axis acceleration sensor
+        - Temperature and humidity sensor
+        - ...
+    - Input devices
+        - Microphone
+        - ...
+- **Support QuecPython, enabling rapid secondary development with Python**
 
-#### QPYcom Utility
+### Supporting Component
 
-QPYcom is a versatile tool that combines **QuecPython interactive shell, file transfers between PC and module, firmware image creation, packaging, and flashing**.
+#### QPYcom
 
-For second-stage development, QPYcom boosts efficiency.
+QPYcom is a powerful tool that integrates **QuecPython REPL interaction, file transfer between PC and module, file system image making and packaging into the firmware, and firmware downloading**.
 
-[Download QPYCom here.](https://python.quectel.com/download)
-Consult the `docs` folder in the installation directory for QPYCom usage instructions.
+If you want to conduct secondary development, QPYcom will greatly improve your development efficiency.
+
+[Click here to download QPYCom](https://python.quectel.com/download)
+
+For the QPYCom user guide, refer to the `docs` folder in the installation directory.
 
 ![](./docs/en/media/QPYCom_V3.3.0.png)
 
-### Product Advantages
-- **GNSS Support**: Accurate global positioning with GPS, BDS, GLONASS, Galileo, Wi-Fi, and cell tower assistance.
-- **1000mAh Battery**: Ultra-low power draw, extended stand-by time over 8000 days.
-- **Sensor Suite**: Accelerometers, temperature & humidity sensors, and more for versatile applications.
-- **Wide Voltage Input**: Operates from 9V to 108V, suitable for various vehicles.
-- **Swift Position Acquisition**: AGPS-assisted fast positioning.
-- **Covert Installation**: Magnetically attachable, adhesive, or fixed, for stealth tracking.
-- **Cost-effective Development**: Python-based customization reduces software costs.
-- **Interchangeable Module Support**: Python development works across multiple modules with minimal code changes.
-- **Exceptional Customer and Tech Support**.
+### Advantages
 
-## QuecTracker Workflow
+- **Multi-technology Positioning**
+    - Support multiple technologies such as GPS, BDS, GLONASS, Galileo, Wi-Fi and LBS to realize an accurate positioning in any corner of the world.
+- **1000 mAh**
+    - Ultra-low power consumption to realize ultra-long standby time (theoretical standby time longer than 8000 days).
+- **Sensors**
+    - Acceleration sensors, temperature and humidity sensors, and ambient light sensors greatly expand usage scenarios, including cold-chain transportation and logistics monitoring.
+- **Wide-range Voltage Support**
+    - Support voltage from 9 V to 108 V, covering cars, large trucks, new energy vehicles and electric scooters.
+- **Fast Positioning**
+    - Support fast positioning with the help of AGPS.
+- **Concealed Installation**
+    - Magnetic, adhesive, fixed, and movable. The hidden tracker provides effective positioning. 
+- **Low-cost Development**
+    - Secondary development with Python reduces software development costs.
+    ![C2Py.png](./docs/en/media/C2Py.png)
+    - Applicable to multiple Quectel module models. Through Python development, you can quickly switch to different module models without modifying the code.
+- **Strong Customer Service and Technical Support Capabilities**
 
-### Danger Alerts and Emergency Help
+## Workflow of Quectel Smart Tracker
+
+### Danger Alarm and SOS Alarm Reporting
 
 ![](./docs/en/media/tracker_alert.png)
 
@@ -82,10 +107,38 @@ Consult the `docs` folder in the installation directory for QPYCom usage instruc
 
 ![](./docs/en/media/solution-tracker-102.png)
 
-## Retrieving the Code
+## Download Complete Code Project
 
-The project includes a `modules` subproject which must be cloned alongside the main project.
+### Description
 
-```bash
-git clone --recurse-submodules https://github.com/QuecPython/solution-tracker.git
-```
+This project includes a sub-project named `modules`. When downloading the code, make sure to download the sub-project together.
+
+### Download Steps
+
+1. Download the main project code
+
+- `git clone https://github.com/QuecPython/solution-tracker.git`
+
+2. Enter the project root directory
+
+- `cd solution-tracker/`
+
+3. Switch to the corresponding main project branch
+
+- `git checkout master`
+
+4. Initialize the sub-project
+
+- `git submodule init`
+
+5. Download the sub-project code
+
+- `git submodule update`
+
+6. Enter the sub-project directory
+
+- `cd code/modules/`
+
+7. Switch to the corresponding sub-project branch
+
+- `git checkout master`
