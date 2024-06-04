@@ -1,0 +1,2291 @@
+{
+  "schema": "https://iotx-tsl.oss-ap-southeast-1.aliyuncs.com/schema.json",
+  "profile": {
+    "version": "1.0",
+    "productKey": "h3nqn03lil0"
+  },
+  "properties": [
+    {
+      "identifier": "GeoLocation",
+      "name": "地理位置",
+      "accessMode": "r",
+      "required": true,
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "Longitude",
+            "name": "经度",
+            "dataType": {
+              "type": "double",
+              "specs": {
+                "min": "-180",
+                "max": "180",
+                "unit": "°",
+                "unitName": "度",
+                "step": "0.01"
+              }
+            }
+          },
+          {
+            "identifier": "Latitude",
+            "name": "纬度",
+            "dataType": {
+              "type": "double",
+              "specs": {
+                "min": "-90",
+                "max": "90",
+                "unit": "°",
+                "unitName": "度",
+                "step": "0.01"
+              }
+            }
+          },
+          {
+            "identifier": "Altitude",
+            "name": "海拔",
+            "dataType": {
+              "type": "double",
+              "specs": {
+                "min": "0",
+                "max": "9999",
+                "unit": "m",
+                "unitName": "米",
+                "step": "0.01"
+              }
+            }
+          },
+          {
+            "identifier": "CoordinateSystem",
+            "name": "坐标系统",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "1": "WGS_84",
+                "2": "GCJ_02"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "power_switch",
+      "name": "开关机",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "energy",
+      "name": "电量",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "0",
+          "max": "100",
+          "unit": "%",
+          "unitName": "百分比",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "phone_num",
+      "name": "电话号码",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "text",
+        "specs": {
+          "length": "11"
+        }
+      }
+    },
+    {
+      "identifier": "loc_method",
+      "name": "定位方式",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "gps",
+            "name": "GPS",
+            "dataType": {
+              "type": "bool",
+              "specs": {
+                "0": "禁用",
+                "1": "启用"
+              }
+            }
+          },
+          {
+            "identifier": "cell",
+            "name": "基站",
+            "dataType": {
+              "type": "bool",
+              "specs": {
+                "0": "禁用",
+                "1": "启用"
+              }
+            }
+          },
+          {
+            "identifier": "wifi",
+            "name": "Wifi",
+            "dataType": {
+              "type": "bool",
+              "specs": {
+                "0": "禁用",
+                "1": "启用"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "work_mode",
+      "name": "工作模式",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "enum",
+        "specs": {
+          "1": "周期性模式",
+          "2": "智能模式"
+        }
+      }
+    },
+    {
+      "identifier": "work_cycle_period",
+      "name": "工作模式循环周期",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "5",
+          "max": "2147483647",
+          "unit": "s",
+          "unitName": "秒",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "local_time",
+      "name": "本地时间",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "date",
+        "specs": {}
+      }
+    },
+    {
+      "identifier": "low_power_alert_threshold",
+      "name": "低电报警阈值",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "5",
+          "max": "30",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "low_power_shutdown_threshold",
+      "name": "低电关机阈值",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "5",
+          "max": "30",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "sw_ota",
+      "name": "OTA功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_ota_auto_upgrade",
+      "name": "OTA自动升级功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_voice_listen",
+      "name": "语音监听功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_voice_record",
+      "name": "录音上报功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_fault_alert",
+      "name": "故障报警功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_low_power_alert",
+      "name": "低电报警功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_over_speed_alert",
+      "name": "超速报警功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_sim_abnormal_alert",
+      "name": "SIM卡异常报警功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_disassemble_alert",
+      "name": "拆卸报警功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "sw_drive_behavior_alert",
+      "name": "驾驶行为报警功能",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "bool",
+        "specs": {
+          "0": "关",
+          "1": "开"
+        }
+      }
+    },
+    {
+      "identifier": "drive_behavior_code",
+      "name": "异常驾驶行为",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "enum",
+        "specs": {
+          "0": "无",
+          "1": "急起",
+          "2": "急停",
+          "3": "左急转弯",
+          "4": "右急转弯"
+        }
+      }
+    },
+    {
+      "identifier": "power_restart",
+      "name": "模块重启",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "enum",
+        "specs": {
+          "1": "重启"
+        }
+      }
+    },
+    {
+      "identifier": "over_speed_threshold",
+      "name": "超速报警阈值",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "0",
+          "max": "132",
+          "unit": "km/h",
+          "unitName": "千米每小时",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "device_module_status",
+      "name": "设备模块状态",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "net",
+            "name": "网络状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "异常",
+                "1": "正常"
+              }
+            }
+          },
+          {
+            "identifier": "location",
+            "name": "定位状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "异常",
+                "1": "正常"
+              }
+            }
+          },
+          {
+            "identifier": "temp_sensor",
+            "name": "温湿度传感器状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "异常",
+                "1": "正常"
+              }
+            }
+          },
+          {
+            "identifier": "light_sensor",
+            "name": "光照传感器状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "异常",
+                "1": "正常"
+              }
+            }
+          },
+          {
+            "identifier": "move_sensor",
+            "name": "三轴加速传感器状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "异常",
+                "1": "正常"
+              }
+            }
+          },
+          {
+            "identifier": "mike",
+            "name": "麦克风状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "异常",
+                "1": "正常"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "gps_mode",
+      "name": "GPS模块类型",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "enum",
+        "specs": {
+          "0": "无GPS模块",
+          "1": "内置GPS模块",
+          "2": "外置GPS模块"
+        }
+      }
+    },
+    {
+      "identifier": "user_ota_action",
+      "name": "确认OTA升级",
+      "accessMode": "rw",
+      "desc": "用户操作，只写功能",
+      "required": false,
+      "dataType": {
+        "type": "enum",
+        "specs": {
+          "0": "取消升级",
+          "1": "确认升级"
+        }
+      }
+    },
+    {
+      "identifier": "ota_status",
+      "name": "OTA升级状态",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "struct",
+        "specs": [
+          {
+            "identifier": "sys_current_version",
+            "name": "系统当前版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "sys_target_version",
+            "name": "系统目标版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "app_current_version",
+            "name": "应用当前版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "app_target_version",
+            "name": "应用目标版本",
+            "dataType": {
+              "type": "text",
+              "specs": {
+                "length": "1024"
+              }
+            }
+          },
+          {
+            "identifier": "upgrade_module",
+            "name": "当前升级模块",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "无",
+                "1": "系统",
+                "2": "应用"
+              }
+            }
+          },
+          {
+            "identifier": "upgrade_status",
+            "name": "当前升级状态",
+            "dataType": {
+              "type": "enum",
+              "specs": {
+                "0": "无",
+                "1": "待升级",
+                "2": "升级中",
+                "3": "升级成功",
+                "4": "升级失败"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "voltage",
+      "name": "电池电压",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "0",
+          "max": "2147483647",
+          "unit": "mV",
+          "unitName": "毫伏",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "current_speed",
+      "name": "当前时速",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "float",
+        "specs": {
+          "min": "0",
+          "max": "200.00",
+          "unit": "km/h",
+          "unitName": "千米每小时",
+          "step": "0.01"
+        }
+      }
+    },
+    {
+      "identifier": "work_mode_timeline",
+      "name": "休眠策略参考时间",
+      "accessMode": "rw",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "3600",
+          "max": "2147483647",
+          "unit": "s",
+          "unitName": "秒",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "loc_gps_read_timeout",
+      "name": "GPS信息读取超时时间",
+      "accessMode": "rw",
+      "desc": "-1：一直等待直到读取到数据才进行返回\n0：不等待，读取接口返回数据后立即返回\n>0: 等待超时时间，单位秒",
+      "required": false,
+      "dataType": {
+        "type": "int",
+        "specs": {
+          "min": "-1",
+          "max": "2147483647",
+          "unit": "s",
+          "unitName": "秒",
+          "step": "1"
+        }
+      }
+    },
+    {
+      "identifier": "temperature",
+      "name": "设备温度",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "double",
+        "specs": {
+          "min": "-40",
+          "max": "125",
+          "unit": "°C",
+          "unitName": "摄氏度",
+          "step": "0.01"
+        }
+      }
+    },
+    {
+      "identifier": "humidity",
+      "name": "设备湿度",
+      "accessMode": "r",
+      "required": false,
+      "dataType": {
+        "type": "double",
+        "specs": {
+          "min": "0",
+          "max": "100",
+          "unit": "%RH",
+          "unitName": "相对湿度",
+          "step": "0.01"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "identifier": "post",
+      "name": "post",
+      "type": "info",
+      "required": true,
+      "desc": "属性上报",
+      "method": "thing.event.property.post",
+      "outputData": [
+        {
+          "identifier": "GeoLocation",
+          "name": "地理位置",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "Longitude",
+                "name": "经度",
+                "dataType": {
+                  "type": "double",
+                  "specs": {
+                    "min": "-180",
+                    "max": "180",
+                    "unit": "°",
+                    "unitName": "度",
+                    "step": "0.01"
+                  }
+                }
+              },
+              {
+                "identifier": "Latitude",
+                "name": "纬度",
+                "dataType": {
+                  "type": "double",
+                  "specs": {
+                    "min": "-90",
+                    "max": "90",
+                    "unit": "°",
+                    "unitName": "度",
+                    "step": "0.01"
+                  }
+                }
+              },
+              {
+                "identifier": "Altitude",
+                "name": "海拔",
+                "dataType": {
+                  "type": "double",
+                  "specs": {
+                    "min": "0",
+                    "max": "9999",
+                    "unit": "m",
+                    "unitName": "米",
+                    "step": "0.01"
+                  }
+                }
+              },
+              {
+                "identifier": "CoordinateSystem",
+                "name": "坐标系统",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "1": "WGS_84",
+                    "2": "GCJ_02"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "power_switch",
+          "name": "开关机",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "energy",
+          "name": "电量",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "100",
+              "unit": "%",
+              "unitName": "百分比",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "phone_num",
+          "name": "电话号码",
+          "dataType": {
+            "type": "text",
+            "specs": {
+              "length": "11"
+            }
+          }
+        },
+        {
+          "identifier": "loc_method",
+          "name": "定位方式",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "gps",
+                "name": "GPS",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              },
+              {
+                "identifier": "cell",
+                "name": "基站",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              },
+              {
+                "identifier": "wifi",
+                "name": "Wifi",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "work_mode",
+          "name": "工作模式",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "1": "周期性模式",
+              "2": "智能模式"
+            }
+          }
+        },
+        {
+          "identifier": "work_cycle_period",
+          "name": "工作模式循环周期",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "local_time",
+          "name": "本地时间",
+          "dataType": {
+            "type": "date",
+            "specs": {}
+          }
+        },
+        {
+          "identifier": "low_power_alert_threshold",
+          "name": "低电报警阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "30",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "low_power_shutdown_threshold",
+          "name": "低电关机阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "30",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "sw_ota",
+          "name": "OTA功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_ota_auto_upgrade",
+          "name": "OTA自动升级功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_voice_listen",
+          "name": "语音监听功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_voice_record",
+          "name": "录音上报功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_fault_alert",
+          "name": "故障报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_low_power_alert",
+          "name": "低电报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_over_speed_alert",
+          "name": "超速报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_sim_abnormal_alert",
+          "name": "SIM卡异常报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_disassemble_alert",
+          "name": "拆卸报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_drive_behavior_alert",
+          "name": "驾驶行为报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "drive_behavior_code",
+          "name": "异常驾驶行为",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "无",
+              "1": "急起",
+              "2": "急停",
+              "3": "左急转弯",
+              "4": "右急转弯"
+            }
+          }
+        },
+        {
+          "identifier": "power_restart",
+          "name": "模块重启",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "1": "重启"
+            }
+          }
+        },
+        {
+          "identifier": "over_speed_threshold",
+          "name": "超速报警阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "132",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "device_module_status",
+          "name": "设备模块状态",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "net",
+                "name": "网络状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "location",
+                "name": "定位状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "temp_sensor",
+                "name": "温湿度传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "light_sensor",
+                "name": "光照传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "move_sensor",
+                "name": "三轴加速传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "mike",
+                "name": "麦克风状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "gps_mode",
+          "name": "GPS模块类型",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "无GPS模块",
+              "1": "内置GPS模块",
+              "2": "外置GPS模块"
+            }
+          }
+        },
+        {
+          "identifier": "user_ota_action",
+          "name": "确认OTA升级",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "取消升级",
+              "1": "确认升级"
+            }
+          }
+        },
+        {
+          "identifier": "ota_status",
+          "name": "OTA升级状态",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "sys_current_version",
+                "name": "系统当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "sys_target_version",
+                "name": "系统目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_current_version",
+                "name": "应用当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_target_version",
+                "name": "应用目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_module",
+                "name": "当前升级模块",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "系统",
+                    "2": "应用"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_status",
+                "name": "当前升级状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "待升级",
+                    "2": "升级中",
+                    "3": "升级成功",
+                    "4": "升级失败"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "voltage",
+          "name": "电池电压",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "mV",
+              "unitName": "毫伏",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "current_speed",
+          "name": "当前时速",
+          "dataType": {
+            "type": "float",
+            "specs": {
+              "min": "0",
+              "max": "200.00",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "0.01"
+            }
+          }
+        },
+        {
+          "identifier": "work_mode_timeline",
+          "name": "休眠策略参考时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "3600",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "loc_gps_read_timeout",
+          "name": "GPS信息读取超时时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "-1",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "temperature",
+          "name": "设备温度",
+          "dataType": {
+            "type": "double",
+            "specs": {
+              "min": "-40",
+              "max": "125",
+              "unit": "°C",
+              "unitName": "摄氏度",
+              "step": "0.01"
+            }
+          }
+        },
+        {
+          "identifier": "humidity",
+          "name": "设备湿度",
+          "dataType": {
+            "type": "double",
+            "specs": {
+              "min": "0",
+              "max": "100",
+              "unit": "%RH",
+              "unitName": "相对湿度",
+              "step": "0.01"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identifier": "sos_alert",
+      "name": "SOS报警",
+      "type": "alert",
+      "required": false,
+      "method": "thing.event.sos_alert.post",
+      "outputData": []
+    },
+    {
+      "identifier": "fault_alert",
+      "name": "故障报警",
+      "type": "error",
+      "required": false,
+      "method": "thing.event.fault_alert.post",
+      "outputData": []
+    },
+    {
+      "identifier": "low_power_alert",
+      "name": "低电报警",
+      "type": "alert",
+      "required": false,
+      "method": "thing.event.low_power_alert.post",
+      "outputData": []
+    },
+    {
+      "identifier": "sim_abnormal_alert",
+      "name": "SIM卡异常报警",
+      "type": "alert",
+      "required": false,
+      "method": "thing.event.sim_abnormal_alert.post",
+      "outputData": []
+    },
+    {
+      "identifier": "drive_behavior_alert",
+      "name": "异常驾驶行为报警",
+      "type": "alert",
+      "required": false,
+      "method": "thing.event.drive_behavior_alert.post",
+      "outputData": []
+    },
+    {
+      "identifier": "disassemble_alert",
+      "name": "拆卸报警",
+      "type": "alert",
+      "required": false,
+      "method": "thing.event.disassemble_alert.post",
+      "outputData": []
+    },
+    {
+      "identifier": "over_speed_alert",
+      "name": "超速报警",
+      "type": "alert",
+      "required": false,
+      "method": "thing.event.over_speed_alert.post",
+      "outputData": []
+    }
+  ],
+  "services": [
+    {
+      "identifier": "set",
+      "name": "set",
+      "required": true,
+      "callType": "async",
+      "desc": "属性设置",
+      "method": "thing.service.property.set",
+      "inputData": [
+        {
+          "identifier": "power_switch",
+          "name": "开关机",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "phone_num",
+          "name": "电话号码",
+          "dataType": {
+            "type": "text",
+            "specs": {
+              "length": "11"
+            }
+          }
+        },
+        {
+          "identifier": "loc_method",
+          "name": "定位方式",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "gps",
+                "name": "GPS",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              },
+              {
+                "identifier": "cell",
+                "name": "基站",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              },
+              {
+                "identifier": "wifi",
+                "name": "Wifi",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "work_mode",
+          "name": "工作模式",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "1": "周期性模式",
+              "2": "智能模式"
+            }
+          }
+        },
+        {
+          "identifier": "work_cycle_period",
+          "name": "工作模式循环周期",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "low_power_alert_threshold",
+          "name": "低电报警阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "30",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "low_power_shutdown_threshold",
+          "name": "低电关机阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "30",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "sw_ota",
+          "name": "OTA功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_ota_auto_upgrade",
+          "name": "OTA自动升级功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_voice_listen",
+          "name": "语音监听功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_voice_record",
+          "name": "录音上报功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_fault_alert",
+          "name": "故障报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_low_power_alert",
+          "name": "低电报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_over_speed_alert",
+          "name": "超速报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_sim_abnormal_alert",
+          "name": "SIM卡异常报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_disassemble_alert",
+          "name": "拆卸报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_drive_behavior_alert",
+          "name": "驾驶行为报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "power_restart",
+          "name": "模块重启",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "1": "重启"
+            }
+          }
+        },
+        {
+          "identifier": "over_speed_threshold",
+          "name": "超速报警阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "132",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "user_ota_action",
+          "name": "确认OTA升级",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "取消升级",
+              "1": "确认升级"
+            }
+          }
+        },
+        {
+          "identifier": "work_mode_timeline",
+          "name": "休眠策略参考时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "3600",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "loc_gps_read_timeout",
+          "name": "GPS信息读取超时时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "-1",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        }
+      ],
+      "outputData": []
+    },
+    {
+      "identifier": "get",
+      "name": "get",
+      "required": true,
+      "callType": "async",
+      "desc": "属性获取",
+      "method": "thing.service.property.get",
+      "inputData": [
+        "GeoLocation",
+        "power_switch",
+        "energy",
+        "phone_num",
+        "loc_method",
+        "work_mode",
+        "work_cycle_period",
+        "local_time",
+        "low_power_alert_threshold",
+        "low_power_shutdown_threshold",
+        "sw_ota",
+        "sw_ota_auto_upgrade",
+        "sw_voice_listen",
+        "sw_voice_record",
+        "sw_fault_alert",
+        "sw_low_power_alert",
+        "sw_over_speed_alert",
+        "sw_sim_abnormal_alert",
+        "sw_disassemble_alert",
+        "sw_drive_behavior_alert",
+        "drive_behavior_code",
+        "power_restart",
+        "over_speed_threshold",
+        "device_module_status",
+        "gps_mode",
+        "user_ota_action",
+        "ota_status",
+        "voltage",
+        "current_speed",
+        "work_mode_timeline",
+        "loc_gps_read_timeout",
+        "temperature",
+        "humidity"
+      ],
+      "outputData": [
+        {
+          "identifier": "GeoLocation",
+          "name": "地理位置",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "Longitude",
+                "name": "经度",
+                "dataType": {
+                  "type": "double",
+                  "specs": {
+                    "min": "-180",
+                    "max": "180",
+                    "unit": "°",
+                    "unitName": "度",
+                    "step": "0.01"
+                  }
+                }
+              },
+              {
+                "identifier": "Latitude",
+                "name": "纬度",
+                "dataType": {
+                  "type": "double",
+                  "specs": {
+                    "min": "-90",
+                    "max": "90",
+                    "unit": "°",
+                    "unitName": "度",
+                    "step": "0.01"
+                  }
+                }
+              },
+              {
+                "identifier": "Altitude",
+                "name": "海拔",
+                "dataType": {
+                  "type": "double",
+                  "specs": {
+                    "min": "0",
+                    "max": "9999",
+                    "unit": "m",
+                    "unitName": "米",
+                    "step": "0.01"
+                  }
+                }
+              },
+              {
+                "identifier": "CoordinateSystem",
+                "name": "坐标系统",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "1": "WGS_84",
+                    "2": "GCJ_02"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "power_switch",
+          "name": "开关机",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "energy",
+          "name": "电量",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "100",
+              "unit": "%",
+              "unitName": "百分比",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "phone_num",
+          "name": "电话号码",
+          "dataType": {
+            "type": "text",
+            "specs": {
+              "length": "11"
+            }
+          }
+        },
+        {
+          "identifier": "loc_method",
+          "name": "定位方式",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "gps",
+                "name": "GPS",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              },
+              {
+                "identifier": "cell",
+                "name": "基站",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              },
+              {
+                "identifier": "wifi",
+                "name": "Wifi",
+                "dataType": {
+                  "type": "bool",
+                  "specs": {
+                    "0": "禁用",
+                    "1": "启用"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "work_mode",
+          "name": "工作模式",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "1": "周期性模式",
+              "2": "智能模式"
+            }
+          }
+        },
+        {
+          "identifier": "work_cycle_period",
+          "name": "工作模式循环周期",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "local_time",
+          "name": "本地时间",
+          "dataType": {
+            "type": "date",
+            "specs": {}
+          }
+        },
+        {
+          "identifier": "low_power_alert_threshold",
+          "name": "低电报警阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "30",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "low_power_shutdown_threshold",
+          "name": "低电关机阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "5",
+              "max": "30",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "sw_ota",
+          "name": "OTA功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_ota_auto_upgrade",
+          "name": "OTA自动升级功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_voice_listen",
+          "name": "语音监听功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_voice_record",
+          "name": "录音上报功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_fault_alert",
+          "name": "故障报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_low_power_alert",
+          "name": "低电报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_over_speed_alert",
+          "name": "超速报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_sim_abnormal_alert",
+          "name": "SIM卡异常报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_disassemble_alert",
+          "name": "拆卸报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "sw_drive_behavior_alert",
+          "name": "驾驶行为报警功能",
+          "dataType": {
+            "type": "bool",
+            "specs": {
+              "0": "关",
+              "1": "开"
+            }
+          }
+        },
+        {
+          "identifier": "drive_behavior_code",
+          "name": "异常驾驶行为",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "无",
+              "1": "急起",
+              "2": "急停",
+              "3": "左急转弯",
+              "4": "右急转弯"
+            }
+          }
+        },
+        {
+          "identifier": "power_restart",
+          "name": "模块重启",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "1": "重启"
+            }
+          }
+        },
+        {
+          "identifier": "over_speed_threshold",
+          "name": "超速报警阈值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "132",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "device_module_status",
+          "name": "设备模块状态",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "net",
+                "name": "网络状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "location",
+                "name": "定位状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "temp_sensor",
+                "name": "温湿度传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "light_sensor",
+                "name": "光照传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "move_sensor",
+                "name": "三轴加速传感器状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              },
+              {
+                "identifier": "mike",
+                "name": "麦克风状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "异常",
+                    "1": "正常"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "gps_mode",
+          "name": "GPS模块类型",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "无GPS模块",
+              "1": "内置GPS模块",
+              "2": "外置GPS模块"
+            }
+          }
+        },
+        {
+          "identifier": "user_ota_action",
+          "name": "确认OTA升级",
+          "dataType": {
+            "type": "enum",
+            "specs": {
+              "0": "取消升级",
+              "1": "确认升级"
+            }
+          }
+        },
+        {
+          "identifier": "ota_status",
+          "name": "OTA升级状态",
+          "dataType": {
+            "type": "struct",
+            "specs": [
+              {
+                "identifier": "sys_current_version",
+                "name": "系统当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "sys_target_version",
+                "name": "系统目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_current_version",
+                "name": "应用当前版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "app_target_version",
+                "name": "应用目标版本",
+                "dataType": {
+                  "type": "text",
+                  "specs": {
+                    "length": "1024"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_module",
+                "name": "当前升级模块",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "系统",
+                    "2": "应用"
+                  }
+                }
+              },
+              {
+                "identifier": "upgrade_status",
+                "name": "当前升级状态",
+                "dataType": {
+                  "type": "enum",
+                  "specs": {
+                    "0": "无",
+                    "1": "待升级",
+                    "2": "升级中",
+                    "3": "升级成功",
+                    "4": "升级失败"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "identifier": "voltage",
+          "name": "电池电压",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "0",
+              "max": "2147483647",
+              "unit": "mV",
+              "unitName": "毫伏",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "current_speed",
+          "name": "当前时速",
+          "dataType": {
+            "type": "float",
+            "specs": {
+              "min": "0",
+              "max": "200.00",
+              "unit": "km/h",
+              "unitName": "千米每小时",
+              "step": "0.01"
+            }
+          }
+        },
+        {
+          "identifier": "work_mode_timeline",
+          "name": "休眠策略参考时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "3600",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "loc_gps_read_timeout",
+          "name": "GPS信息读取超时时间",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "-1",
+              "max": "2147483647",
+              "unit": "s",
+              "unitName": "秒",
+              "step": "1"
+            }
+          }
+        },
+        {
+          "identifier": "temperature",
+          "name": "设备温度",
+          "dataType": {
+            "type": "double",
+            "specs": {
+              "min": "-40",
+              "max": "125",
+              "unit": "°C",
+              "unitName": "摄氏度",
+              "step": "0.01"
+            }
+          }
+        },
+        {
+          "identifier": "humidity",
+          "name": "设备湿度",
+          "dataType": {
+            "type": "double",
+            "specs": {
+              "min": "0",
+              "max": "100",
+              "unit": "%RH",
+              "unitName": "相对湿度",
+              "step": "0.01"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
