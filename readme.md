@@ -1,5 +1,7 @@
 # Smart Tracker Solution for QuecPython
 
+[中文](readme_zh.md) | English
+
 ## Tracker Introduction
 
 ### Product Overview
