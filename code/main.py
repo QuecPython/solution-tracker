@@ -29,7 +29,7 @@ from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManager
 from usr.modules.thingsboard import TBDeviceMQTTClient
 from usr.modules.power_manage import PowerManage
-from usr.modules.aliyunIot import AliIot, AliIotOTA
+from usr.modules.aliIot import AliIot, AliIotOTA
 from usr.modules.location import GNSS, CellLocator, WiFiLocator, CoordinateSystemConvert
 
 from usr.settings_user import UserConfig

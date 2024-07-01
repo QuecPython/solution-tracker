@@ -35,7 +35,7 @@ from usr.modules.battery import Battery
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.modules.net_manage import NetManager
-from usr.modules.aliyunIot import AliIot, AliIotOTA
+from usr.modules.aliIot import AliIot, AliIotOTA
 from usr.modules.power_manage import PowerManage, PMLock
 from usr.modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
 
