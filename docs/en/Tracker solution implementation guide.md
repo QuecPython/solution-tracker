@@ -1,4 +1,4 @@
-[中文](../CN/定位器方案应用指导.md) | **English** |
+[中文](../zh/定位器方案应用指导.md) | **English** |
 
 # Tracker Solution Application Note
 
@@ -11,7 +11,7 @@ This document introduces how to run the tracker solution program we provided on 
 Tracker solution resources can be downloaded from [https://github.com/QuecPython/solution-tracker](https://github.com/QuecPython/solution-tracker)
 
 > The solution project has a sub-project named `modules`. Do not forget to download the sub-project together.
-> 
+>
 > The command for downloading the sub-project synchronously: `git clone --recursive https://github.com/QuecPython/solution-tracker.git`
 
 Resource package directory:
