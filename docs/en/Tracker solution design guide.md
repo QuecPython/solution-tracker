@@ -1,4 +1,4 @@
-[中文](../CN/定位器方案设计指导.md) | **English** |
+[中文](../zh/定位器方案设计指导.md) | **English** |
 
 # Tracker Solution Design Guide
 
