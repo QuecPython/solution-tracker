@@ -1,6 +1,6 @@
 # QuecPython 智能定位器解决方案
 
-中文 | [English](readme.md)
+中文 | [English](readme.md) | [日本語](readme_jp.md)
 
 ## Tracker 介绍
 

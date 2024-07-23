@@ -1,6 +1,6 @@
 # Smart Tracker Solution for QuecPython
 
-[中文](readme_zh.md) | English
+[中文](readme_zh.md) | [日本語](readme_jp.md) | English
 
 ## Introduction to Smart Tracker
 
