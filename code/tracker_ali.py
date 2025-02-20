@@ -29,15 +29,26 @@ from misc import Power
 from queue import Queue
 from machine import RTC
 
-from usr.settings_user import UserConfig
-from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, FIRMWARE_NAME, FIRMWARE_VERSION
-from usr.modules.battery import Battery
-from usr.modules.history import History
-from usr.modules.logging import getLogger
-from usr.modules.net_manage import NetManager
-from usr.modules.aliIot import AliIot, AliIotOTA
-from usr.modules.power_manage import PowerManage, PMLock
-from usr.modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
+try:
+    from settings_user import UserConfig
+    from settings import Settings, PROJECT_NAME, PROJECT_VERSION, FIRMWARE_NAME, FIRMWARE_VERSION
+    from modules.battery import Battery
+    from modules.history import History
+    from modules.logging import getLogger
+    from modules.net_manage import NetManager
+    from modules.aliIot import AliIot, AliIotOTA
+    from modules.power_manage import PowerManage, PMLock
+    from modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
+except ImportError:
+    from usr.settings_user import UserConfig
+    from usr.settings import Settings, PROJECT_NAME, PROJECT_VERSION, FIRMWARE_NAME, FIRMWARE_VERSION
+    from usr.modules.battery import Battery
+    from usr.modules.history import History
+    from usr.modules.logging import getLogger
+    from usr.modules.net_manage import NetManager
+    from usr.modules.aliIot import AliIot, AliIotOTA
+    from usr.modules.power_manage import PowerManage, PMLock
+    from usr.modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
 
 log = getLogger(__name__)
 
@@ -260,7 +271,7 @@ class Tracker:
 
     def __server_connect(self):
         if self.__net_manager.net_status():
-            self.__server.disconnect()
+            # self.__server.disconnect()
             self.__server.connect()
         if not self.__server.status:
             self.__server_reconn_timer.stop()
@@ -445,51 +456,3 @@ class Tracker:
         if self.__server_conn_tag == 0:
             self.__server_conn_tag = 1
             self.__business_queue.put((0, "server_connect"))
-
-
-if __name__ == "__main__":
-    # Init settings.
-    settings = Settings()
-    # Init battery.
-    battery = Battery()
-    # Init history
-    history = History()
-    # Init power manage and set device low energy.
-    power_manage = PowerManage()
-    power_manage.autosleep(1)
-    # Init net modules and start net connect.
-    net_manager = NetManager()
-    _thread.stack_size(0x1000)
-    _thread.start_new_thread(net_manager.net_connect, ())
-    # Init GNSS modules and start reading and parsing gnss data.
-    loc_cfg = settings.read("loc")
-    gnss = GNSS(**loc_cfg["gps_cfg"])
-    gnss.set_trans(0)
-    gnss.start()
-    # Init cell and wifi location modules.
-    cell = CellLocator(**loc_cfg["cell_cfg"])
-    wifi = WiFiLocator(**loc_cfg["wifi_cfg"])
-    # Init coordinate system convert modules.
-    csc = CoordinateSystemConvert()
-    # Init server modules.
-    server_cfg = settings.read("server")
-    server = AliIot(**server_cfg)
-    server_ota = AliIotOTA(PROJECT_NAME, FIRMWARE_NAME)
-    server_ota.set_server(server)
-    # Initialize tracker business modules.
-    tracker = Tracker()
-    tracker.add_module(settings)
-    tracker.add_module(battery)
-    tracker.add_module(history)
-    tracker.add_module(net_manager)
-    tracker.add_module(server)
-    tracker.add_module(server_ota)
-    tracker.add_module(gnss)
-    tracker.add_module(cell)
-    tracker.add_module(wifi)
-    tracker.add_module(csc)
-    # Set net and server callback.
-    net_manager.set_callback(tracker.net_callback)
-    server.set_callback(tracker.server_callback)
-    # Tracker start.
-    tracker.running()
