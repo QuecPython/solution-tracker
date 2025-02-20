@@ -145,7 +145,6 @@ solution-tracker/
 │   │   │   └── zh/
 │   │   ├── aliIot.py
 │   │   ├── battery.py
-│   │   ├── battery.py
 │   │   ├── buzzer.py
 │   │   ├── common.py
 │   │   ├── history.py
@@ -157,7 +156,6 @@ solution-tracker/
 │   │   ├── power_manage.py
 │   │   ├── serial.py
 │   │   ├── temp_humidity_sensor.py
-│   │   ├── thingsboard.py
 │   │   └── thingsboard.py
 │   ├── _main.py
 │   ├── settings.py
