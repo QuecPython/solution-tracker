@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """
-@file      :settings_server.py
+@file      :dev_settings_server.py
 @author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Server config.
 @version   :2.2.0
-@date      :2023-04-11 11:25:09
+@date      :2022-10-31 14:42:25
 @copyright :Copyright (c) 2022
 """
 
@@ -25,11 +25,12 @@
 class AliIotConfig:
 
     product_key = ""
-    product_secret = ""
     device_name = ""
     device_secret = ""
+    product_secret = None
     server = "iot-as-mqtt.cn-shanghai.aliyuncs.com"
     qos = 1
+
 
 
 class ThingsBoardConfig:

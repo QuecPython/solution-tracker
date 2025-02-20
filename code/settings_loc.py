@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """
-@file      :settings_loc.py
+@file      :dev_settings_loc.py
 @author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Loction config.
 @version   :2.2.0
-@date      :2023-04-11 11:26:16
+@date      :2022-10-31 14:42:25
 @copyright :Copyright (c) 2022
 """
 
@@ -43,18 +43,18 @@ class LocConfig:
 
     profile_idx = 1
 
-    map_coordinate_system = _map_coordinate_system.WGS84
+    map_coordinate_system = _map_coordinate_system.GCJ02
 
     gps_sleep_mode = _gps_sleep_mode.none
 
     gps_cfg = {
-        "UARTn": UART.UART1,
+        "gps_mode": _gps_mode.internal,
+        "UARTn": UART.UART2,
         "buadrate": 115200,
         "databits": 8,
         "parity": 0,
         "stopbits": 1,
         "flowctl": 0,
-        "gps_mode": _gps_mode.external_uart,
         "PowerPin": None,
         "StandbyPin": None,
         "BackupPin": None,

@@ -2,34 +2,37 @@
 
 中文 | [English](readme.md)
 
-## Tracker 介绍
+欢迎来到 QuecPython Tracker 解决方案仓库！本仓库提供了一个全面的解决方案，用于使用 QuecPython Tracker 设备应用程序。
+
+## 目录
+
+- [介绍](#介绍)
+- [功能](#功能)
+- [快速开始](#快速开始)
+  - [先决条件](#先决条件)
+  - [安装](#安装)
+  - [运行应用程序](#运行应用程序)
+- [目录结构](#目录结构)
+- [贡献](#贡献)
+- [许可证](#许可证)
+- [支持](#支持)
+
+## 介绍
 
 ### 产品概述
 
-- Tracker智能定位器。
+- Tracker 智能定位器
 - 终端设备功能涵盖绝大部分定位器应用场景
-- 可视化运营平台+手机APP, 设备管理和数据查看更方便
+- 可视化运营平台+手机 APP，设备管理和数据查看更方便
 
 ![](./docs/zh/media/tracker_process.png)
-
-### 产品功能
-
-- 多重定位、安全围栏、危险报警、紧急求救、语音监听、录音、轨迹回放、远程控制等
-- 智能定位
-    - 系统利用4G通信/多重定位/分布式服务等技术, 为智能定位器行业提供从端到服务的一站式解决方案
-- 全平台支持
-    - 设备运营平台和手机APP功能齐全, 终端设备厂商无需自行搭建服务平台即可快速实现对设备和终端用户的管理
-- 可靠稳定
-    - 终端设备定位精度高、危险感知灵敏度高、功耗低、运行稳定, 终端设备厂商可套壳即用, 极大缩短硬件开发周期
-
-![](./docs/zh/media/tracker_funcion.png)
 
 ### 产品特点
 
 - 位置信息、危险警情智能感知、识别和上报
-- 支持阿里Iot平台、ThingsBoard、私有服务等多种Iot平台对接
-- QuecPython二次开发, 模块化、定制化、缩短开发周期
-- 可视化运营平台、手机APP控制终端
+- 支持阿里 IoT 平台、ThingsBoard、私有服务等多种 IoT 平台对接
+- QuecPython 二次开发，模块化、定制化、缩短开发周期
+- 可视化运营平台、手机 APP 控制终端
 
 ### 应用行业
 
@@ -42,103 +45,161 @@
 
 ![](./docs/zh/media/tracker_application.png)
 
-## 移远Tracker智能定位器及其能力
+## 功能
 
-### 产品能力
+- 多重定位、安全围栏、危险报警、紧急求救、语音监听、录音、轨迹回放、远程控制等
+- 智能定位
+  - 系统利用 4G 通信/多重定位/分布式服务等技术，为智能定位器行业提供从端到服务的一站式解决方案
+- 全平台支持
+  - 设备运营平台和手机 APP 功能齐全，终端设备厂商无需自行搭建服务平台即可快速实现对设备和终端用户的管理
+- 可靠稳定
+  - 终端设备定位精度高、危险感知灵敏度高、功耗低、运行稳定，终端设备厂商可套壳即用，极大缩短硬件开发周期
 
-- **通道支持阿里Iot平台、ThingsBoard、私有服务平台等多种平台(目前暂只支持阿里Iot平台和ThingsBoard平台, 其他平台正在开发中)**
-- **支持本地和远程参数配置**
-- **支持OTA升级**
-- **支持数据离线存储**
-    - 在网络连接不稳定情况下, 将发送失败的数据暂存至本地, 在网络恢复后优先将本地数据发送至服务端
-    - 离线存储的数据量可通过配置文件配置
-- **支持常用的传感器和输入设备**
-    - 传感器:
-        - 照度传感器
-        - 三轴加速度传感器
-        - 温湿度传感器
-        - ...
-    - 输入设备
-        - 麦克风
-        - ...
-- **支持QuecPython, 可以使用Python代码快速实现二次开发**
+![](./docs/zh/media/tracker_funcion.png)
 
-### 产品配套组件
+## 快速开始
 
-#### QPYcom工具
+### 先决条件
 
-QPYcom工具是一个集**QuecPython repl交互、PC和模组间文件传输、文件系统镜像制作并打包到固件包、及固件烧录等各种功能**于一体的强大利器。
+在开始之前，请确保您具备以下先决条件：
 
-用户如需进行二次开发, 使用QPYcom将会大大提高开发的效率。
+- **硬件：**
 
-[点此下载QPYCom工具。](https://python.quectel.com/download)
+  - Windows 电脑一台，建议 `Win10` 系统
 
-QPYCom的使用文档, 参见安装目录下的`docs`文件夹。
+  - 一套 [EC200UEUAA QuecPython 标准开发板](https://python.quectel.com/doc/Getting_started/zh/evb/ec200x-evb.html)（含 LTE 天线、 Type-C 数据线等）
 
-![](./docs/zh/media/QPYCom_V3.3.0.png)
+    > 点击查看 Tracker 定位器开发板的[原理图](https://python.quectel.com/wp-content/uploads/2024/09/EC200UA_C4-P01%E7%B3%BB%E5%88%97%E5%BC%80%E5%8F%91%E6%9D%BF%E5%8E%9F%E7%90%86%E5%9B%BE.pdf)和[丝印图](https://python.quectel.com/wp-content/uploads/2024/09/EC200UA_C4-P01%E7%B3%BB%E5%88%97%E5%BC%80%E5%8F%91%E6%9D%BF%E4%B8%9D%E5%8D%B0.pdf)文档。
 
-### 产品优势
+  - 一根 [GNSS天线](https://e.tb.cn/h.TpAFyEz02BnCHRD?tk=fznae6ITVEX)
 
-- **多重定位**
-    - 支持GPS、BDS、GLONASS、Galileo, 支持Wi-Fi、基站定位, 世界任意角落, 都能精准定位
-- **1000mah**
-    - 超低功耗, 超长待机, 理论待机>8000天
-- **传感器**
-    - 加速传感器、温湿度传感器、光照传感器, 极大扩展使用场景, 冷链运输、物流监控, 不在话下
-- **宽电压支持**
-    - 最低9v, 最高108v, 不论是小轿车、大货车、新能源汽车, 还是两轮电动车, 统统支持
-- **疾速定位**
-    - AGPS加持, 疾速定位, 急脾气？别着急。定位器比你更“疾”
-- **隐蔽安装**
-    - 可磁吸、可粘扣、可固定、可移动, 定位效果无所遁形, 定位器杳无踪迹
-- **低成本开发**
-    - 可使用Python进行二次开发, 降低软件开发成本
-    ![C2Py.png](./docs/zh/media/C2Py.png)
-    - 我司多平台模组适用, 使用Python开发, 无需修改代码即可快速切换至不同模组
-- **强大的客户服务和技术支持能力**
+  - 一个排针跳线帽
 
-## 移远Tracker智能定位器的工作流程
+  - 一张可正常使用的 Nano SIM 卡
 
-### 危险报警、紧急求救
+- **软件：**
 
-![](./docs/zh/media/tracker_alert.png)
+  - QuecPython 模块的 USB 驱动：[QuecPython_USB_Driver_Win10_U_G](https://python.quectel.com/wp-content/uploads/2024/09/Quectel_Windows_USB_DriverU_V1.0.19.zip)
+  - 调试工具 [QPYcom](https://images.quectel.com/python/2022/12/QPYcom_V3.6.0.zip)
+  - QuecPython 固件及相关软件资源
+  - Python 文本编辑器（例如，[VSCode](https://code.visualstudio.com/)、[Pycharm](https://www.jetbrains.com/pycharm/download/)）
 
-### 远程控制
+### 安装
 
-![](./docs/zh/media/solution-tracker-102.png)
+1. **克隆仓库**：
 
-## 拉取完整代码工程
+   ```bash
+   # 1.拉取主项目代码
+   git clone https://github.com/QuecPython/solution-tracker.git
+   
+   # 2.进入项目根目录
+   cd solution-tracker/
+   
+   # 3.切换对应的主项目分支
+   git checkout master
+   
+   # 4.子项目初始化
+   git submodule init
+   
+   # 5.子项目代码拉取
+   git submodule update
+   
+   # 6.进入子项目目录
+   cd code/modules/
+   
+   # 7.切换对应的子项目分支
+   git checkout master
+   ```
 
-### 说明
+2. **烧录固件：**
+   按照[说明](https://python.quectel.com/doc/Application_guide/zh/dev-tools/QPYcom/qpycom-dw.html#%E4%B8%8B%E8%BD%BD%E5%9B%BA%E4%BB%B6)将固件烧录到开发板上。
 
-本项目包含有一个`modules`子项目, 拉取代码时需将子项目一并拉去下来进行使用。
+### 运行应用程序
 
-### 拉取步骤
+1. **连接硬件：**
+   按照下图进行硬件连接：
 
-1 拉取主项目代码
+   ![](./docs/zh/media/连线.png) 
 
-- `git clone https://github.com/QuecPython/solution-tracker.git`
+   1. 将 LTE 天线连接至标识有 `LTE` 字样的天线连接座上
+   2. 将 GNSS 天线连接至标识有 `GNSS` 字样的天线连接座上
+   3. 在图示位置开发板背面插入可用的 Nano SIM 卡
+   4. 使用跳线帽将标识有 `GNSS_EN` 字样的两根排针短接，使能开发板内置 GNSS 功能
+   5. 使用 Type-C 数据线连接开发板和电脑
 
-2 进入项目根目录
+2. **将代码下载到设备：**
+   - 启动 QPYcom 调试工具。
+   - 将数据线连接到计算机。
+   - 按照[说明](https://python.quectel.com/doc/Application_guide/zh/dev-tools/QPYcom/qpycom-dw.html#%E4%B8%8B%E8%BD%BD%E8%84%9A%E6%9C%AC)将 `code` 文件夹中的所有文件导入到模块的文件系统中，保留目录结构。
 
-- `cd solution-tracker/`
+3. **运行应用程序：**
+   - 选择 `File` 选项卡。
+   - 选择 `_main.py` 脚本。
+   - 右键单击并选择 `Run` 或使用`运行`快捷按钮执行脚本。
 
-3 切换对应的主项目分支
+## 目录结构
 
-- `git checkout master`
+```plaintext
+solution-tracker/
+├── code/
+│   ├── modules/
+│   │   ├── docs/
+│   │   │   ├── en/
+│   │   │   └── zh/
+│   │   ├── aliIot.py
+│   │   ├── battery.py
+│   │   ├── battery.py
+│   │   ├── buzzer.py
+│   │   ├── common.py
+│   │   ├── history.py
+│   │   ├── led.py
+│   │   ├── location.py
+│   │   ├── logging.py
+│   │   ├── net_manage.py
+│   │   ├── player.py
+│   │   ├── power_manage.py
+│   │   ├── serial.py
+│   │   ├── temp_humidity_sensor.py
+│   │   ├── thingsboard.py
+│   │   └── thingsboard.py
+│   ├── _main.py
+│   ├── settings.py
+│   ├── settings_loc.py.py
+│   ├── settings_server.py
+│   ├── settings_user.py
+│   ├── tracker_ali.py
+│   └── tracker_tb.py
+├── docs/
+│   ├── en/
+│   │   └── media/
+│   └── zh/
+│       └── media/
+├── object_model_demo/
+│   └── ali_cloud_object_model.json
+├── QPY_OCPU_BETA0001_EC200U_EUAA_FW/
+│   └──  QPY_OCPU_BETA0001_EC200U_EUAA_FW.pac
+├── .gitignore
+├── .gitmodules
+├── CHANGELOG.md
+├── LICENSE
+├── readme.md
+└── readme_zh.md
+```
 
-4 子项目初始化
+## 贡献
 
-- `git submodule init`
+我们欢迎对本项目的改进做出贡献！请按照以下步骤进行贡献：
 
-5 子项目代码拉取
+1. Fork 此仓库。
+2. 创建一个新分支（`git checkout -b feature/your-feature`）。
+3. 提交您的更改（`git commit -m 'Add your feature'`）。
+4. 推送到分支（`git push origin feature/your-feature`）。
+5. 打开一个 Pull Request。
 
-- `git submodule update`
+## 许可证
 
-6 进入子项目目录
+本项目使用 Apache 许可证。详细信息请参阅 [LICENSE](LICENSE) 文件。
 
-- `cd code/modules/`
+## 支持
 
-7 切换对应的子项目分支
-
-- `git checkout master`
+如果您有任何问题或需要支持，请参阅 [QuecPython 文档](https://python.quectel.com/doc)或在本仓库中打开一个 issue。

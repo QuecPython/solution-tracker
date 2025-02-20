@@ -28,15 +28,26 @@ from misc import Power
 from queue import Queue
 from machine import RTC
 
-from usr.settings import Settings
-from usr.settings_user import UserConfig
-from usr.modules.battery import Battery
-from usr.modules.history import History
-from usr.modules.logging import getLogger
-from usr.modules.net_manage import NetManager
-from usr.modules.thingsboard import TBDeviceMQTTClient
-from usr.modules.power_manage import PowerManage, PMLock
-from usr.modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
+try:
+    from settings import Settings
+    from settings_user import UserConfig
+    from modules.battery import Battery
+    from modules.history import History
+    from modules.logging import getLogger
+    from modules.net_manage import NetManager
+    from modules.thingsboard import TBDeviceMQTTClient
+    from modules.power_manage import PowerManage, PMLock
+    from modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
+except ImportError:
+    from usr.settings import Settings
+    from usr.settings_user import UserConfig
+    from usr.modules.battery import Battery
+    from usr.modules.history import History
+    from usr.modules.logging import getLogger
+    from usr.modules.net_manage import NetManager
+    from usr.modules.thingsboard import TBDeviceMQTTClient
+    from usr.modules.power_manage import PowerManage, PMLock
+    from usr.modules.location import GNSS, GNSSBase, CellLocator, WiFiLocator, CoordinateSystemConvert
 
 log = getLogger(__name__)
 
