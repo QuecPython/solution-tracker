@@ -1,0 +1,5 @@
+{
+    "QTH_PRODUCT_KEY": "pe17gQ",
+    "QTH_PRODUCT_SECRET": "REdmNmlMRS8yUmNi",
+    "QTH_SERVER": "mqtt://iot-south.quectelcn.com:1883"
+}
